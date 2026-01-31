@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    
+
     // --- MOCK DATA SETUP ---
     const API = {
-        MR_STOCK: '/api/mr-stock',
-        STOCK_RECEIVED: '/api/stock-received',
-        DCRS: '/api/dcrs'
+        MR_STOCK: 'https://pharma-track-app.onrender.com/api/mr-stock',
+        STOCK_RECEIVED: 'https://pharma-track-app.onrender.com/api/stock-received',
+        DCRS: 'https://pharma-track-app.onrender.com/api/dcrs'
     };
 
     async function apiJson(url, options) {
@@ -36,14 +36,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         { productId: 'P003', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
         { productId: 'P004', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
     ];
-    
+
     // 2. DCR History (used to calculate Total Distributed Stock)
     let submittedDCRs = loadLocalJson('submittedDCRs') || [
         // Mock data demonstrating samples given
-        { reportId: 1700000000004, doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", remarks: "Handed over materials.", samplesGiven: [{productId: "P004", productName: "Sample Kit A", quantity: 3}] },
-        { reportId: 1700000000003, doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", remarks: "Enthusiastic about X.", samplesGiven: [{productId: "P001", productName: "Product X (500mg)", quantity: 10}, {productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5}] },
-        { reportId: 1700000000002, doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", remarks: "Requested a full sample kit.", samplesGiven: [{productId: "P004", productName: "Sample Kit A", quantity: 1}] },
-        { reportId: 1700000000001, doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", remarks: "Needs more data.", samplesGiven: [{productId: "P001", productName: "Product X (500mg)", quantity: 5}] }
+        { reportId: 1700000000004, doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", remarks: "Handed over materials.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 3 }] },
+        { reportId: 1700000000003, doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", remarks: "Enthusiastic about X.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 10 }, { productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5 }] },
+        { reportId: 1700000000002, doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", remarks: "Requested a full sample kit.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 1 }] },
+        { reportId: 1700000000001, doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", remarks: "Needs more data.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 5 }] }
     ];
 
 
@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         { id: 'P003', name: 'Product Z Cream' },
         { id: 'P004', name: 'Sample Kit A' },
     ];
-    
+
     // In a real app, this list is often fetched separately. We'll use this list
     // and calculate the remaining stock dynamically during rendering.
 
@@ -79,11 +79,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             .filter(item => item.productId === productId)
             .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     }
-    
+
     // Calculate the total quantity distributed (sold) for a product based on DCRs
     function calculateTotalDistributed(productId) {
         let distributed = 0;
-        
+
         submittedDCRs.forEach(dcr => {
             if (!dcr || !Array.isArray(dcr.samplesGiven)) {
                 return;
@@ -94,25 +94,25 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             });
         });
-        
+
         return distributed;
     }
-    
+
     // --- MAIN REPORT RENDERING FUNCTION ---
 
     function renderProductStockReport() {
         productStockTableBody.innerHTML = '';
-        
+
         // Loop through the main product list
         productsList.forEach((product, index) => {
             const totalReceived = calculateTotalReceived(product.id);
             const totalDistributed = calculateTotalDistributed(product.id);
             // *** CRITICAL FIX: Calculate remaining stock as the difference ***
-            const remainingStock = totalReceived - totalDistributed; 
-            
+            const remainingStock = totalReceived - totalDistributed;
+
             // Determine text color based on stock level (e.g., low if below 10)
-            const stockClass = remainingStock <= 10 ? 'stock-low' : 'stock-ok'; 
-            
+            const stockClass = remainingStock <= 10 ? 'stock-low' : 'stock-ok';
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="text-center">${index + 1}</td>
@@ -126,13 +126,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </button>
                 </td>
             `;
-            
+
             productStockTableBody.appendChild(row);
         });
     }
 
     // --- MODAL RENDERING FUNCTION (Distribution Details) ---
-    
+
     function populateDistributionModal(productId, productName) {
         // 1. Filter DCRs for the specific product distribution and map the data
         const distributionEntries = submittedDCRs
@@ -149,14 +149,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             })
             // Sort by most recent DCR submission date
             .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-            
+
         // 2. Calculate totals and update modal header
         const totalDistributed = distributionEntries.reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
         modalProductName.textContent = productName;
         modalTotalDistributed.textContent = totalDistributed;
-        
+
         distributionDetailsTableBody.innerHTML = '';
-        
+
         // 3. Populate the detail table body
         if (distributionEntries.length === 0) {
             distributionDetailsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No distribution records found.</td></tr>';
@@ -182,12 +182,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // --- EVENT LISTENERS ---
-    
+
     document.getElementById('distributionModal').addEventListener('show.bs.modal', (event) => {
         const button = event.relatedTarget;
         const productId = button.dataset.id;
         const productName = button.dataset.name;
-        
+
         populateDistributionModal(productId, productName);
     });
 
@@ -243,14 +243,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Save mock data for persistence across pages
     if (!localStorage.getItem('stockReceivedHistory')) {
-         localStorage.setItem('stockReceivedHistory', JSON.stringify(stockReceivedHistory));
+        localStorage.setItem('stockReceivedHistory', JSON.stringify(stockReceivedHistory));
     }
     if (!localStorage.getItem('submittedDCRs')) {
-         localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
+        localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
     }
     // Always keep localStorage in sync for fallback mode
     localStorage.setItem('stockReceivedHistory', JSON.stringify(stockReceivedHistory));
     localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
-    
-    renderProductStockReport(); 
+
+    renderProductStockReport();
 });

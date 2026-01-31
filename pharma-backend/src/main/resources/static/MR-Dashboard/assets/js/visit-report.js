@@ -1,11 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
-    
+
     // --- CONFIGURATION ---
     const PAGE_SIZE = 3;
 
     const API = {
-        DCRS: '/api/dcrs',
-        MR_STOCK: '/api/mr-stock'
+        DCRS: 'https://pharma-track-app.onrender.com/api/dcrs',
+        MR_STOCK: 'https://pharma-track-app.onrender.com/api/mr-stock'
     };
 
     let apiMode = true;
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return await res.json();
     }
-    
+
     // --- MOCK DATA ---
     const assignedDoctors = [
         { id: 101, name: "Dr. Anjali Sharma", clinic: "Care Clinic" },
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { id: 305, name: "Dr. Chris Lee", clinic: "Family Care" },
         { id: 306, name: "Dr. Nina George", clinic: "Star Health" },
     ];
-    
+
     let mrStock = JSON.parse(localStorage.getItem('mrProductStock')) || [
         { id: 'P001', name: 'Product X (500mg)', stock: 100 },
         { id: 'P002', name: 'Product Y Syrup (100ml)', stock: 100 },
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     // --- STATE MANAGEMENT ---
-    let tempSamples = []; 
+    let tempSamples = [];
     let sampleEntryIdCounter = 1;
     let submittedDCRs = JSON.parse(localStorage.getItem('submittedDCRs')) || [];
     let currentPage = 1;
@@ -55,10 +55,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Ensure we have at least 4 mock entries for initial display if storage is empty
     if (submittedDCRs.length === 0) {
         submittedDCRs = [
-            { reportId: 1700000000004, visitTitle: "Sample Kit Delivery", visitType: "Promotion", doctorId: "202", doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", rating: "3", remarks: "Handed over marketing materials. Follow-up scheduled.", samplesGiven: [{productId: "P004", productName: "Sample Kit A", quantity: 3}], submissionTime: "2025-11-27T10:15:00.000Z" },
-            { reportId: 1700000000003, visitTitle: "New Product Launch Detailing", visitType: "Doctor Visit", doctorId: "201", doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", rating: "5", remarks: "Enthusiastic about X. Will prescribe immediately.", samplesGiven: [{productId: "P001", productName: "Product X (500mg)", quantity: 10}, {productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5}], submissionTime: "2025-11-26T16:15:00.000Z" },
-            { reportId: 1700000000002, visitTitle: "Follow-up on Product Z", visitType: "Follow-up", doctorId: "103", doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", rating: "4", remarks: "Very satisfied. Requested a full sample kit.", samplesGiven: [{productId: "P004", productName: "Sample Kit A", quantity: 1}], submissionTime: "2025-11-26T14:15:00.000Z" },
-            { reportId: 1700000000001, visitTitle: "Initial Detailing of Product X", visitType: "Doctor Visit", doctorId: "101", doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", rating: "3", remarks: "Receptive but cautious. Needs more data.", samplesGiven: [{productId: "P001", productName: "Product X (500mg)", quantity: 5}], submissionTime: "2025-11-25T10:45:00.000Z" }
+            { reportId: 1700000000004, visitTitle: "Sample Kit Delivery", visitType: "Promotion", doctorId: "202", doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", rating: "3", remarks: "Handed over marketing materials. Follow-up scheduled.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 3 }], submissionTime: "2025-11-27T10:15:00.000Z" },
+            { reportId: 1700000000003, visitTitle: "New Product Launch Detailing", visitType: "Doctor Visit", doctorId: "201", doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", rating: "5", remarks: "Enthusiastic about X. Will prescribe immediately.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 10 }, { productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5 }], submissionTime: "2025-11-26T16:15:00.000Z" },
+            { reportId: 1700000000002, visitTitle: "Follow-up on Product Z", visitType: "Follow-up", doctorId: "103", doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", rating: "4", remarks: "Very satisfied. Requested a full sample kit.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 1 }], submissionTime: "2025-11-26T14:15:00.000Z" },
+            { reportId: 1700000000001, visitTitle: "Initial Detailing of Product X", visitType: "Doctor Visit", doctorId: "101", doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", rating: "3", remarks: "Receptive but cautious. Needs more data.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 5 }], submissionTime: "2025-11-25T10:45:00.000Z" }
         ];
     }
 
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const samplesTableBody = document.getElementById('samplesTableBody');
     const submittedDCRTableBody = document.getElementById('submittedDCRTableBody');
     let dcrPaginationFooter = document.getElementById('dcrPaginationFooter');
-    
+
     // Assuming you have a toast container structure ready in your HTML, let's target it
     // For this example, we'll assume the Toast structure is available and has the ID 'liveToast'
     const liveToastElement = document.getElementById('liveToast');
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveStock() {
         localStorage.setItem('mrProductStock', JSON.stringify(mrStock));
     }
-    
+
     function saveDCRs() {
         localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
     }
@@ -121,51 +121,51 @@ document.addEventListener("DOMContentLoaded", () => {
             // keep existing localStorage data
         }
     }
-    
+
     function getProductStock(productId) {
         const product = mrStock.find(p => p.id === productId);
         let effectiveStock = product ? product.stock : 0;
-        
+
         const committedQuantity = tempSamples
             .filter(s => s.productId === productId)
             .reduce((sum, s) => sum + s.quantity, 0);
 
         return effectiveStock - committedQuantity;
     }
-    
+
     function updateStock(productId, quantityUsed) {
         const productIndex = mrStock.findIndex(p => p.id === productId);
         if (productIndex !== -1) {
             mrStock[productIndex].stock -= quantityUsed;
         }
     }
-    
+
     // --- INITIALIZATION FUNCTIONS ---
 
     function populateDoctors() {
-        doctorSelect.innerHTML = '<option value="">Select Doctor</option>'; 
+        doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
         assignedDoctors.forEach(doctor => {
             const option = document.createElement('option');
             option.value = doctor.id;
             option.textContent = doctor.name;
-            option.dataset.clinic = doctor.clinic; 
+            option.dataset.clinic = doctor.clinic;
             doctorSelect.appendChild(option);
         });
     }
 
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
-        
+
         mrStock.forEach(product => {
             const effectiveStock = getProductStock(product.id);
-            
-            if (product.stock > 0 || tempSamples.some(s => s.productId === product.id)) { 
+
+            if (product.stock > 0 || tempSamples.some(s => s.productId === product.id)) {
                 const option = document.createElement('option');
                 option.value = product.id;
-                option.textContent = `${product.name} (Available: ${effectiveStock})`; 
-                
+                option.textContent = `${product.name} (Available: ${effectiveStock})`;
+
                 if (effectiveStock <= 0) {
-                     option.disabled = true;
+                    option.disabled = true;
                 }
 
                 selectElement.appendChild(option);
@@ -177,14 +177,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderSamplesTable() {
         samplesTableBody.innerHTML = '';
-        
+
         if (tempSamples.length === 0) {
             samplesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No samples added yet.</td></tr>';
         } else {
             tempSamples.forEach(sample => {
                 const row = document.createElement('tr');
                 row.dataset.id = sample.id;
-                
+
                 row.innerHTML = `
                     <td>${sample.productName}</td>
                     <td class="text-center">${sample.quantity}</td>
@@ -202,10 +202,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 samplesTableBody.appendChild(row);
             });
         }
-        
+
         populateProductSelect(sampleProductSelect);
     }
-    
+
     // --- PAGINATION & DCR TABLE MANAGEMENT ---
 
     function renderPaginationControls(totalRecords) {
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const nav = document.createElement('nav');
         nav.setAttribute('aria-label', 'Page navigation');
-        
+
         const ul = document.createElement('ul');
         ul.className = 'pagination pagination-sm mb-0';
         ul.addEventListener('click', handlePaginationClick);
@@ -282,17 +282,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 <a class="page-link" href="#" data-page="${Math.min(totalPages, currentPage + 1)}">Next</a>
             </li>
         `;
-        
+
         nav.appendChild(ul);
         // Append the controls wrapped in the <nav> element
         dcrPaginationFooter.appendChild(nav);
     }
-    
+
     function handlePaginationClick(event) {
         const target = event.target.closest('a.page-link');
         if (!target) return;
         event.preventDefault();
-        
+
         const page = parseInt(target.dataset.page);
         const totalPages = Math.max(1, Math.ceil(submittedDCRs.length / PAGE_SIZE));
 
@@ -305,14 +305,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderSubmittedDCRTable() {
         submittedDCRs.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-        
+
         // Pagination logic: Slice the array based on currentPage and PAGE_SIZE
         const startIndex = (currentPage - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
         const recordsToDisplay = submittedDCRs.slice(startIndex, endIndex);
 
         submittedDCRTableBody.innerHTML = '';
-        
+
         if (submittedDCRs.length === 0) {
             submittedDCRTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No DCRs have been submitted yet.</td></tr>';
             if (dcrPaginationFooter) dcrPaginationFooter.innerHTML = '';
@@ -320,16 +320,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (recordsToDisplay.length === 0 && currentPage > 1) {
-             // Handle case where last record of a page is deleted, move back one page
-             currentPage--;
-             renderSubmittedDCRTable();
-             return;
+            // Handle case where last record of a page is deleted, move back one page
+            currentPage--;
+            renderSubmittedDCRTable();
+            return;
         }
-        
+
         recordsToDisplay.forEach(dcr => {
             const row = document.createElement('tr');
             row.dataset.id = dcr.reportId;
-            
+
             // Product name rendering (no bolding)
             const samples = Array.isArray(dcr.samplesGiven) ? dcr.samplesGiven : [];
             const samplesSummary = samples.length > 0
@@ -340,11 +340,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     return `${base} (${qty})`;
                 }).join('<br>')
                 : '—';
-            
+
             const formattedDate = new Date(dcr.dateTime).toLocaleString('en-IN', {
                 day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
             });
-            
+
             const ratingText = `${dcr.rating} ⭐`;
 
             const remarks = dcr.remarks == null ? '' : String(dcr.remarks);
@@ -385,9 +385,9 @@ document.addEventListener("DOMContentLoaded", () => {
         tempSamples = [];
         renderSamplesTable();
         // Reset the 'Select Rating' to the default '3' for new entries
-        document.getElementById('doctorRating').value = '3'; 
+        document.getElementById('doctorRating').value = '3';
     }
-    
+
     // Function to Load a DCR for Editing
     function loadDCRForEdit(reportId) {
         const dcr = submittedDCRs.find(d => d.reportId === reportId);
@@ -410,7 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const samples = Array.isArray(dcr.samplesGiven) ? dcr.samplesGiven : [];
         tempSamples = samples.map(s => ({
             ...s,
-            id: sampleEntryIdCounter++, 
+            id: sampleEntryIdCounter++,
         }));
 
         // 4. Render Samples Table
@@ -441,12 +441,12 @@ document.addEventListener("DOMContentLoaded", () => {
     submittedDCRTableBody.addEventListener('click', (event) => {
         const target = event.target.closest('button');
         if (!target) return;
-        
+
         const reportId = parseInt(target.dataset.id);
 
         if (target.classList.contains('delete-dcr-btn')) {
             if (!confirm("Are you sure you want to delete this submitted DCR? Stock will be refunded.")) return;
-            
+
             const dcrIndex = submittedDCRs.findIndex(d => d.reportId === reportId);
             if (dcrIndex === -1) return;
 
@@ -479,12 +479,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 saveDCRs();
                 renderSubmittedDCRTable();
             })();
-        } 
+        }
     });
 
 
     // --- SAMPLES ENTRY HANDLERS (inside modal) ---
-    
+
     doctorSelect.addEventListener('change', () => {
         const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
         if (clinicLocationInput) {
@@ -495,8 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sampleProductSelect.addEventListener('change', () => {
         const productId = sampleProductSelect.value;
-        const maxStock = getProductStock(productId); 
-        
+        const maxStock = getProductStock(productId);
+
         sampleQuantityInput.value = '';
         if (productId) {
             sampleQuantityInput.setAttribute('max', maxStock);
@@ -513,19 +513,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const productId = sampleProductSelect.value;
         const quantity = parseInt(sampleQuantityInput.value);
         const maxStock = getProductStock(productId);
-        
+
         if (!productId || isNaN(quantity) || quantity <= 0) {
             alert("Please select a product and enter a positive quantity.");
             return;
         }
-        
+
         if (quantity > maxStock) {
             alert(`Quantity exceeds available stock. Max available: ${maxStock}`);
             return;
         }
 
         const existingSample = tempSamples.find(s => s.productId === productId);
-        const productName = mrStock.find(p => p.id === productId).name; 
+        const productName = mrStock.find(p => p.id === productId).name;
 
         if (existingSample) {
             existingSample.quantity += quantity;
@@ -533,11 +533,11 @@ document.addEventListener("DOMContentLoaded", () => {
             tempSamples.push({
                 id: sampleEntryIdCounter++,
                 productId: productId,
-                productName: productName, 
+                productName: productName,
                 quantity: quantity
             });
         }
-        
+
         renderSamplesTable();
         sampleProductSelect.value = '';
         sampleQuantityInput.value = '';
@@ -549,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
     samplesTableBody.addEventListener('click', (event) => {
         const target = event.target.closest('button');
         if (!target) return;
-        
+
         const sampleId = parseInt(target.dataset.id);
         const sampleIndex = tempSamples.findIndex(s => s.id === sampleId);
         if (sampleIndex === -1) return;
@@ -559,10 +559,10 @@ document.addEventListener("DOMContentLoaded", () => {
             renderSamplesTable();
         } else if (target.classList.contains('edit-sample-btn')) {
             const sample = tempSamples[sampleIndex];
-            const max = getProductStock(sample.productId) + sample.quantity; 
-            
+            const max = getProductStock(sample.productId) + sample.quantity;
+
             let newQuantity = prompt(`Enter new quantity for ${sample.productName} (Max: ${max}):`, sample.quantity);
-            
+
             if (newQuantity !== null) {
                 newQuantity = parseInt(newQuantity);
                 if (isNaN(newQuantity) || newQuantity < 0) {
@@ -573,7 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert(`Quantity exceeds max available stock: ${max}`);
                     return;
                 }
-                
+
                 sample.quantity = newQuantity;
                 if (sample.quantity === 0) {
                     tempSamples.splice(sampleIndex, 1);
@@ -590,7 +590,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const isEditing = reportIdField.value !== '';
         const reportId = isEditing ? parseInt(reportIdField.value) : Date.now();
-        
+
         if (tempSamples.length === 0 && !confirm("No samples added. Submit report anyway?")) {
             return;
         }
@@ -665,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const oldDCR = submittedDCRs[oldDCRIndex];
                 const oldSamples = Array.isArray(oldDCR.samplesGiven) ? oldDCR.samplesGiven : [];
                 const newSamples = Array.isArray(newReportData.samplesGiven) ? newReportData.samplesGiven : [];
-                
+
                 // 1. Refund Old Stock
                 oldSamples.forEach(item => {
                     const product = mrStock.find(p => p.id === item.productId);
@@ -673,12 +673,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         product.stock += (Number(item.quantity) || 0);
                     }
                 });
-                
+
                 // 2. Re-deduct New Stock
                 newSamples.forEach(item => {
                     updateStock(item.productId, item.quantity);
                 });
-                
+
                 // 3. Update the DCR in the array
                 submittedDCRs[oldDCRIndex] = newReportData;
 
@@ -696,7 +696,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // --- FINAL COMMIT & UI UPDATE ---
             saveStock();
             saveDCRs();
-            
+
             // Hide modal
             dcrModal.hide();
 
@@ -708,7 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 console.log(`✅ Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
             }
-            
+
             // Refresh table with pagination
             renderSubmittedDCRTable();
         })();

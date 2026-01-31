@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DAILYPLAN] dailyplan.js loaded and DOM content is ready!");
 
     // --- API Configuration ---
-    const API_BASE = "";
+    const API_BASE = "https://pharma-track-app.onrender.com";
     const TASKS_API_BASE = `${API_BASE}/api/tasks`;
     let tasksApiMode = true;
 

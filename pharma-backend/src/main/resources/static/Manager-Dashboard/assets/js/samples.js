@@ -46,7 +46,7 @@ function upsertSampleMeta(productId, metaPatch) {
   saveSampleMetaByProductId(meta);
 }
 
-const API_BASE = "";
+const API_BASE = "https://pharma-track-app.onrender.com";
 const USERS_API_BASE = `${API_BASE}/api/users`;
 const MR_STOCK_API_BASE = `${API_BASE}/api/mr-stock`;
 const STOCK_RECEIVED_API_BASE = `${API_BASE}/api/stock-received`;

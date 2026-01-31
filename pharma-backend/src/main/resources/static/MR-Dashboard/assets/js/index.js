@@ -23,8 +23,8 @@
   };
 
   const API = {
-    DASHBOARD: "/api/mr-dashboard",
-    TASKS: "/api/tasks"
+    DASHBOARD: "https://pharma-track-app.onrender.com/api/mr-dashboard",
+    TASKS: "https://pharma-track-app.onrender.com/api/tasks"
   };
 
   function getAuthHeader() {
@@ -122,49 +122,49 @@
     if (elExpApproved) elExpApproved.textContent = formatINR(Number(data.expensesApproved) || 0);
   }
 
-  }
+}
 
 
   // Initialization
   async function init() {
-    log("Initializing MR Dashboard script");
+  log("Initializing MR Dashboard script");
 
-    // Set Today's date in header
-    const dateEl = $id("todayDate");
-    if (dateEl) {
-      const d = new Date();
-      dateEl.textContent = d.toLocaleDateString("en-IN", { weekday: 'long', day: 'numeric', month: 'short' });
-    } else {
-      warn("#todayDate element not found.");
-    }
-
-    const dashboardData = await loadDashboard();
-    renderSummary(dashboardData);
-
-    // Load Tasks
-    loadTasks();
-
-
-    // Backwards-compatible update helper
-    window._mrUpdate = function (obj) {
-      (async function () {
-        try {
-          const current = await loadDashboard();
-          const merged = Object.assign({}, current, obj);
-          const saved = await saveDashboard(merged);
-          renderSummary(saved);
-        } catch (e) {
-          err("Dashboard update failed:", e);
-        }
-      })();
-    };
-
-    log("MR Dashboard ready. Use window._mrDebugAttendance(), _mrSimulateCheckIn(), _mrSimulateCheckOut().");
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  // Set Today's date in header
+  const dateEl = $id("todayDate");
+  if (dateEl) {
+    const d = new Date();
+    dateEl.textContent = d.toLocaleDateString("en-IN", { weekday: 'long', day: 'numeric', month: 'short' });
   } else {
-    setTimeout(init, 10);
+    warn("#todayDate element not found.");
   }
-})();
+
+  const dashboardData = await loadDashboard();
+  renderSummary(dashboardData);
+
+  // Load Tasks
+  loadTasks();
+
+
+  // Backwards-compatible update helper
+  window._mrUpdate = function (obj) {
+    (async function () {
+      try {
+        const current = await loadDashboard();
+        const merged = Object.assign({}, current, obj);
+        const saved = await saveDashboard(merged);
+        renderSummary(saved);
+      } catch (e) {
+        err("Dashboard update failed:", e);
+      }
+    })();
+  };
+
+  log("MR Dashboard ready. Use window._mrDebugAttendance(), _mrSimulateCheckIn(), _mrSimulateCheckOut().");
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  setTimeout(init, 10);
+}
+}) ();

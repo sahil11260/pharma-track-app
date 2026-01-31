@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
 
   const form = document.getElementById("signupForm");
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
 
   const nameField = document.getElementById("name");
   const emailField = document.getElementById("email");

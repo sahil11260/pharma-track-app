@@ -1,6 +1,6 @@
 // --- PERSISTENCE SETUP ---
 const STORAGE_KEY = "kavyaPharmDoctorsData";
-const API_BASE = "";
+const API_BASE = "https://pharma-track-app.onrender.com";
 const DOCTORS_API_BASE = `${API_BASE}/api/doctors`;
 let doctorsApiMode = true;
 

@@ -4,7 +4,7 @@
   const NOTIFICATIONS_KEY = "kavyaPharmNotificationsData";
   const ALERTS_KEY = "kavyaPharmAlertsData";
 
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
   // Fallback data (used only if localStorage is empty/corrupt)

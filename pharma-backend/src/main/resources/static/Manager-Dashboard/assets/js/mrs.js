@@ -4,7 +4,7 @@
 const STORAGE_KEY_MRS = "kavyaPharmMRsData";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const USERS_API_BASE = `${API_BASE}/api/users`;
   let mrsApiMode = true;
 
@@ -483,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Try to distinguish network error from validation/server error
         if (err instanceof TypeError || errorMsg.includes("Failed to fetch")) {
-          showAlert("Network error: Could not reach the server. Please check if the backend is running at http://localhost:8082");
+          showAlert("Network error: Could not reach the server. Please check if the backend is running at https://pharma-track-app.onrender.com");
           console.error("[MR] Network error detected - NOT switching to offline mode to allow retry");
           // Don't set mrsApiMode = false here - let user retry
         } else {

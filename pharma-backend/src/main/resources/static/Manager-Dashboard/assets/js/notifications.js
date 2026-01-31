@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
   let notificationsApiMode = true;
 
@@ -159,8 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${n.date}</td>
           <td>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${String(
-              n.id ?? i + start
-            )}')">
+          n.id ?? i + start
+        )}')">
               <i class="bi bi-trash"></i>
             </button>
           </td>

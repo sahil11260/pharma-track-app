@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;

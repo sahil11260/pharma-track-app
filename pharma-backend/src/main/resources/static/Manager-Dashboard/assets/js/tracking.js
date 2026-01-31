@@ -5,7 +5,7 @@
   const exists = (id) => !!$(id);
 
   // --- Mock MR Data with GPS coordinates around Nagpur (window-scoped for debug) ---
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
   function getAuthHeader() {

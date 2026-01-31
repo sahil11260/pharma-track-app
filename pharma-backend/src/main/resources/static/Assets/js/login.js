@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.textContent;
-    const API_BASE = "";
+    const API_BASE = "https://pharma-track-app.onrender.com";
 
     (async function () {
       try {

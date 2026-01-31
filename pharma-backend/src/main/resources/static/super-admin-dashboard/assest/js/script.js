@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   const API = {
     USERS: `${API_BASE}/api/users`,
     REGIONS: `${API_BASE}/api/regions`,

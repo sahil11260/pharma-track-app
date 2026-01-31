@@ -1,7 +1,7 @@
 
 
 document.addEventListener("DOMContentLoaded", () => {
- 
+
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebar = document.getElementById("sidebar");
   const mainContent = document.getElementById("mainContent");
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------
   // Mock / dashboard data
   // -----------------------
-  const API_BASE = "";
+  const API_BASE = "https://pharma-track-app.onrender.com";
   let dashboardData = {
     totalMRs: 0,
     totalSales: 0,
@@ -168,12 +168,12 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn("Failed to fetch dashboard charts, using defaults.", e);
       // Keep empty defaults if API fails
       chartsData = {
-        monthLabels: ["Jan","Feb","Mar","Apr","May","Jun"],
-        salesByMonth: [0,0,0,0,0,0],
-        visitsByMonth: [0,0,0,0,0,0],
-        targetsByMonth: [0,0,0,0,0,0],
-        expenseByCategory: { Travel:0, Meals:0, Samples:0, Marketing:0, Other:0 },
-        productSalesByMonth: { "Product A":[0,0,0,0,0,0], "Product B":[0,0,0,0,0,0], "Product C":[0,0,0,0,0,0], "Product D":[0,0,0,0,0,0] }
+        monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        salesByMonth: [0, 0, 0, 0, 0, 0],
+        visitsByMonth: [0, 0, 0, 0, 0, 0],
+        targetsByMonth: [0, 0, 0, 0, 0, 0],
+        expenseByCategory: { Travel: 0, Meals: 0, Samples: 0, Marketing: 0, Other: 0 },
+        productSalesByMonth: { "Product A": [0, 0, 0, 0, 0, 0], "Product B": [0, 0, 0, 0, 0, 0], "Product C": [0, 0, 0, 0, 0, 0], "Product D": [0, 0, 0, 0, 0, 0] }
       };
     }
   }
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (productSalesChartInstance) {
-      try { productSalesChartInstance.destroy(); } catch (e) {}
+      try { productSalesChartInstance.destroy(); } catch (e) { }
       productSalesChartInstance = null;
     }
 
@@ -566,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
 
     if (window._expenseChartInstance) {
-      try { window._expenseChartInstance.destroy(); } catch (e) {}
+      try { window._expenseChartInstance.destroy(); } catch (e) { }
       window._expenseChartInstance = null;
     }
 
