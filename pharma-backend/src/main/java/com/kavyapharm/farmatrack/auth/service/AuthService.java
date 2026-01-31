@@ -28,9 +28,15 @@ public class AuthService {
     }
 
     public UserResponse signup(SignupRequest request) {
-        if (userRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new IllegalArgumentException("Email already exists");
-        }
+        // If email exists, check if we should allow 'SUPERADMIN' to overwrite (Fresh
+        // Start)
+        userRepository.findByEmailIgnoreCase(request.email()).ifPresent(existingUser -> {
+            if (com.kavyapharm.farmatrack.user.model.UserRole.SUPERADMIN.equals(request.role())) {
+                userRepository.delete(existingUser);
+            } else {
+                throw new IllegalArgumentException("Email already exists");
+            }
+        });
 
         User user = new User();
         user.setName(request.name());
