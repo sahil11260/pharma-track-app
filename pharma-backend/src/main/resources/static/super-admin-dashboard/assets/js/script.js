@@ -29,11 +29,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const icon = darkModeToggle.querySelector("i");
       if (document.body.classList.contains("dark-mode")) {
         localStorage.setItem("theme", "dark");
-        if (logo) logo.src = "assest/image/logo-dark.png";
+        if (logo) logo.src = "assets/image/logo-dark.png";
         if (icon) icon.className = "bi bi-sun";
       } else {
         localStorage.setItem("theme", "light");
-        if (logo) logo.src = "assest/image/image.png";
+        if (logo) logo.src = "assets/image/image.png";
         if (icon) icon.className = "bi bi-moon";
       }
     });
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (savedTheme === "dark") {
     document.body.classList.add("dark-mode");
     const logo = document.querySelector(".logo");
-    if (logo) logo.src = "assest/image/logo-dark.png";
+    if (logo) logo.src = "assets/image/logo-dark.png";
     const icon = document.querySelector("#themeToggle i");
     if (icon) icon.className = "bi bi-sun";
   } else {
@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.classList.remove("dark-mode");
     localStorage.setItem("theme", "light");
     const logo = document.querySelector(".logo");
-    if (logo) logo.src = "assest/image/image.png";
+    if (logo) logo.src = "assets/image/image.png";
     const icon = document.querySelector("#themeToggle i");
     if (icon) icon.className = "bi bi-moon";
   }
