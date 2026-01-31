@@ -42,6 +42,8 @@ public class SecurityConfig {
                                 "/login.html",
                                 "/signup.html",
                                 "/assets/**",
+                                "/Assets/**",
+                                "/assest/**",
                                 "/**/*.js",
                                 "/**/*.css",
                                 "/**/*.png",
