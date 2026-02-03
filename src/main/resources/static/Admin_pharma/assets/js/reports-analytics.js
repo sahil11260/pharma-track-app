@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== API Configuration =====
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const DCR_API = `${API_BASE}/api/dcrs`;
   const EXPENSE_API = `${API_BASE}/api/expenses`;
   const TARGET_API = `${API_BASE}/api/targets`;
@@ -36,37 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainContent.classList.toggle("expanded");
   });
 
-  // ===== Theme Toggle (Dark / Light Mode) =====
-  const themeToggle = document.getElementById("themeToggle");
-  const body = document.body;
-  const lightLogo = document.querySelector(".light-logo");
-  const darkLogo = document.querySelector(".dark-logo");
 
-  // Load theme from local storage
-  if (localStorage.getItem("theme") === "dark") {
-    body.classList.add("dark-mode");
-    themeToggle.innerHTML = '<i class="bi bi-sun"></i>';
-    if (darkLogo) darkLogo.style.display = "block";
-    if (lightLogo) lightLogo.style.display = "none";
-  } else {
-    if (darkLogo) darkLogo.style.display = "none";
-    if (lightLogo) lightLogo.style.display = "block";
-  }
-
-  themeToggle.addEventListener("click", () => {
-    body.classList.toggle("dark-mode");
-    if (body.classList.contains("dark-mode")) {
-      themeToggle.innerHTML = '<i class="bi bi-sun"></i>';
-      localStorage.setItem("theme", "dark");
-      if (darkLogo) darkLogo.style.display = "block";
-      if (lightLogo) lightLogo.style.display = "none";
-    } else {
-      themeToggle.innerHTML = '<i class="bi bi-moon"></i>';
-      localStorage.setItem("theme", "light");
-      if (darkLogo) darkLogo.style.display = "none";
-      if (lightLogo) lightLogo.style.display = "block";
-    }
-  });
 
   // ===== Data Fetching and Rendering =====
   let allDcrs = [];
@@ -107,12 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalExpense = allExpenses
       .filter(e => e.status === "APPROVED")
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    totalExpensesEl.textContent = `₹${totalExpense.toLocaleString('en-IN')}`;
+    totalExpensesEl.textContent = `â‚¹${totalExpense.toLocaleString('en-IN')}`;
 
     // Sales Achieved (sum of sales achievements from targets)
     const totalSales = allTargets
       .reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
-    salesAchievedEl.textContent = `₹${(totalSales / 100000).toFixed(2)} Lakh`;
+    salesAchievedEl.textContent = `â‚¹${(totalSales / 100000).toFixed(2)} Lakh`;
   }
 
   function renderTable(data) {
@@ -183,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data: {
         labels: salesLabels.length > 0 ? salesLabels : ["No Data"],
         datasets: [{
-          label: "Sales (₹ in Lakhs)",
+          label: "Sales (â‚¹ in Lakhs)",
           data: salesData.length > 0 ? salesData : [0],
           backgroundColor: ["#0d6efd", "#198754", "#ffc107", "#dc3545", "#6f42c1"]
         }]

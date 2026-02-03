@@ -46,7 +46,7 @@ function upsertSampleMeta(productId, metaPatch) {
   saveSampleMetaByProductId(meta);
 }
 
-const API_BASE = "";
+const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
 const USERS_API_BASE = `${API_BASE}/api/users`;
 const MR_STOCK_API_BASE = `${API_BASE}/api/mr-stock`;
 const STOCK_RECEIVED_API_BASE = `${API_BASE}/api/stock-received`;
@@ -412,17 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainContent.classList.toggle("expanded");
   });
 
-  // Theme toggle
-  const themeToggle = document.getElementById("themeToggle");
-  // Load theme
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark-mode");
-  }
-  themeToggle.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  });
+
 
   // Populate dropdowns
   function populateDropdowns() {
@@ -530,7 +520,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${sample.totalStock}</td>
                 <td>${sample.distributed}</td>
                 <td>${sample.remaining}</td>
-                <td>₹${sample.unitPrice}</td>
+                <td>â‚¹${sample.unitPrice}</td>
                 <td>${formatDate(sample.expiryDate)}</td>
                 <td>
                   <button class="btn btn-outline-info btn-sm me-1" onclick="viewMRStocks()">

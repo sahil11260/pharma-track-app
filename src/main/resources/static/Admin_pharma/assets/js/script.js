@@ -12,13 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainContent.classList.toggle("expanded");
   });
 
-  /* ============================
-     🌙 Theme Toggle
-  ============================ */
-  const themeToggle = document.getElementById("themeToggle");
-  themeToggle.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-  });
+
 
   /* ============================
      🚪 Logout Handler

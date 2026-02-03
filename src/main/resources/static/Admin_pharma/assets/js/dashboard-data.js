@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== API Configuration =====
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const USERS_API = `${API_BASE}/api/users`;
   const DOCTORS_API = `${API_BASE}/api/doctors`;
   const TARGETS_API = `${API_BASE}/api/targets`;
@@ -312,8 +312,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ).length;
     document.getElementById("pendingApprovalsCount").textContent = pendingCount;
   }
-  document.getElementById("pendingApprovalsCount").textContent = pendingCount;
-}
 
   // ===== Initialize =====
   fetchAllData();

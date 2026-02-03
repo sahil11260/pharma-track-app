@@ -20,42 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // ✅ Dark Mode Toggle (fixed to match HTML id="themeToggle")
-  const darkModeToggle = document.getElementById("themeToggle");
-  if (darkModeToggle) {
-    darkModeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      const logo = document.querySelector(".logo");
-      const icon = darkModeToggle.querySelector("i");
-      if (document.body.classList.contains("dark-mode")) {
-        localStorage.setItem("theme", "dark");
-        if (logo) logo.src = "assets/image/logo-dark.png";
-        if (icon) icon.className = "bi bi-sun";
-      } else {
-        localStorage.setItem("theme", "light");
-        if (logo) logo.src = "assets/image/image.png";
-        if (icon) icon.className = "bi bi-moon";
-      }
-    });
-  }
 
-  // Apply saved dark mode preference on load
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-    const logo = document.querySelector(".logo");
-    if (logo) logo.src = "assets/image/logo-dark.png";
-    const icon = document.querySelector("#themeToggle i");
-    if (icon) icon.className = "bi bi-sun";
-  } else {
-    // Default to light mode
-    document.body.classList.remove("dark-mode");
-    localStorage.setItem("theme", "light");
-    const logo = document.querySelector(".logo");
-    if (logo) logo.src = "assets/image/image.png";
-    const icon = document.querySelector("#themeToggle i");
-    if (icon) icon.className = "bi bi-moon";
-  }
 
   // Logout functionality
   document.querySelectorAll(".dropdown-menu .dropdown-item").forEach((item) => {
@@ -70,7 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const API = {
     USERS: `${API_BASE}/api/users`,
     REGIONS: `${API_BASE}/api/regions`,
@@ -254,7 +219,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, e) => sum + (Number(e.amount) || 0),
       0
     );
-    if (totalExpensesEl) totalExpensesEl.textContent = `₹${Math.round(total)}`;
+    if (totalExpensesEl) totalExpensesEl.textContent = `â‚¹${Math.round(total)}`;
     expenses = expensesApi
       .reduce((acc, e) => {
         const category = e.category || "Other";
@@ -275,7 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, t) => sum + (Number(t.salesAchievement) || 0),
       0
     );
-    if (totalSalesEl) totalSalesEl.textContent = `₹${Math.round(sales)}`;
+    if (totalSalesEl) totalSalesEl.textContent = `â‚¹${Math.round(sales)}`;
 
     const sumTarget = targetsApi.reduce(
       (sum, t) => sum + (Number(t.salesTarget) || 0),

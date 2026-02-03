@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
   let notificationsApiMode = true;
 
@@ -37,8 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "L1", recipient: "Managers", message: "Monthly report due by Friday.", date: "2025-11-02" },
     { id: "L2", recipient: "MRs", message: "Doctor visit summary upload reminder.", date: "2025-11-03" },
     { id: "L3", recipient: "All", message: "Team meeting scheduled on Monday 10 AM.", date: "2025-11-04" },
-    { id: "L4", recipient: "Managers", message: "Submit last month’s sales data.", date: "2025-11-05" },
-    { id: "L5", recipient: "MRs", message: "Don’t forget doctor visit feedback form.", date: "2025-11-06" },
+    { id: "L4", recipient: "Managers", message: "Submit last monthâ€™s sales data.", date: "2025-11-05" },
+    { id: "L5", recipient: "MRs", message: "Donâ€™t forget doctor visit feedback form.", date: "2025-11-06" },
     { id: "L6", recipient: "All", message: "New products launch next week!", date: "2025-11-07" },
     { id: "L7", recipient: "Managers", message: "Expense report deadline tomorrow.", date: "2025-11-08" },
     { id: "L8", recipient: "MRs", message: "Doctor approval form updated.", date: "2025-11-09" },
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const perPage = 5;
   let currentPage = 1;
 
-  // ✅ Render Notifications Table
+  // âœ… Render Notifications Table
   const renderTable = () => {
     const filtered = notifications.filter(n =>
       n.message.toLowerCase().includes(searchInput.value.toLowerCase())
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
       )
       .join("");
 
-    // ✅ Pagination Controls
+    // âœ… Pagination Controls
     pagination.innerHTML = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
         <a class="page-link" href="#" id="prevPage">Previous</a>
@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </li>
     `;
 
-    // ✅ Page Number Click
+    // âœ… Page Number Click
     document.querySelectorAll(".page-link").forEach((btn, index) => {
       if (btn.id === "prevPage") {
         btn.addEventListener("click", (e) => {
@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderTable();
 
-  // ✅ Add Notification
+  // âœ… Add Notification
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const newNotif = {
@@ -220,13 +220,13 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  // ✅ Search Filter
+  // âœ… Search Filter
   searchInput.addEventListener("input", () => {
     currentPage = 1;
     renderTable();
   });
 
-  // ✅ Delete Notification
+  // âœ… Delete Notification
   window.deleteNotification = (id) => {
     if (!confirm("Delete this notification?")) return;
 

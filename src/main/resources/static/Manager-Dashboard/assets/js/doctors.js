@@ -1,6 +1,6 @@
 // --- PERSISTENCE SETUP ---
 const STORAGE_KEY = "kavyaPharmDoctorsData";
-const API_BASE = "";
+const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
 const DOCTORS_API_BASE = `${API_BASE}/api/doctors`;
 let doctorsApiMode = true;
 
@@ -29,7 +29,7 @@ let mrData = [];
 
 const USERS_API_BASE = `${API_BASE}/api/users`;
 
-// start empty — will be populated from API or localStorage
+// start empty â€” will be populated from API or localStorage
 let doctorsData = [];
 
 // Load/save to localStorage
@@ -490,7 +490,7 @@ function editDoctor(doctorId) {
   document.getElementById("clinicName").value = doctor.clinicName;
   const doctorCityEl = document.getElementById("doctorCity");
   if (doctorCityEl) doctorCityEl.value = doctor.city || "";
-  // NOTE: Address and Notes fields were removed from modal — do not attempt to set them
+  // NOTE: Address and Notes fields were removed from modal â€” do not attempt to set them
   document.getElementById("assignToMR").value = doctor.assignedMR || "";
 
   modalTitle.innerHTML = '<i class="bi bi-pencil-square"></i> Edit Doctor';
@@ -590,15 +590,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mainContent.classList.toggle("expanded");
   });
 
-  const themeToggle = document.getElementById("themeToggle");
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark-mode");
-  }
-  themeToggle.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  });
+
 
   const storedMrs = localStorage.getItem("kavyaPharmMRs");
   if (storedMrs) {
@@ -640,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
           phone: document.getElementById("doctorPhone").value,
           email: document.getElementById("doctorEmail").value,
           clinicName: document.getElementById("clinicName").value,
-          // Address & Notes removed from add modal — set to empty strings
+          // Address & Notes removed from add modal â€” set to empty strings
           address: "",
           city: (document.getElementById("doctorCity")?.value) || "",
           assignedMR: document.getElementById("assignToMR").value,
@@ -677,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
           doctorsData.push(newDoctor);
           saveData();
 
-          // re-render on first page (or current) — reset to page 1 to show new record
+          // re-render on first page (or current) â€” reset to page 1 to show new record
           currentPage = 1;
           renderDoctorsTablePage(currentPage);
 

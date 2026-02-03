@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const USERS_API = `${API_BASE}/api/users`;
 
   const tableBody = document.getElementById("managerTableBody");
@@ -95,8 +95,8 @@ document.addEventListener("DOMContentLoaded", function () {
       tr.innerHTML = `
         <td>${m.name}</td>
         <td>${m.email}</td>
-        <td>${m.phone || "—"}</td>
-        <td>${m.territory || "—"}</td>
+        <td>${m.phone || "â€”"}</td>
+        <td>${m.territory || "â€”"}</td>
         <td>
           <button class="btn btn-sm btn-outline-primary me-2 edit-btn" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
           <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${m.id}"><i class="bi bi-trash"></i></button>

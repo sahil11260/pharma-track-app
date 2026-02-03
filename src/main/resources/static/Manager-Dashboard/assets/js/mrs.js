@@ -4,7 +4,7 @@
 const STORAGE_KEY_MRS = "kavyaPharmMRsData";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const USERS_API_BASE = `${API_BASE}/api/users`;
   let mrsApiMode = true;
 
@@ -79,6 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function createMrApi(mr) {
+    // robustly determine manager identifier (prefer email as it is guaranteed to be in backend identifiers)
+    const mgr = mr.manager || localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
     const payload = {
       name: mr.name,
       email: mr.email,
@@ -87,19 +89,20 @@ document.addEventListener("DOMContentLoaded", () => {
       phone: mr.phone,
       territory: mr.territory,
       status: "ACTIVE",
-      assignedManager: mr.manager || localStorage.getItem("signup_name") || ""
+      assignedManager: mgr
     };
     return await apiJson(USERS_API_BASE, { method: "POST", body: JSON.stringify(payload) });
   }
 
   async function updateMrApi(id, mr) {
+    const mgr = mr.manager || localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
     const payload = {
       name: mr.name,
       role: "MR",
       phone: mr.phone,
       territory: mr.territory,
       status: "ACTIVE",
-      assignedManager: mr.manager || localStorage.getItem("signup_name") || "",
+      assignedManager: mgr,
       password: mr.password ? mr.password : null
     };
     return await apiJson(`${USERS_API_BASE}/${id}`, { method: "PUT", body: JSON.stringify(payload) });
@@ -122,24 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const themeToggle = document.getElementById("themeToggle");
-  if (themeToggle) {
-    // apply saved theme
-    if (localStorage.getItem("theme") === "dark") {
-      document.body.classList.add("dark-mode");
-      themeToggle.innerHTML = '<i class="bi bi-sun"></i>';
-    } else {
-      themeToggle.innerHTML = '<i class="bi bi-moon"></i>';
-    }
 
-    themeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      const isDark = document.body.classList.contains("dark-mode");
-      localStorage.setItem("theme", isDark ? "dark" : "light");
-      // swap icon
-      themeToggle.innerHTML = isDark ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon"></i>';
-    });
-  }
 
   /* =========================
      Remove Manager column header from table (so you don't need to edit HTML)
@@ -284,32 +270,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const emailExists = mrs.some(m => m.email.toLowerCase() === email.toLowerCase() && m.id !== editId);
     if (emailExists) {
-      showAlert("⚠️ An MR with this email address already exists in your list.");
+      showAlert("âš ï¸ An MR with this email address already exists in your list.");
       return false;
     }
 
     if (!name || !email || !phone || !territory || (editId === null && !password)) {
-      showAlert("⚠️ Please fill all fields before saving.");
+      showAlert("âš ï¸ Please fill all fields before saving.");
       return false;
     }
     if (!nameRegex.test(name)) {
-      showAlert("⚠️ Name should contain only letters and spaces.");
+      showAlert("âš ï¸ Name should contain only letters and spaces.");
       return false;
     }
     if (!emailRegex.test(email)) {
-      showAlert("⚠️ Enter a valid email.");
+      showAlert("âš ï¸ Enter a valid email.");
       return false;
     }
     if (!phoneRegex.test(phone)) {
-      showAlert("⚠️ Phone number must be 10 digits.");
+      showAlert("âš ï¸ Phone number must be 10 digits.");
       return false;
     }
     if (!nameRegex.test(territory)) {
-      showAlert("⚠️ Territory should contain only letters and spaces.");
+      showAlert("âš ï¸ Territory should contain only letters and spaces.");
       return false;
     }
     if (password && password.length < 5) {
-      showAlert("⚠️ Password must be at least 5 characters.");
+      showAlert("âš ï¸ Password must be at least 5 characters.");
       return false;
     }
 
@@ -433,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("[MR] Attempting to save MR. API Mode:", mrsApiMode);
         if (mrsApiMode) {
           if (editId === null) {
-            newMR.manager = localStorage.getItem("signup_name") || "";
+            newMR.manager = localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
             console.log("[MR] Creating new MR:", newMR);
             const result = await createMrApi(newMR);
             console.log("[MR] Create API response:", result);
@@ -453,7 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
           // Local fallback mode
           if (editId === null) {
             newMR.id = Date.now();
-            newMR.manager = localStorage.getItem("signup_name") || "";
+            newMR.manager = localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
             mrs.push(newMR);
             saveMRsToStorage();
             currentPage = Math.ceil(mrs.length / itemsPerPage);
@@ -623,19 +609,8 @@ document.addEventListener("DOMContentLoaded", () => {
      ========================= */
   const notificationsList = document.getElementById("notificationsList");
   if (notificationsList) {
-    const recentActivities = [
-      { icon: "bi-person-plus", iconClass: "bg-primary", title: "New MR Assigned", description: "Sneha Patel assigned to Central Delhi region", time: "2 hours ago" },
-      { icon: "bi-currency-rupee", iconClass: "bg-success", title: "Sales Target Achieved", description: "Rajesh Kumar achieved 112% of monthly target", time: "4 hours ago" },
-      { icon: "bi-hospital", iconClass: "bg-info", title: "Doctor Visit Completed", description: "15 doctor visits completed today", time: "6 hours ago" },
-      { icon: "bi-bell", iconClass: "bg-warning", title: "Meeting Reminder", description: "Team meeting scheduled for tomorrow 10 AM", time: "8 hours ago" },
-      { icon: "bi-box-seam", iconClass: "bg-secondary", title: "Sample Stock Updated", description: "Diabetex 500mg stock replenished", time: "1 day ago" }
-    ];
-    const alertsData = [
-      { icon: "bi-exclamation-triangle", iconClass: "bg-danger", title: "Low Stock Alert", description: "CardioCare 10mg running low in North Delhi", type: "urgent", time: "1 hour ago" },
-      { icon: "bi-calendar-x", iconClass: "bg-warning", title: "Pending Approvals", description: "12 expense reports awaiting your approval", type: "warning", time: "3 hours ago" },
-      { icon: "bi-graph-down", iconClass: "bg-info", title: "Performance Alert", description: "Manish Patel below 80% target achievement", type: "info", time: "5 hours ago" },
-      { icon: "bi-check-circle", iconClass: "bg-success", title: "Task Completed", description: "Monthly report submitted successfully", type: "success", time: "1 day ago" }
-    ];
+    const recentActivities = [];
+    const alertsData = [];
     const allNotifications = [
       ...alertsData.map(a => ({ ...a, kind: 'alert' })),
       ...recentActivities.map(a => ({ ...a, kind: 'activity' }))

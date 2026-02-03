@@ -25,26 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- MOCK DATA ---
-    const assignedDoctors = [
-        { id: 101, name: "Dr. Anjali Sharma", clinic: "Care Clinic" },
-        { id: 103, name: "Dr. Vikram Singh", clinic: "Global Hospital" },
-        { id: 201, name: "Dr. Ben Carter", clinic: "Westside Clinic" },
-        { id: 106, name: "Dr. Rohit Patel", clinic: "City Medical" },
-        { id: 202, name: "Dr. Lisa Ray", clinic: "Main City Hosp." },
-        { id: 301, name: "Dr. Sanjay Rao", clinic: "Apex Centre" },
-        { id: 302, name: "Dr. Fatima Khan", clinic: "Health Plus" },
-        { id: 303, name: "Dr. Kenji Tanaka", clinic: "East Clinic" },
-        { id: 304, name: "Dr. Mia Lopez", clinic: "City General" },
-        { id: 305, name: "Dr. Chris Lee", clinic: "Family Care" },
-        { id: 306, name: "Dr. Nina George", clinic: "Star Health" },
-    ];
+    const assignedDoctors = [];
 
-    let mrStock = JSON.parse(localStorage.getItem('mrProductStock')) || [
-        { id: 'P001', name: 'Product X (500mg)', stock: 100 },
-        { id: 'P002', name: 'Product Y Syrup (100ml)', stock: 100 },
-        { id: 'P003', name: 'Product Z Cream', stock: 100 },
-        { id: 'P004', name: 'Sample Kit A', stock: 100 },
-    ];
+    let mrStock = JSON.parse(localStorage.getItem('mrProductStock')) || [];
 
     // --- STATE MANAGEMENT ---
     let tempSamples = [];
@@ -54,12 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ensure we have at least 4 mock entries for initial display if storage is empty
     if (submittedDCRs.length === 0) {
-        submittedDCRs = [
-            { reportId: 1700000000004, visitTitle: "Sample Kit Delivery", visitType: "Promotion", doctorId: "202", doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", rating: "3", remarks: "Handed over marketing materials. Follow-up scheduled.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 3 }], submissionTime: "2025-11-27T10:15:00.000Z" },
-            { reportId: 1700000000003, visitTitle: "New Product Launch Detailing", visitType: "Doctor Visit", doctorId: "201", doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", rating: "5", remarks: "Enthusiastic about X. Will prescribe immediately.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 10 }, { productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5 }], submissionTime: "2025-11-26T16:15:00.000Z" },
-            { reportId: 1700000000002, visitTitle: "Follow-up on Product Z", visitType: "Follow-up", doctorId: "103", doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", rating: "4", remarks: "Very satisfied. Requested a full sample kit.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 1 }], submissionTime: "2025-11-26T14:15:00.000Z" },
-            { reportId: 1700000000001, visitTitle: "Initial Detailing of Product X", visitType: "Doctor Visit", doctorId: "101", doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", rating: "3", remarks: "Receptive but cautious. Needs more data.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 5 }], submissionTime: "2025-11-25T10:45:00.000Z" }
-        ];
+        submittedDCRs = [];
     }
 
 

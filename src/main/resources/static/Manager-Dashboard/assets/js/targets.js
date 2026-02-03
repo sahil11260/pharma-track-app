@@ -21,7 +21,7 @@
   // Persistence setup
   const STORAGE_KEY = "kavyaPharmTargetsData";
 
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
   let targetsApiMode = true;
@@ -345,11 +345,11 @@
                 </div>
                 <div class="row g-2 mt-2">
                   <div class="col-md-6">
-                    <label class="form-label">Sales Target (₹)</label>
+                    <label class="form-label">Sales Target (â‚¹)</label>
                     <input id="editSalesTarget" type="number" min="0" class="form-control" required />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Sales Achievement (₹)</label>
+                    <label class="form-label">Sales Achievement (â‚¹)</label>
                     <input id="editSalesAchievement" type="number" min="0" class="form-control" required />
                   </div>
                 </div>
@@ -460,8 +460,8 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${escapeHtml(target.mrName)}</td>
-        <td>₹${target.salesTarget.toLocaleString()}</td>
-        <td>₹${target.salesAchievement.toLocaleString()}</td>
+        <td>â‚¹${target.salesTarget.toLocaleString()}</td>
+        <td>â‚¹${target.salesAchievement.toLocaleString()}</td>
         <td>${target.achievementPercentage}%</td>
         <td>${statusBadge}</td>
         <td>
@@ -508,8 +508,8 @@
       data[0] || { mrName: "-" }
     );
     container.innerHTML = `
-      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>₹${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
-      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>₹${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>â‚¹${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>â‚¹${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
       <div class="col-md-3"><div class="card summary-card summary-avg-achievement"><div class="card-body"><div class="card-content"><h3>${avgAchievement}%</h3><h5>Avg Achievement</h5></div><div class="card-icon"><i class="bi bi-graph-up"></i></div></div></div></div>
       <div class="col-md-3"><div class="card summary-card summary-top-performer"><div class="card-body"><div class="card-content"><h3>${escapeHtml(
       (topPerformer.mrName || "-").split(" ")[0]
@@ -531,8 +531,8 @@
         <td><span class="badge ${rank <= 0 ? `badge-${rank}` : "bg-light text-dark"
         }">${rank}</span></td>
         <td>${escapeHtml(t.mrName)}</td>
-        <td>₹${t.salesTarget.toLocaleString()}</td>
-        <td>₹${t.salesAchievement.toLocaleString()}</td>
+        <td>â‚¹${t.salesTarget.toLocaleString()}</td>
+        <td>â‚¹${t.salesAchievement.toLocaleString()}</td>
         <td><strong>${t.achievementPercentage}%</strong></td>
         <td><span class="badge ${getStatusBadgeClass(t.status)}">${escapeHtml(
           t.status.charAt(0).toUpperCase() + t.status.slice(1)
@@ -554,12 +554,12 @@
         labels: data.map((d) => d.mrName.split(" ")[0]),
         datasets: [
           {
-            label: "Target (₹)",
+            label: "Target (â‚¹)",
             data: data.map((d) => d.salesTarget),
             backgroundColor: "#6c757d",
           },
           {
-            label: "Achievement (₹)",
+            label: "Achievement (â‚¹)",
             data: data.map((d) => d.salesAchievement),
             backgroundColor: "#28a745",
           },
@@ -571,7 +571,7 @@
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: (v) => "₹" + v / 1000 + "K" },
+            ticks: { callback: (v) => "â‚¹" + v / 1000 + "K" },
           },
         },
         plugins: { legend: { position: "top" } },
@@ -620,11 +620,11 @@
     content.innerHTML = `
       <h5>${escapeHtml(t.mrName)} Target</h5>
       <div class="row">
-        <div class="col-md-6"><p><strong>Sales Target:</strong> ₹${t.salesTarget.toLocaleString()}</p></div>
-        <div class="col-md-6"><p><strong>Sales Achievement:</strong> ₹${t.salesAchievement.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Target:</strong> â‚¹${t.salesTarget.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Achievement:</strong> â‚¹${t.salesAchievement.toLocaleString()}</p></div>
       </div>
       <p><strong>Achievement:</strong> ${t.achievementPercentage
-      }% — ${getAchievementBadge(t.achievementPercentage)}</p>
+      }% â€” ${getAchievementBadge(t.achievementPercentage)}</p>
       <p><strong>Period:</strong> ${formatDate(t.startDate)} to ${formatDate(
         t.endDate
       )}</p>
@@ -650,10 +650,10 @@
         <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #ddd}</style>
       </head>
       <body>
-        <h1>Target Details — ${escapeHtml(t.mrName)}</h1>
+        <h1>Target Details â€” ${escapeHtml(t.mrName)}</h1>
         <table>
-          <tr><th>Sales Target (₹)</th><td>₹${t.salesTarget.toLocaleString()}</td></tr>
-          <tr><th>Sales Achievement (₹)</th><td>₹${t.salesAchievement.toLocaleString()}</td></tr>
+          <tr><th>Sales Target (â‚¹)</th><td>â‚¹${t.salesTarget.toLocaleString()}</td></tr>
+          <tr><th>Sales Achievement (â‚¹)</th><td>â‚¹${t.salesAchievement.toLocaleString()}</td></tr>
           <tr><th>Achievement %</th><td>${t.achievementPercentage}%</td></tr>
           <tr><th>Status</th><td>${escapeHtml(t.status)}</td></tr>
           <tr><th>Start Date</th><td>${formatDate(t.startDate)}</td></tr>
@@ -883,18 +883,7 @@
         mainContent.classList.toggle("expanded");
       });
     }
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      // Load theme
-      if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-mode");
-      }
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      });
-    }
+
 
     // populate MR dropdowns and render UI
     ensureViewModal();

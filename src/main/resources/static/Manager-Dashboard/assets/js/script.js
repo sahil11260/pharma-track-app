@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const themeToggle = document.getElementById("themeToggle");
+
 
   function injectDarkCardStyles() {
     if (document.getElementById("dark-card-styles")) return;
@@ -83,39 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Load theme from storage
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark-mode");
-    injectDarkCardStyles();
-    applyDarkToEqualHeightCards(true);
-    applyDarkToNotificationsModal(true);
-    const ic = themeToggle && themeToggle.querySelector("i");
-    if (ic) {
-      ic.classList.remove("bi-moon");
-      ic.classList.add("bi-sun");
-    }
-  }
 
-  if (themeToggle) {
-    themeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark-mode");
-      const isDark = document.body.classList.contains("dark-mode");
-      localStorage.setItem("theme", isDark ? "dark" : "light");
-      if (isDark) injectDarkCardStyles();
-      applyDarkToEqualHeightCards(isDark);
-      applyDarkToNotificationsModal(isDark);
-      const icon = themeToggle.querySelector("i");
-      if (icon) {
-        icon.classList.toggle("bi-moon", !isDark);
-        icon.classList.toggle("bi-sun", isDark);
-      }
-    });
-  }
 
   // -----------------------
   // Mock / dashboard data
   // -----------------------
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   let dashboardData = {
     totalMRs: 0,
     totalSales: 0,
@@ -187,20 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Kavita Jain", sales: 160000, visits: 45, target: 180000, avatar: "KJ" },
   ];
 
-  const recentActivities = [
-    { icon: "bi-person-plus", iconClass: "bg-primary", title: "New MR Assigned", description: "Sneha Patel assigned to Central Delhi region", time: "2 hours ago" },
-    { icon: "bi-currency-rupee", iconClass: "bg-success", title: "Sales Target Achieved", description: "Rajesh Kumar achieved 112% of monthly target", time: "4 hours ago" },
-    { icon: "bi-hospital", iconClass: "bg-info", title: "Doctor Visit Completed", description: "15 doctor visits completed today", time: "6 hours ago" },
-    { icon: "bi-bell", iconClass: "bg-warning", title: "Meeting Reminder", description: "Team meeting scheduled for tomorrow 10 AM", time: "8 hours ago" },
-    { icon: "bi-box-seam", iconClass: "bg-secondary", title: "Sample Stock Updated", description: "Diabetex 500mg stock replenished", time: "1 day ago" },
-  ];
+  const recentActivities = [];
 
-  const alertsData = [
-    { icon: "bi-exclamation-triangle", iconClass: "bg-danger", title: "Low Stock Alert", description: "CardioCare 10mg running low in North Delhi", type: "urgent", time: "1 hour ago" },
-    { icon: "bi-calendar-x", iconClass: "bg-warning", title: "Pending Approvals", description: "12 expense reports awaiting your approval", type: "warning", time: "3 hours ago" },
-    { icon: "bi-graph-down", iconClass: "bg-info", title: "Performance Alert", description: "Manish Patel below 80% target achievement", type: "info", time: "6 hours ago" },
-    { icon: "bi-check-circle", iconClass: "bg-success", title: "Task Completed", description: "Monthly report submitted successfully", type: "success", time: "1 day ago" },
-  ];
+  const alertsData = [];
 
   // -----------------------
   // Product Sales (dynamic)
@@ -219,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return `rgba(${rgb}, ${alpha})`;
   }
 
-  // We'll create datasets per (product × month) so we can control stacking order per month.
+  // We'll create datasets per (product Ã— month) so we can control stacking order per month.
   let productSalesChartInstance = null;
   let productDatasetIndexMap = {};
 
@@ -302,11 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
           y: {
             stacked: stacked,
             beginAtZero: true,
-            title: { display: true, text: 'Sales (₹)' },
+            title: { display: true, text: 'Sales (â‚¹)' },
             ticks: {
               callback: function (value) {
-                if (value >= 1000) return '₹' + (value / 1000).toFixed(0) + 'K';
-                return '₹' + value;
+                if (value >= 1000) return 'â‚¹' + (value / 1000).toFixed(0) + 'K';
+                return 'â‚¹' + value;
               }
             }
           }
@@ -325,8 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const ds = context.dataset;
                 const value = context.raw ?? context.parsed?.y ?? 0;
                 if (value === 0) return null;
-                if (value >= 1000) return ds._productName + ': ₹' + (value / 1000).toLocaleString() + 'K';
-                return ds._productName + ': ₹' + value;
+                if (value >= 1000) return ds._productName + ': â‚¹' + (value / 1000).toLocaleString() + 'K';
+                return ds._productName + ': â‚¹' + value;
               }
             }
           },
@@ -397,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const elPendingTasks = document.getElementById("pendingTasks");
 
     if (elTotalMRs) elTotalMRs.textContent = dashboardData.totalMRs;
-    if (elTotalSales) elTotalSales.textContent = `₹${(dashboardData.totalSales / 100000).toFixed(1)}L`;
+    if (elTotalSales) elTotalSales.textContent = `â‚¹${(dashboardData.totalSales / 100000).toFixed(1)}L`;
     if (elTotalVisits) elTotalVisits.textContent = dashboardData.totalVisits;
     if (elPendingTasks) elPendingTasks.textContent = dashboardData.pendingTasks;
   }
@@ -442,26 +404,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------
   let dashboardMap;
   function initDashboardMap() {
+    // MR Live Tracking module removed
     const el = document.getElementById("dashboardMap");
-    if (!el) return;
-    dashboardMap = L.map("dashboardMap").setView([21.1458, 79.0882], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(dashboardMap);
-
-    const mrLocations = [
-      { name: "Rajesh Kumar", lat: 21.1458, lng: 79.0882, status: "online" },
-      { name: "Priya Sharma", lat: 21.125, lng: 79.05, status: "moving" },
-      { name: "Amit Singh", lat: 21.165, lng: 79.12, status: "stopped" },
-      { name: "Sneha Patel", lat: 21.135, lng: 79.07, status: "online" },
-      { name: "Manish Patel", lat: 21.155, lng: 79.1, status: "moving" },
-      { name: "Kavita Jain", lat: 21.115, lng: 79.03, status: "offline" },
-    ];
-
-    mrLocations.forEach((mr) => {
-      const marker = L.marker([mr.lat, mr.lng]).addTo(dashboardMap);
-      marker.bindPopup(`<b>${mr.name}</b><br>Status: ${mr.status}`);
-    });
+    if (el) el.innerHTML = '<div class="text-center text-muted p-5">Module Removed</div>';
   }
 
   // -----------------------
@@ -486,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Team Sales (₹)",
+            label: "Team Sales (â‚¹)",
             data: chartsData.salesByMonth,
             borderColor: "#667eea",
             backgroundColor: "rgba(102, 126, 234, 0.1)",
@@ -494,7 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fill: true,
           },
           {
-            label: "Target (₹)",
+            label: "Target (â‚¹)",
             data: chartsData.targetsByMonth,
             borderColor: "#f093fb",
             backgroundColor: "rgba(240, 147, 251, 0.1)",
@@ -510,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: function (value) { return "₹" + (value / 1000).toFixed(0) + "K"; } },
+            ticks: { callback: function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; } },
           },
         },
       },
@@ -527,12 +472,12 @@ document.addEventListener("DOMContentLoaded", () => {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Sales (₹)",
+            label: "Sales (â‚¹)",
             data: chartsData.salesByMonth,
             backgroundColor: "#667eea",
           },
           {
-            label: "Target (₹)",
+            label: "Target (â‚¹)",
             data: chartsData.targetsByMonth,
             backgroundColor: "#f093fb",
           },
@@ -544,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: function (value) { return "₹" + (value / 1000).toFixed(0) + "K"; } },
+            ticks: { callback: function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; } },
           },
         },
       },
@@ -613,19 +558,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const currencyTick = function (value) { return "₹" + (value / 1000).toFixed(0) + "K"; };
+    const currencyTick = function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; };
     const plainTick = function (value) { return value; };
     const percentTick = function (value) { return value + "%"; };
 
     switch (type) {
       case "sales":
         performanceChart.data.datasets[0].data = chartsData.salesByMonth;
-        performanceChart.data.datasets[0].label = "Team Sales (₹)";
+        performanceChart.data.datasets[0].label = "Team Sales (â‚¹)";
         performanceChart.data.datasets[0].borderColor = "#667eea";
         performanceChart.data.datasets[0].backgroundColor = "rgba(102, 126, 234, 0.1)";
         if (performanceChart.data.datasets[1]) {
           performanceChart.data.datasets[1].data = chartsData.targetsByMonth;
-          performanceChart.data.datasets[1].label = "Target (₹)";
+          performanceChart.data.datasets[1].label = "Target (â‚¹)";
           performanceChart.data.datasets[1].borderColor = "#f093fb";
           performanceChart.data.datasets[1].backgroundColor = "rgba(240, 147, 251, 0.1)";
         }
@@ -695,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
       case "assignTask": window.location.href = "tasks.html"; break;
       case "sendNotification": window.location.href = "notifications.html"; break;
       case "viewReports": window.location.href = "reports.html"; break;
-      case "trackMR": window.location.href = "tracking.html"; break;
+
     }
   };
 

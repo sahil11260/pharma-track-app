@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DOCTORS-MR] doctors.js loaded and DOM ready");
 
     // --- API Configuration ---
-    const API_BASE = "";
+    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
     const DOCTORS_API_BASE = `${API_BASE}/api/doctors`;
     let doctorsApiMode = true;
 
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             banner.className = "alert alert-warning alert-dismissible fade show";
             banner.style.cssText = "position: fixed; top: 10px; right: 10px; z-index: 9999; max-width: 400px;";
             banner.innerHTML = `
-                <strong>⚠️ Offline Mode</strong>
+                <strong>âš ï¸ Offline Mode</strong>
                 <p class="mb-0">Doctors API unavailable. Using local data. <button class="btn btn-sm btn-warning" onclick="location.reload()">Retry</button></p>
             `;
             document.body.appendChild(banner);
@@ -87,13 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- MOCK DATA (Fallback only) ---
-    const mockAssignedDoctors = [
-        { id: 1, name: "Dr. Anjali Sharma", clinic: "Care Clinic", specialization: "General Physician", City: "South Mumbai" },
-        { id: 2, name: "Dr. Vikram Singh", clinic: "Global Hospital", specialization: "Cardiology", City: "Navi Mumbai" },
-        { id: 3, name: "Dr. Rohit Patel", clinic: "City Medical Center", specialization: "Pediatrics", City: "Thane" },
-        { id: 4, name: "Dr. Evelyn Reed", clinic: "Central Office Practice", specialization: "Gastroenterology", City: "Panvel" },
-        { id: 5, name: "Dr. Ben Carter", clinic: "Westside Clinic", specialization: "Dermatology", City: "Kurla" }
-    ];
+    const mockAssignedDoctors = [];
 
     // Elements
     const doctorListBody = document.getElementById("doctorListBody");

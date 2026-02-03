@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.textContent;
-    const API_BASE = "";
+    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
 
     (async function () {
       try {

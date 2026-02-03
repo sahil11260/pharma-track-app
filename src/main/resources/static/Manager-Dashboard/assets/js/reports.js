@@ -1,6 +1,6 @@
 (() => {
 
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
   function getAuthHeader() {
@@ -565,18 +565,7 @@
     saveReportsData();
   }
 
-  // Theme toggle
-  document.addEventListener("DOMContentLoaded", () => {
-    const themeToggle = document.getElementById("themeToggle");
-    if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark-mode");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      });
-    }
-  });
+
 
   function wireFilterControls() {
     const searchEl = document.getElementById("searchReport");

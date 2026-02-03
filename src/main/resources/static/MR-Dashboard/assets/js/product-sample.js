@@ -30,21 +30,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // 3. Stock Received History (Used to calculate Total Received Stock)
-    let stockReceivedHistory = loadLocalJson('stockReceivedHistory') || [
-        { productId: 'P001', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
-        { productId: 'P002', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
-        { productId: 'P003', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
-        { productId: 'P004', quantity: 100, date: '2025-11-01T09:00:00.000Z', notes: 'Initial batch Q4' },
-    ];
+    let stockReceivedHistory = [];
 
     // 2. DCR History (used to calculate Total Distributed Stock)
-    let submittedDCRs = loadLocalJson('submittedDCRs') || [
-        // Mock data demonstrating samples given
-        { reportId: 1700000000004, doctorName: "Dr. Lisa Ray", clinicLocation: "Main City Hosp.", dateTime: "2025-11-27T10:00", remarks: "Handed over materials.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 3 }] },
-        { reportId: 1700000000003, doctorName: "Dr. Ben Carter", clinicLocation: "Westside Clinic", dateTime: "2025-11-26T16:00", remarks: "Enthusiastic about X.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 10 }, { productId: "P002", productName: "Product Y Syrup (100ml)", quantity: 5 }] },
-        { reportId: 1700000000002, doctorName: "Dr. Vikram Singh", clinicLocation: "Global Hospital", dateTime: "2025-11-26T14:00", remarks: "Requested a full sample kit.", samplesGiven: [{ productId: "P004", productName: "Sample Kit A", quantity: 1 }] },
-        { reportId: 1700000000001, doctorName: "Dr. Anjali Sharma", clinicLocation: "Care Clinic", dateTime: "2025-11-25T10:30", remarks: "Needs more data.", samplesGiven: [{ productId: "P001", productName: "Product X (500mg)", quantity: 5 }] }
-    ];
+    let submittedDCRs = [];
 
 
     // 1. Current Stock 
@@ -52,12 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // For simplicity and dynamic calculation, we will now rely ONLY on the functions,
     // and initialize this array with zero stock. The actual remaining stock displayed
     // will be the difference between received and distributed.
-    let productsList = [
-        { id: 'P001', name: 'Product X (500mg)' },
-        { id: 'P002', name: 'Product Y Syrup (100ml)' },
-        { id: 'P003', name: 'Product Z Cream' },
-        { id: 'P004', name: 'Sample Kit A' },
-    ];
+    let productsList = [];
 
     // In a real app, this list is often fetched separately. We'll use this list
     // and calculate the remaining stock dynamically during rendering.

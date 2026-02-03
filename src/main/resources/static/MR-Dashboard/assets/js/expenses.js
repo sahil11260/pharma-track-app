@@ -1,71 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
 
     // --- MOCK DATA ---
-    const initialExpenses = [
-        {
-            id: 1700000001,
-            category: "Travel",
-            amount: 750.50,
-            date: "2025-11-25",
-            desc: "Local conveyance for client meetings in Zone A and surrounding areas for three days, covering 150 km. This is a detailed note to test wrapping.",
-            attachment: "cab_receipt_25Nov.pdf",
-            status: "Approved"
-        },
-        {
-            id: 1700000002,
-            category: "Meals",
-            amount: 350.00,
-            date: "2025-11-26",
-            desc: "Lunch with Dr. Sharma to discuss new product launch and distribution strategy.",
-            attachment: "lunch_bill_26Nov.jpg",
-            status: "Pending"
-        },
-        {
-            id: 1700000003,
-            category: "Accommodation",
-            amount: 4500.00,
-            date: "2025-11-24",
-            desc: "One night stay for out-of-city visit to meet regional doctors and hospitals.",
-            attachment: "hotel_receipt_24Nov.pdf",
-            status: "Rejected"
-        },
-        {
-            id: 1700000004,
-            category: "Samples",
-            amount: 1200.00,
-            date: "2025-11-23",
-            desc: "Courier charges for dispatching new product samples to five different clinics.",
-            attachment: "courier_slip_23Nov.png",
-            status: "Approved"
-        },
-        {
-            id: 1700000005,
-            category: "Other",
-            amount: 200.00,
-            date: "2025-11-22",
-            desc: "Printing material for doctor presentations and informational flyers.",
-            attachment: "print_bill_22Nov.pdf",
-            status: "Pending"
-        },
-        {
-            id: 1700000006,
-            category: "Travel",
-            amount: 50.00,
-            date: "2025-11-21",
-            desc: "Bus fare for office trip to regional head quarters.",
-            attachment: "bus_ticket.jpg",
-            status: "Pending"
-        },
-        {
-            id: 1700000007,
-            category: "Meals",
-            amount: 850.00,
-            date: "2025-11-20",
-            desc: "Dinner meeting with hospital staff to build rapport.",
-            attachment: "dinner_receipt_20.pdf",
-            status: "Approved"
-        },
-    ];
+    const initialExpenses = [];
     // --- END MOCK DATA ---
 
     // --- CONFIGURATION ---

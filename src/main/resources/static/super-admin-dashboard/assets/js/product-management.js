@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;
   const STORAGE_KEY = "kavyaPharmProducts";
   let productsApiMode = true;
@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
     banner.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
     banner.style.zIndex = "2000";
     banner.innerHTML = `<div style=\"display:flex;gap:12px;align-items:center;\">` +
-      `<div style=\"font-weight:600;color:#856404;\">API unreachable — using local data</div>` +
+      `<div style=\"font-weight:600;color:#856404;\">API unreachable â€” using local data</div>` +
       `<button id=\"apiRetryBtn\" class=\"btn btn-sm btn-outline-primary\">Retry</button>` +
       `</div>`;
     document.body.appendChild(banner);
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
         renderProductTable(productsData, 1);
       } catch (e) {
         console.warn("Retry failed", e);
-        showToastNotification("Retry failed — still offline", "danger");
+        showToastNotification("Retry failed â€” still offline", "danger");
       }
     });
   }
@@ -278,77 +278,77 @@ document.addEventListener("DOMContentLoaded", function () {
         id: "1001",
         name: "Paracetamol 500mg",
         category: "Pain Relief",
-        price: "₹25.00",
+        price: "â‚¹25.00",
         stock: 150,
       },
       {
         id: "1002",
         name: "Amoxicillin 250mg",
         category: "Antibiotic",
-        price: "₹45.00",
+        price: "â‚¹45.00",
         stock: 80,
       },
       {
         id: "1003",
         name: "Vitamin C 1000mg",
         category: "Supplements",
-        price: "₹30.00",
+        price: "â‚¹30.00",
         stock: 200,
       },
       {
         id: "1004",
         name: "Ibuprofen 200mg",
         category: "Pain Relief",
-        price: "₹15.00",
+        price: "â‚¹15.00",
         stock: 0,
       },
       {
         id: "1005",
         name: "Aspirin 75mg",
         category: "Cardiovascular",
-        price: "₹20.00",
+        price: "â‚¹20.00",
         stock: 120,
       },
       {
         id: "1006",
         name: "Metformin 500mg",
         category: "Diabetics",
-        price: "₹80.00",
+        price: "â‚¹80.00",
         stock: 300,
       },
       {
         id: "1007",
         name: "Cetirizine 10mg",
         category: "Anti-Allergy",
-        price: "₹10.00",
+        price: "â‚¹10.00",
         stock: 450,
       },
       {
         id: "1008",
         name: "Omeprazole 20mg",
         category: "Gastric",
-        price: "₹50.00",
+        price: "â‚¹50.00",
         stock: 15,
       },
       {
         id: "1009",
         name: "Atorvastatin 10mg",
         category: "Cardiovascular",
-        price: "₹120.00",
+        price: "â‚¹120.00",
         stock: 0,
       },
       {
         id: "1010",
         name: "Clopidogrel 75mg",
         category: "Cardiovascular",
-        price: "₹150.00",
+        price: "â‚¹150.00",
         stock: 60,
       },
       {
         id: "1011",
         name: "Lisinopril 10mg",
         category: "Hypertension",
-        price: "₹90.00",
+        price: "â‚¹90.00",
         stock: 180,
       },
     ];
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
       modalTitle.textContent = "Edit Product: " + productToEdit.name;
       saveButton.textContent = "Save Changes";
       document.getElementById("productId").value = productToEdit.id;
-      const priceValue = productToEdit.price.replace("₹", "");
+      const priceValue = productToEdit.price.replace("â‚¹", "");
       document.getElementById("productName").value = productToEdit.name;
       document.getElementById("productCategory").value = productToEdit.category;
       document.getElementById("productPrice").value = priceValue;
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("productStock").value
       );
 
-      // ✅ Show error if negative value
+      // âœ… Show error if negative value
       if (priceValue < 0 || stockValue < 0) {
         showToastNotification("Does not allow negative value.", "danger");
         return;
@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", function () {
         id: document.getElementById("productId").value,
         name: document.getElementById("productName").value,
         category: document.getElementById("productCategory").value,
-        price: "₹" + priceValue.toFixed(2),
+        price: "â‚¹" + priceValue.toFixed(2),
         stock: stockValue,
       };
 
@@ -595,10 +595,10 @@ document.addEventListener("DOMContentLoaded", function () {
       popup.innerHTML = `
         <div style="position: fixed; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 250px; color: black;">
           <h6 style="margin: 0 0 10px 0; font-weight: bold;">Notifications</h6>
-          <div style="margin-bottom: 8px;">• New order received</div>
-          <div style="margin-bottom: 8px;">• Inventory low alert</div>
-          <div style="margin-bottom: 8px;">• System update available</div>
-          <div style="margin-bottom: 8px;">• View all notifications</div>
+          <div style="margin-bottom: 8px;">â€¢ New order received</div>
+          <div style="margin-bottom: 8px;">â€¢ Inventory low alert</div>
+          <div style="margin-bottom: 8px;">â€¢ System update available</div>
+          <div style="margin-bottom: 8px;">â€¢ View all notifications</div>
         </div>`;
       document.body.appendChild(popup);
       const btnRect = notificationBtn.getBoundingClientRect();

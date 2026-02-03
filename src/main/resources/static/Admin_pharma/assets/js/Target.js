@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await apiJson(`${TARGETS_API_BASE}/${id}`, { method: "DELETE" });
   }
 
-  // ✅ Fetch and Populate Dropdowns
+  // âœ… Fetch and Populate Dropdowns
   let allManagers = [];
   let allProducts = [];
 
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (product) {
       const stock = Number(product.stock) || 0;
       const after = stock - qty;
-      availableInfo.textContent = `Available: ${stock} units — After allocation: ${after >= 0 ? after : "--- (insufficient)"
+      availableInfo.textContent = `Available: ${stock} units â€” After allocation: ${after >= 0 ? after : "--- (insufficient)"
         }`;
       if (after < 0) availableInfo.classList.add("text-danger");
       else availableInfo.classList.remove("text-danger");
@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 MAIN RENDER FUNCTION (Table)
+  // ðŸ”¥ MAIN RENDER FUNCTION (Table)
   // ---------------------------------------------------------
   function renderTable() {
     const searchTerm = searchInput.value.toLowerCase();
@@ -281,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 PAGINATION WITH PREVIOUS / NEXT
+  // ðŸ”¥ PAGINATION WITH PREVIOUS / NEXT
   // ---------------------------------------------------------
   function renderPagination(totalPages, filtered) {
     pagination.innerHTML = "";
@@ -328,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 FORM VALIDATION
+  // ðŸ”¥ FORM VALIDATION
   // ---------------------------------------------------------
   function validateForm() {
     const name = form.targetPerson.value.trim();
@@ -341,22 +341,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const stock = productObj ? (Number(productObj.stock) || 0) : 0;
 
     if (!name || !product || !qty || !given || !deadline) {
-      alert("⚠️ Fill all fields.");
+      alert("âš ï¸ Fill all fields.");
       return false;
     }
 
     if (qty <= 0) {
-      alert("⚠ Quantity must be positive.");
+      alert("âš  Quantity must be positive.");
       return false;
     }
 
     if (qty > stock) {
-      alert(`⚠ Insufficient stock. Available: ${stock} units.`);
+      alert(`âš  Insufficient stock. Available: ${stock} units.`);
       return false;
     }
 
     if (new Date(deadline) < new Date(given)) {
-      alert("⚠ Deadline cannot be before Given Date.");
+      alert("âš  Deadline cannot be before Given Date.");
       return false;
     }
 
@@ -364,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 CRUD OPERATIONS
+  // ðŸ”¥ CRUD OPERATIONS
   // ---------------------------------------------------------
   window.markAchieved = (id) => {
     const idx = targets.findIndex((x) => Number(x.id) === Number(id));
@@ -504,7 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------------------------------------------------------
-  // 🔥 FILTERS
+  // ðŸ”¥ FILTERS
   // ---------------------------------------------------------
   searchInput.addEventListener("input", () => {
     currentPage = 1;

@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const DOCTORS_API = `${API_BASE}/api/doctors`;
   const USERS_API = `${API_BASE}/api/users`;
 
@@ -66,12 +66,12 @@ document.addEventListener("DOMContentLoaded", function () {
       doctors = data.map(d => ({
         id: d.id,
         name: d.name,
-        specialty: d.specialty || "—",
-        city: d.city || "—",
+        specialty: d.specialty || "â€”",
+        city: d.city || "â€”",
         assignedMR: d.assignedMR || "",
         phone: d.phone || "",
         email: d.email || "",
-        contact: d.email || d.phone || "—"
+        contact: d.email || d.phone || "â€”"
       }));
       applyFilter();
     } catch (error) {
@@ -163,10 +163,10 @@ document.addEventListener("DOMContentLoaded", function () {
     currentEditId = id;
     modalTitle.textContent = "Edit Doctor";
     document.getElementById("doctorName").value = doc.name;
-    document.getElementById("doctorSpecialty").value = doc.specialty === "—" ? "" : doc.specialty;
-    document.getElementById("doctorCity").value = doc.city === "—" ? "" : doc.city;
+    document.getElementById("doctorSpecialty").value = doc.specialty === "â€”" ? "" : doc.specialty;
+    document.getElementById("doctorCity").value = doc.city === "â€”" ? "" : doc.city;
     document.getElementById("doctorPhone").value = doc.phone || "";
-    document.getElementById("doctorContact").value = doc.contact === "—" ? "" : doc.contact;
+    document.getElementById("doctorContact").value = doc.contact === "â€”" ? "" : doc.contact;
     assignMR.value = doc.assignedMR;
     doctorModal.show();
   }

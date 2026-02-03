@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const EXPENSES_API_BASE = `${API_BASE}/api/expenses`;
   const STORAGE_KEY = "kavyaPharmAdminExpensesData";
   let expensesApiMode = true;
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let editIndex = null;
 
   // ---------------------------------------------------------
-  // 🔥 Render Cards
+  // ðŸ”¥ Render Cards
   // ---------------------------------------------------------
   function renderCards() {
     let filtered = expenses.filter(
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="card-body">
               <h5 class="card-title text-success">${e.type}</h5>
               <p><strong>MR:</strong> ${e.person}</p>
-              <p><strong>Amount:</strong> ₹${e.amount}</p>
+              <p><strong>Amount:</strong> â‚¹${e.amount}</p>
               <p><strong>Date:</strong> ${e.date}</p>
               <p><strong>Receipt:</strong> ${e.bill
               ? `<a href="${e.bill}" target="_blank" class="text-primary">View Bill</a>`
@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 Pagination (Previous + Numbers + Next)
+  // ðŸ”¥ Pagination (Previous + Numbers + Next)
   // ---------------------------------------------------------
   function renderPagination(totalPages) {
     pagination.innerHTML = "";
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 Validation
+  // ðŸ”¥ Validation
   // ---------------------------------------------------------
   function validateForm() {
     const name = form.expensePerson.value.trim();
@@ -249,17 +249,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const nameRegex = /^[A-Za-z\s]+$/;
 
     if (!name || !type || !amount || !date) {
-      alert("⚠️ Please fill all fields.");
+      alert("âš ï¸ Please fill all fields.");
       return false;
     }
 
     if (!nameRegex.test(name)) {
-      alert("⚠ MR Name must contain only letters.");
+      alert("âš  MR Name must contain only letters.");
       return false;
     }
 
     if (amount <= 0) {
-      alert("⚠ Amount must be positive.");
+      alert("âš  Amount must be positive.");
       return false;
     }
 
@@ -267,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------------------------------------
-  // 🔥 CRUD Operations
+  // ðŸ”¥ CRUD Operations
   // ---------------------------------------------------------
   window.approveExpense = (id) => {
     const idx = expenses.findIndex((x) => Number(x.id) === Number(id));
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ---------------------------------------------------------
-  // 🔥 Add / Update Expense
+  // ðŸ”¥ Add / Update Expense
   // ---------------------------------------------------------
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------------------------------------------------------
-  // 🔥 Filters
+  // ðŸ”¥ Filters
   // ---------------------------------------------------------
   searchInput.addEventListener("input", () => {
     currentPage = 1;

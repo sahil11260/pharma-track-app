@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DAILYPLAN] dailyplan.js loaded and DOM content is ready!");
 
     // --- API Configuration ---
-    const API_BASE = "";
+    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
     const TASKS_API_BASE = `${API_BASE}/api/tasks`;
     let tasksApiMode = true;
 
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Handle various date formats (String ISO, Array [y,m,d], etc.)
         let taskDate = "";
         const rawDate = backendTask.dueDate;
-        
+
         if (Array.isArray(rawDate)) {
             const y = rawDate[0];
             const m = String(rawDate[1]).padStart(2, '0');
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
             banner.className = "alert alert-warning alert-dismissible fade show";
             banner.style.cssText = "position: fixed; top: 10px; right: 10px; z-index: 9999; max-width: 400px;";
             banner.innerHTML = `
-                <strong>⚠️ Offline Mode</strong>
+                <strong>âš ï¸ Offline Mode</strong>
                 <p class="mb-0">Tasks API unavailable. Using local data. <button class="btn btn-sm btn-warning" onclick="location.reload()">Retry</button></p>
             `;
             document.body.appendChild(banner);
@@ -175,15 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- MOCK DATA (Fallback only) ---
-    const mockManagerTasks = [
-        { id: 101, type: "Doctor Visit", clinic: "Care Clinic", doctor: "Dr. Anjali Sharma", status: "Pending", date: todayKey },
-        { id: 103, type: "Pramotion", clinic: "South Delhi Clinics", doctor: "Mr. R. K. Singh", status: "Pending", date: todayKey },
-        { id: 105, type: "Other", clinic: "Office/Virtual", doctor: "Regional Meeting", status: "Pending", date: todayKey },
-        { id: 106, type: "Doctor Visit", clinic: "City Medical", doctor: "Dr. Rohit Patel", status: "Pending", date: todayKey },
-        { id: 201, type: "Doctor", clinic: "Westside Clinic", doctor: "Dr. Ben Carter", status: "Pending", date: getDateXDaysAgo(1) },
-        { id: 202, type: "Meeting", clinic: "Main City Hosp.", doctor: "Dr. Jane Doe", status: "In Progress", date: getDateXDaysAgo(3) },
-        { id: 203, type: "Doctor Visit", clinic: "Old Town Clinic", doctor: "Dr. Jane Doe", status: "Pending", date: getDateXDaysAgo(7) },
-    ];
+    const mockManagerTasks = [];
 
     // --- DOM Elements Selector ---
     const $id = id => document.getElementById(id);

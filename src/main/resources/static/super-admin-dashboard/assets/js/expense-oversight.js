@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const EXPENSES_API_BASE = `${API_BASE}/api/expenses`;
   const expenseTableBody = document.getElementById("expenseTableBody");
   const expenseForm = document.getElementById("expenseForm");
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Rajesh Kumar",
         category: "Travel",
         description: "Client meeting travel to Delhi",
-        amount: "₹15,000",
+        amount: "â‚¹15,000",
         date: "2025-10-25",
         status: "Approved",
         receiptName: "Flight_Receipt_R.pdf",
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Priya Sharma",
         category: "Meals",
         description: "Doctor lunch meeting",
-        amount: "₹2,500",
+        amount: "â‚¹2,500",
         date: "2025-10-24",
         status: "Pending",
         receiptName: "Lunch_Bill_P.jpg",
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Amit Singh",
         category: "Medical Samples",
         description: "Product samples for doctors in Mumbai region",
-        amount: "₹8,000",
+        amount: "â‚¹8,000",
         date: "2025-10-23",
         status: "Approved",
         receiptName: "Samples_Invoice_A.pdf",
@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Suresh Reddy",
         category: "Accommodation",
         description: "Hotel stay during national sales conference in Bangalore",
-        amount: "₹12,000",
+        amount: "â‚¹12,000",
         date: "2025-10-22",
         status: "Rejected",
         receiptName: "Hotel_Bill_S.pdf",
@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Vikram Patel",
         category: "Transportation",
         description: "Cab charges for field visits to multiple clinics in Pune",
-        amount: "₹3,500",
+        amount: "â‚¹3,500",
         date: "2025-10-21",
         status: "Approved",
         receiptName: "Cab_Receipts_V.pdf",
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Anjali Rao",
         category: "Marketing",
         description: "Printed promotional materials for product launch event",
-        amount: "₹22,000",
+        amount: "â‚¹22,000",
         date: "2025-10-20",
         status: "Pending",
         receiptName: "Print_Invoice_A.pdf",
@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Gaurav Joshi",
         category: "Travel",
         description: "Train ticket to regional office for training",
-        amount: "₹4,200",
+        amount: "â‚¹4,200",
         date: "2025-10-19",
         status: "Approved",
         receiptName: "Train_Ticket_G.pdf",
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
         category: "Office Supplies",
         description:
           "Purchase of stationery and printer ink for regional office",
-        amount: "₹1,800",
+        amount: "â‚¹1,800",
         date: "2025-10-18",
         status: "Pending",
         receiptName: "Supplies_Bill_K.jpg",
@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function () {
         category: "Meals",
         description:
           "Dinner with key account doctor and hospital administrator",
-        amount: "₹7,500",
+        amount: "â‚¹7,500",
         date: "2025-10-17",
         status: "Approved",
         receiptName: "Dinner_Receipt_R2.pdf",
@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", function () {
         employee: "Deepak Yadav",
         category: "Transportation",
         description: "Fuel refill for company vehicle for month of October",
-        amount: "₹5,500",
+        amount: "â‚¹5,500",
         date: "2025-10-16",
         status: "Rejected",
         receiptName: "Fuel_Slip_D.jpg",
@@ -602,10 +602,10 @@ document.addEventListener("DOMContentLoaded", function () {
       popup.innerHTML = `
         <div style="position: fixed; background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 250px;">
           <h6 style="margin: 0 0 10px 0; font-weight: bold;">Notifications</h6>
-          <div style="margin-bottom: 8px;">• New order received</div>
-          <div style="margin-bottom: 8px;">• Inventory low alert</div>
-          <div style="margin-bottom: 8px;">• System update available</div>
-          <div style="margin-bottom: 8px; color: var(--bs-primary); cursor: pointer;">• View all notifications</div>
+          <div style="margin-bottom: 8px;">â€¢ New order received</div>
+          <div style="margin-bottom: 8px;">â€¢ Inventory low alert</div>
+          <div style="margin-bottom: 8px;">â€¢ System update available</div>
+          <div style="margin-bottom: 8px; color: var(--bs-primary); cursor: pointer;">â€¢ View all notifications</div>
         </div>
       `;
 
@@ -650,10 +650,10 @@ if (notificationBtn) {
     popup.innerHTML = `
                 <div style="position: fixed; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 250px;">
                   <h6 style="margin: 0 0 10px 0; font-weight: bold;">Notifications</h6>
-                  <div style="margin-bottom: 8px;">• New order received</div>
-                  <div style="margin-bottom: 8px;">• Inventory low alert</div>
-                  <div style="margin-bottom: 8px;">• System update available</div>
-                  <div style="margin-bottom: 8px;">• View all notifications</div>
+                  <div style="margin-bottom: 8px;">â€¢ New order received</div>
+                  <div style="margin-bottom: 8px;">â€¢ Inventory low alert</div>
+                  <div style="margin-bottom: 8px;">â€¢ System update available</div>
+                  <div style="margin-bottom: 8px;">â€¢ View all notifications</div>
                 </div>
               `;
 

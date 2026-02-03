@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
   let notificationsApiMode = true;
 
@@ -73,73 +73,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Dummy Data
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [
-    {
-      id: "L1",
-      recipient: "Managers",
-      message: "Monthly report due by Friday.",
-      date: "2025-11-02",
-    },
-    {
-      id: "L2",
-      recipient: "MRs",
-      message: "Doctor visit summary upload reminder.",
-      date: "2025-11-03",
-    },
-    {
-      id: "L3",
-      recipient: "All",
-      message: "Team meeting scheduled on Monday 10 AM.",
-      date: "2025-11-04",
-    },
-    {
-      id: "L4",
-      recipient: "Managers",
-      message: "Submit last month’s sales data.",
-      date: "2025-11-05",
-    },
-    {
-      id: "L5",
-      recipient: "MRs",
-      message: "Don’t forget doctor visit feedback form.",
-      date: "2025-11-06",
-    },
-    {
-      id: "L6",
-      recipient: "All",
-      message: "New products launch next week!",
-      date: "2025-11-07",
-    },
-    {
-      id: "L7",
-      recipient: "Managers",
-      message: "Expense report deadline tomorrow.",
-      date: "2025-11-08",
-    },
-    {
-      id: "L8",
-      recipient: "MRs",
-      message: "Doctor approval form updated.",
-      date: "2025-11-09",
-    },
-    {
-      id: "L9",
-      recipient: "All",
-      message: "Server maintenance tonight 11 PM.",
-      date: "2025-11-10",
-    },
-    {
-      id: "L10",
-      recipient: "Managers",
-      message: "Submit November plan ASAP.",
-      date: "2025-11-11",
-    },
-  ];
+  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
 
   const perPage = 5;
   let currentPage = 1;
 
-  // ✅ Render Notifications Table
+  // âœ… Render Notifications Table
   const renderTable = () => {
     const filtered = notifications.filter(n =>
       n.message.toLowerCase().includes(searchInput.value.toLowerCase())
@@ -168,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
       )
       .join("");
 
-    // ✅ Pagination Controls
+    // âœ… Pagination Controls
     pagination.innerHTML = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
         <a class="page-link" href="#" id="prevPage">Previous</a>
@@ -182,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </li>
     `;
 
-    // ✅ Page Number Click
+    // âœ… Page Number Click
     document.querySelectorAll(".page-link").forEach((btn, index) => {
       if (btn.id === "prevPage") {
         btn.addEventListener("click", (e) => {
@@ -208,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderTable();
 
-  // ✅ Add Notification
+  // âœ… Add Notification
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -262,13 +201,13 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  // ✅ Search Filter
+  // âœ… Search Filter
   searchInput.addEventListener("input", () => {
     currentPage = 1;
     renderTable();
   });
 
-  // ✅ Delete Notification
+  // âœ… Delete Notification
   window.deleteNotification = (id) => {
     if (!confirm("Delete this notification?")) return;
 
@@ -313,79 +252,9 @@ function loadNotificationsIntoModal() {
   if (!notificationsList) return;
 
   // --- Your notifications data ---
-  const recentActivities = [
-    {
-      icon: "bi-person-plus",
-      iconClass: "bg-primary",
-      title: "New MR Assigned",
-      description: "Sneha Patel assigned to Central Delhi region",
-      time: "2 hours ago",
-      type: "activity"
-    },
-    {
-      icon: "bi-currency-rupee",
-      iconClass: "bg-success",
-      title: "Sales Target Achieved",
-      description: "Rajesh Kumar achieved 112% of monthly target",
-      time: "4 hours ago",
-      type: "activity"
-    },
-    {
-      icon: "bi-hospital",
-      iconClass: "bg-info",
-      title: "Doctor Visit Completed",
-      description: "15 doctor visits completed today",
-      time: "6 hours ago",
-      type: "activity"
-    },
-    {
-      icon: "bi-bell",
-      iconClass: "bg-warning",
-      title: "Meeting Reminder",
-      description: "Team meeting scheduled for tomorrow 10 AM",
-      time: "8 hours ago",
-      type: "activity"
-    },
-    {
-      icon: "bi-box-seam",
-      iconClass: "bg-secondary",
-      title: "Sample Stock Updated",
-      description: "Diabetex 500mg stock replenished",
-      time: "1 day ago",
-      type: "activity"
-    },
-  ];
+  const recentActivities = [];
 
-  const alertsData = [
-    {
-      icon: "bi-exclamation-triangle",
-      iconClass: "bg-danger",
-      title: "Low Stock Alert",
-      description: "CardioCare 10mg running low in North Delhi",
-      type: "urgent",
-    },
-    {
-      icon: "bi-calendar-x",
-      iconClass: "bg-warning",
-      title: "Pending Approvals",
-      description: "12 expense reports awaiting your approval",
-      type: "warning",
-    },
-    {
-      icon: "bi-graph-down",
-      iconClass: "bg-info",
-      title: "Performance Alert",
-      description: "Manish Patel below 80% target achievement",
-      type: "info",
-    },
-    {
-      icon: "bi-check-circle",
-      iconClass: "bg-success",
-      title: "Task Completed",
-      description: "Monthly report submitted successfully",
-      type: "success",
-    },
-  ];
+  const alertsData = [];
 
   // --- Merge ---
   const allNotifications = [...alertsData, ...recentActivities];

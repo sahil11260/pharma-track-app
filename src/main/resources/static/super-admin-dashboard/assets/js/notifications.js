@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = "";
+  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
   const STORAGE_KEY = "kavyaPharmNotifications";
   let notificationsApiMode = true;
@@ -153,7 +153,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================================
-  //                         DATA FUNCTIONS 💾
+  // Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  DATA FUNCTIONS ðŸ’¾
   // ==========================================================
 
   /**
@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================================
-  //          RENDERING & PAGINATION 🔄
+  // Â  Â  Â  Â  Â RENDERING & PAGINATION ðŸ”„
   // ==========================================================
 
   function getFilteredNotifications() {
@@ -943,7 +943,7 @@ document.addEventListener("DOMContentLoaded", function () {
   );
 
   // ==========================================================
-  //          SAVE/UPDATE HANDLER (with validations) ✍️
+  // Â  Â  Â  Â  Â SAVE/UPDATE HANDLER (with validations) âœï¸
   // ==========================================================
   if (saveNotificationBtn) {
     saveNotificationBtn.addEventListener("click", function (e) {
@@ -958,7 +958,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Validation
       if (!title || !type || !message || !priority || !status) {
-        alert("❌ All fields must be filled out and selected.");
+        alert("âŒ All fields must be filled out and selected.");
         return;
       }
 
@@ -977,7 +977,7 @@ document.addEventListener("DOMContentLoaded", function () {
           notificationObject.priority = priority;
           notificationObject.status = status;
         }
-        alertMsg = `✅ Notification ID ${editingNotificationId} updated successfully!`;
+        alertMsg = `âœ… Notification ID ${editingNotificationId} updated successfully!`;
 
         (async function () {
           if (notificationsApiMode && notificationObject && isNumericId(notificationObject.id)) {
@@ -1031,7 +1031,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
 
           allNotifications.push(notificationObject);
-          alertMsg = `✅ Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
+          alertMsg = `âœ… Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
           saveNotifications(allNotifications);
 
           const filteredData = getFilteredNotifications();
@@ -1070,10 +1070,10 @@ document.addEventListener("DOMContentLoaded", function () {
       popup.innerHTML = `
               <div style="position: fixed; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 250px; color: black;">
                   <h6 style="margin: 0 0 10px 0; font-weight: bold;">Notifications</h6>
-                  <div style="margin-bottom: 8px;">• New order received</div>
-                  <div style="margin-bottom: 8px;">• Inventory low alert</div>
-                  <div style="margin-bottom: 8px;">• System update available</div>
-                  <div style="margin-bottom: 8px;">• View all notifications</div>
+                  <div style="margin-bottom: 8px;">â€¢ New order received</div>
+                  <div style="margin-bottom: 8px;">â€¢ Inventory low alert</div>
+                  <div style="margin-bottom: 8px;">â€¢ System update available</div>
+                  <div style="margin-bottom: 8px;">â€¢ View all notifications</div>
               </div>
           `;
 
