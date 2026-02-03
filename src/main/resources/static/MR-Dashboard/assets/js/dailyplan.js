@@ -40,14 +40,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Task Mapping Functions ---
     function mapBackendTaskToUI(backendTask) {
-        // Map backend: { id, title, type, assignedTo, priority, status, dueDate, location, description, clinicName, doctorName }
+        // Handle various date formats (String ISO, Array [y,m,d], etc.)
+        let taskDate = "";
+        const rawDate = backendTask.dueDate;
+        
+        if (Array.isArray(rawDate)) {
+            const y = rawDate[0];
+            const m = String(rawDate[1]).padStart(2, '0');
+            const d = String(rawDate[2]).padStart(2, '0');
+            taskDate = `${y}-${m}-${d}`;
+        } else if (typeof rawDate === 'string') {
+            taskDate = rawDate.split('T')[0]; // Handle "2023-10-10T..."
+        } else {
+            taskDate = todayKey; // Fallback to today if null/missing
+        }
 
-        // Prioritize specific fields, fallback to location/title without ugly prefixes if possible
+        // Prioritize specific fields
         const clinic = backendTask.clinicName || (backendTask.type === 'meeting' ? (backendTask.location || 'Office/Field') : (backendTask.location || 'N/A'));
         const doctor = backendTask.doctorName || backendTask.title || 'N/A';
 
-        // Capitalize first letter of type and status
-        const capitalizeFirst = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
+        const capitalizeFirst = (str) => {
+            if (!str) return "";
+            const s = String(str);
+            return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+        };
 
         return {
             id: backendTask.id,
@@ -55,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
             clinic: clinic,
             doctor: doctor,
             status: capitalizeFirst(backendTask.status) || "Pending",
-            date: backendTask.dueDate || todayKey
+            date: taskDate
         };
     }
 
@@ -176,6 +192,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const todayTaskListBody = $id("todayTaskListBody");
     const pastDueTaskListBody = $id("pastDueTaskListBody");
     const pastDueTasksContainer = $id("pastDueTasksContainer");
+    const upcomingTaskListBody = $id("upcomingTaskListBody");
+    const upcomingTasksContainer = $id("upcomingTasksContainer");
 
     // Summary Card Elements
     const totalCountEl = $id("totalTasksCount");
@@ -207,17 +225,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getStatusClass(status) {
-        switch (status) {
-            case 'Completed': return 'bg-success';
-            case 'In Progress': return 'bg-primary';
-            case 'Pending': return 'bg-danger';
-            default: return 'bg-secondary';
-        }
+        if (!status) return 'bg-secondary';
+        const s = status.toLowerCase();
+        if (s.includes('completed')) return 'bg-success';
+        if (s.includes('progress')) return 'bg-primary';
+        if (s.includes('pending')) return 'bg-danger';
+        return 'bg-secondary';
     }
 
     // --- TASK RENDERING ---
     function renderAllTasks() {
         console.log("[DAILYPLAN] Rendering all tasks. Today is:", todayKey);
+        console.log("[DAILYPLAN] Current tasks state:", tasks);
 
         // Strictly only today's tasks
         const todayTasks = tasks.filter(task => task.date === todayKey);
@@ -226,44 +245,50 @@ document.addEventListener("DOMContentLoaded", () => {
         // Past Due list: only tasks due BEFORE today that are not completed
         const pastDueTasks = tasks.filter(task =>
             task.date < todayKey &&
-            task.status !== "Completed"
+            task.status.toLowerCase() !== "completed"
         ).sort((a, b) => new Date(a.date) - new Date(b.date));
         console.log("[DAILYPLAN] Past due tasks count:", pastDueTasks.length);
 
-        renderTaskTable(todayTasks, todayTaskListBody, false);
-        renderTaskTable(pastDueTasks, pastDueTaskListBody, true);
+        // Upcoming tasks: tasks due AFTER today
+        const upcomingTasks = tasks.filter(task =>
+            task.date > todayKey
+        ).sort((a, b) => new Date(a.date) - new Date(b.date));
+        console.log("[DAILYPLAN] Upcoming tasks count:", upcomingTasks.length);
+
+        renderTaskTable(todayTasks, todayTaskListBody, false, "today");
+        renderTaskTable(pastDueTasks, pastDueTaskListBody, true, "past");
+        renderTaskTable(upcomingTasks, upcomingTaskListBody, true, "upcoming");
 
         updateSummary();
     }
 
-    function renderTaskTable(taskList, tableBodyElement, isPastDue) {
+    function renderTaskTable(taskList, tableBodyElement, isExtended, mode) {
         if (!tableBodyElement) return;
 
         tableBodyElement.innerHTML = '';
 
         if (taskList.length === 0) {
-            const emptyMessage = isPastDue
-                ? 'No post dated due task'
-                : 'No visits assigned for today.';
+            let emptyMessage = 'No visits assigned for today.';
+            if (mode === 'past') emptyMessage = 'No past due pending tasks.';
+            if (mode === 'upcoming') emptyMessage = 'No upcoming tasks.';
 
             const colSpan = 6;
             tableBodyElement.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-muted p-4">${emptyMessage}</td></tr>`;
 
-            if (isPastDue && pastDueTasksContainer) {
-                pastDueTasksContainer.style.display = 'none';
-            }
+            if (mode === 'past' && pastDueTasksContainer) pastDueTasksContainer.style.display = 'none';
+            if (mode === 'upcoming' && upcomingTasksContainer) upcomingTasksContainer.style.display = 'none';
             return;
         }
 
-        if (isPastDue && pastDueTasksContainer) {
-            pastDueTasksContainer.style.display = 'block';
-        }
+        if (mode === 'past' && pastDueTasksContainer) pastDueTasksContainer.style.display = 'block';
+        if (mode === 'upcoming' && upcomingTasksContainer) upcomingTasksContainer.style.display = 'block';
 
         taskList.forEach((task, index) => {
             const statusClass = getStatusClass(task.status);
             const row = document.createElement('tr');
             row.dataset.taskId = task.id;
 
+            // Show date if not today
             const firstColContent = (task.date !== todayKey) ? task.date : (index + 1);
 
             row.innerHTML = `
@@ -278,8 +303,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         data-task-id="${task.id}"
                         data-bs-toggle="modal" 
                         data-bs-target="#statusUpdateModal"
-                        ${task.status === 'Completed' ? 'disabled' : ''}>
-                        ${task.status === 'Completed' ? 'Done' : 'Update'}
+                        ${task.status.toLowerCase() === 'completed' ? 'disabled' : ''}>
+                        ${task.status.toLowerCase() === 'completed' ? 'Done' : 'Update'}
                     </button>
                 </td>
             `;
