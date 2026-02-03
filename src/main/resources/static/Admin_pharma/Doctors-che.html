@@ -28,56 +28,25 @@
 </head>
 
 <body>
-  <!-- ✅ Navbar -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
     <div class="container-fluid">
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle"><i class="bi bi-list"></i></button>
       <div class="d-flex">
         
-        <!-- 🔔 Notification Dropdown -->
+        <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Notification Dropdown -->
         <div class="dropdown">
           <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
             data-bs-toggle="dropdown">
             <i class="bi bi-bell"></i>
 
             <!-- Red Dot -->
-            <span
-              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            
           </button>
 
           <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
             <li class="dropdown-header fw-bold">Notifications</li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-info-circle text-primary me-2"></i>
-                New doctor added by Super Admin
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-person-check text-success me-2"></i>
-                3 doctors assigned to MR John
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-envelope-open text-warning me-2"></i>
-                Pending approval for expenses
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-
-            <!-- <li class="text-center">
-      <a class="dropdown-item small text-primary" href="Notification.html">
-        View All Notifications →
-      </a>
-    </li> -->
+            <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
           </ul>
         </div>
 
@@ -99,7 +68,7 @@
     </div>
   </nav>
 
-  <!-- ✅ Sidebar -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
@@ -120,11 +89,11 @@
     </ul>
   </div>
 
-  <!-- ✅ Main Content -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Main Content -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold">🏥 Doctors</h3>
+        <h3 class="fw-bold">ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¥ Doctors</h3>
         <div class="d-flex gap-2">
           <button class="btn btn-outline-secondary" id="bulkAssignBtn"><i class="bi bi-people-fill me-1"></i> Bulk
             Assign</button>
@@ -133,7 +102,7 @@
         </div>
       </div>
 
-      <!-- 🔍 Search -->
+      <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Search -->
       <div class="row mb-3 g-2">
         <div class="col-md-6">
           <div class="input-group">
@@ -143,7 +112,7 @@
         </div>
       </div>
 
-      <!-- 🩺 Doctor Table -->
+      <!-- ÃƒÂ°Ã…Â¸Ã‚Â©Ã‚Âº Doctor Table -->
       <div class="card mb-3">
         <div class="card-body table-responsive">
           <table class="table table-hover align-middle text-nowrap">
@@ -169,7 +138,7 @@
     </div>
   </div>
 
-  <!-- ✅ Add/Edit Doctor Modal -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Add/Edit Doctor Modal -->
   <div class="modal fade" id="doctorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <form class="modal-content" id="doctorForm">
@@ -212,14 +181,14 @@
     </div>
   </div>
 
-  <!-- ✅ Footer -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Footer -->
   <footer class="footer">
     <div class="container-fluid">
       <p>&copy; 2025 KavyaPharm | All Rights Reserved.</p>
     </div>
   </footer>
 
-  <!-- ✅ Scripts -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/script.js?v=1.2"></script>
   <script src="assets/js/Doctors-che.js?v=1.2"></script>

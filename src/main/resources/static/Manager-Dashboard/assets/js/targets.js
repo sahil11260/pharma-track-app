@@ -85,14 +85,11 @@
         targetsApiMode = true;
         return;
       }
-      targetsApiMode = false;
     } catch (e) {
-      console.warn("Targets API unavailable.", e);
-      targetsApiMode = false;
+      console.warn("Targets API unavailable. Using fallback data.", e);
     }
-
-    alert("Targets API not available. Please start backend / login again.");
-    window.targetsData = [];
+    targetsApiMode = false;
+    window.targetsData = getStoredData(STORAGE_KEY, initialTargetsData);
   }
 
   async function createTargetApi(newTarget) {
@@ -420,17 +417,18 @@
         t.lastUpdated = new Date().toISOString().split("T")[0];
 
         (async function () {
-          if (!targetsApiMode) {
-            alert("Targets API not available.");
-            return;
-          }
-          try {
-            await updateTargetApi(t.id, t);
-            await refreshTargetsFromApiOrFallback();
-          } catch (e) {
-            console.warn("Target update API failed.", e);
-            alert("Target update failed in backend.");
-            return;
+          if (targetsApiMode) {
+            try {
+              await updateTargetApi(t.id, t);
+              await refreshTargetsFromApiOrFallback();
+            } catch (e) {
+              console.warn("Target update API failed.", e);
+            }
+          } else {
+            // Pure local fallback mode
+            const idx = window.targetsData.findIndex(x => x.id === t.id);
+            if (idx !== -1) window.targetsData[idx] = t;
+            saveStoredData(STORAGE_KEY, window.targetsData);
           }
 
           bootstrap.Modal.getInstance(
@@ -702,20 +700,21 @@
       return;
 
     (async function () {
-      if (!targetsApiMode) {
-        alert("Targets API not available.");
-        return;
+      if (targetsApiMode) {
+        try {
+          await deleteTargetApi(id);
+          await refreshTargetsFromApiOrFallback();
+          refreshAllDisplays();
+          return;
+        } catch (e) {
+          console.warn("Target delete API failed.", e);
+        }
       }
-      try {
-        await deleteTargetApi(id);
-        await refreshTargetsFromApiOrFallback();
-        refreshAllDisplays();
-        return;
-      } catch (e) {
-        console.warn("Target delete API failed.", e);
-        alert("Target delete failed in backend.");
-        return;
-      }
+
+      // Local fallback
+      window.targetsData.splice(idx, 1);
+      saveStoredData(STORAGE_KEY, window.targetsData);
+      refreshAllDisplays();
     })();
   }
 
@@ -834,17 +833,18 @@
       };
 
       (async function () {
-        if (!targetsApiMode) {
-          alert("Targets API not available.");
-          return;
-        }
-        try {
-          await createTargetApi(newTarget);
-          await refreshTargetsFromApiOrFallback();
-        } catch (e) {
-          console.warn("Target create API failed.", e);
-          alert("Target create failed in backend.");
-          return;
+        if (targetsApiMode) {
+          try {
+            await createTargetApi(newTarget);
+            await refreshTargetsFromApiOrFallback();
+          } catch (e) {
+            console.warn("Target create API failed.", e);
+          }
+        } else {
+          // Local fallback
+          newTarget.id = Date.now();
+          window.targetsData.push(newTarget);
+          saveStoredData(STORAGE_KEY, window.targetsData);
         }
         // close modal if present
         try {

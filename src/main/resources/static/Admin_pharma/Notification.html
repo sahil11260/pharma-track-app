@@ -12,7 +12,7 @@
 </head>
 
 <body>
-  <!-- ✅ Navbar -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
     <div class="container-fluid">
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle">
@@ -23,50 +23,19 @@
         <!-- <button class="btn btn-outline-secondary me-2 ">
           <i class="bi bi-bell"></i>
         </button> -->
-        <!-- 🔔 Notification Dropdown -->
+        <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Notification Dropdown -->
         <div class="dropdown">
           <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
             data-bs-toggle="dropdown">
             <i class="bi bi-bell"></i>
 
             <!-- Red Dot -->
-            <span
-              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            
           </button>
 
           <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
             <li class="dropdown-header fw-bold">Notifications</li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-info-circle text-primary me-2"></i>
-                New doctor added by Super Admin
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-person-check text-success me-2"></i>
-                3 doctors assigned to MR John
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-envelope-open text-warning me-2"></i>
-                Pending approval for expenses
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-
-            <!-- <li class="text-center">
-      <a class="dropdown-item small text-primary" href="Notification.html">
-        View All Notifications →
-      </a>
-    </li> -->
+            <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
           </ul>
         </div>
 
@@ -90,7 +59,7 @@
     </div>
   </nav>
 
-  <!-- ✅ Sidebar -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
@@ -113,7 +82,7 @@
     </ul>
   </div>
 
-  <!-- ✅ Main Content -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Main Content -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
@@ -123,13 +92,13 @@
         </button>
       </div>
 
-      <!-- 🔍 Search -->
+      <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Search -->
       <div class="input-group mb-3 w-50">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
         <input type="text" id="searchNotification" class="form-control" placeholder="Search Notification..." />
       </div>
 
-      <!-- 📋 Table -->
+      <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Table -->
       <div class="card shadow-sm">
         <div class="card-body table-responsive">
           <table class="table table-hover align-middle text-nowrap">
@@ -146,21 +115,21 @@
         </div>
       </div>
 
-      <!-- ✅ PAGINATION -->
+      <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PAGINATION -->
       <nav>
         <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
       </nav>
     </div>
   </div>
 
-  <!-- ✅ Footer -->
+  <!-- ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Footer -->
   <footer class="footer">
     <div class="container-fluid text-center">
       <p>&copy; 2025 KavyaPharm | All Rights Reserved.</p>
     </div>
   </footer>
 
-  <!-- 📨 Modal: Add Notification -->
+  <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¨ Modal: Add Notification -->
   <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -203,7 +172,7 @@
   <script src="assets/js/script.js"></script>
   <script src="assets/js/Notification.js"></script>
 
-  <!-- 🧑‍💼 Profile Info Modal -->
+  <!-- ÃƒÂ°Ã…Â¸Ã‚Â§Ã¢â‚¬ËœÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¼ Profile Info Modal -->
   <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg rounded-4">
@@ -223,7 +192,7 @@
 
           <div class="alert alert-light border text-start small">
             <i class="bi bi-info-circle me-1 text-primary"></i>
-            Logged in as <strong>Regional Manager</strong>
+            Logged in as <strong>Regional Admin</strong>
           </div>
         </div>
         <div class="modal-footer justify-content-center">

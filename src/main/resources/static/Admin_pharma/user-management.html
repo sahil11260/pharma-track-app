@@ -29,21 +29,12 @@
           <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
             data-bs-toggle="dropdown">
             <i class="bi bi-bell"></i>
-            <span
-              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            
           </button>
 
           <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
             <li class="dropdown-header fw-bold">Notifications</li>
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-info-circle text-primary me-2"></i>
-                New doctor added by Super Admin
-              </div>
-            </li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
+            <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
           </ul>
         </div>
 
@@ -103,7 +94,7 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
             <div class="btn-group" role="group" id="roleFilterButtons">
               <button type="button" class="btn btn-sm btn-dark active" data-role-filter="All">All</button>
-              <!-- Hidden Super Admin Filter for Regional Manager -->
+              <!-- Hidden Super Admin Filter for Regional Admin -->
               <!-- <button type="button" class="btn btn-sm btn-outline-dark" data-role-filter="Super Admin">Super Admin</button> -->
               <button type="button" class="btn btn-sm btn-outline-dark" data-role-filter="Area Manager">Manager</button>
               <button type="button" class="btn btn-sm btn-outline-dark" data-role-filter="Medical Rep">MR</button>
@@ -155,7 +146,7 @@
           <p id="profileEmail" class="text-muted mb-3"></p>
           <div class="alert alert-light border text-start small">
             <i class="bi bi-info-circle me-1 text-primary"></i>
-            Logged in as <strong>Regional Manager</strong>
+            Logged in as <strong>Regional Admin</strong>
           </div>
         </div>
         <div class="modal-footer justify-content-center">

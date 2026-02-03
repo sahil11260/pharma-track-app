@@ -46,50 +46,19 @@
         <!-- <button class="btn btn-outline-secondary me-2" id="notifButton">
             <i class="bi bi-bell"></i>
           </button> -->
-        <!-- 🔔 Notification Dropdown -->
+        <!-- ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Notification Dropdown -->
         <div class="dropdown">
           <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
             data-bs-toggle="dropdown">
             <i class="bi bi-bell"></i>
 
             <!-- Red Dot -->
-            <span
-              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            
           </button>
 
           <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
             <li class="dropdown-header fw-bold">Notifications</li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-info-circle text-primary me-2"></i>
-                New doctor added by Super Admin
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-person-check text-success me-2"></i>
-                3 doctors assigned to MR John
-              </div>
-            </li>
-
-            <li>
-              <div class="dropdown-item small">
-                <i class="bi bi-envelope-open text-warning me-2"></i>
-                Pending approval for expenses
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-
-            <!-- <li class="text-center">
-      <a class="dropdown-item small text-primary" href="Notification.html">
-        View All Notifications →
-      </a>
-    </li> -->
+            <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
           </ul>
         </div>
 
@@ -143,7 +112,7 @@
     <div class="container-fluid mt-5 pt-4">
 
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="fw-bold">💊 Product Distribution</h3>
+        <h3 class="fw-bold">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã…Â  Product Distribution</h3>
         <div>
           <button class="btn btn-outline-primary me-2" id="refreshBtn"><i class="bi bi-arrow-clockwise"></i>
             Refresh</button>
@@ -304,7 +273,7 @@
     <!-- page-specific logic -->
     <script src="assets/js/Product-distribution.js"></script>
 
-    <!-- 🧑‍💼 Profile Info Modal -->
+    <!-- ÃƒÂ°Ã…Â¸Ã‚Â§Ã¢â‚¬ËœÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¼ Profile Info Modal -->
     <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -324,7 +293,7 @@
 
             <div class="alert alert-light border text-start small">
               <i class="bi bi-info-circle me-1 text-primary"></i>
-              Logged in as <strong>Regional Manager</strong>
+              Logged in as <strong>Regional Admin</strong>
             </div>
           </div>
           <div class="modal-footer justify-content-center">
@@ -334,7 +303,7 @@
       </div>
     </div>
 
-    <!-- ➕ Add Product Modal -->
+    <!-- ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢ Add Product Modal -->
     <div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <form class="modal-content" id="addProductForm">
@@ -384,7 +353,7 @@
             </div>
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Price (₹)</label>
+                <label class="form-label">Price (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)</label>
                 <input type="number" step="0.01" class="form-control" id="newPrice" required />
               </div>
               <div class="col-md-6 mb-3">
