@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret.key}")
     private String secret;
 
     @Value("${jwt.expiration}")
@@ -73,7 +73,18 @@ public class JwtUtil {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        byte[] keyBytes;
+        try {
+            System.out.println(
+                    "DEBUG: (NESTED) System received secret with length: " + (secret != null ? secret.length() : 0));
+            if (secret.contains("-") || secret.contains("_")) {
+                keyBytes = Decoders.BASE64URL.decode(secret);
+            } else {
+                keyBytes = Decoders.BASE64.decode(secret);
+            }
+        } catch (Exception e) {
+            keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

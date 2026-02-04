@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret.key}")
     private String secret;
 
     @Value("${jwt.expiration}")
@@ -73,7 +73,21 @@ public class JwtUtil {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        byte[] keyBytes;
+        try {
+            // Log that we are generating the key (helpful for debugging)
+            System.out.println("DEBUG: System received secret with length: " + (secret != null ? secret.length() : 0));
+            System.out.println("DEBUG: Generating JWT Sign-in Key using configured secret...");
+
+            if (secret.contains("-") || secret.contains("_")) {
+                keyBytes = Decoders.BASE64URL.decode(secret);
+            } else {
+                keyBytes = Decoders.BASE64.decode(secret);
+            }
+        } catch (Exception e) {
+            System.out.println("DEBUG: Secret is not valid Base64, using raw bytes as fallback.");
+            keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

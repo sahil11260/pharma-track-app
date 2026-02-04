@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (profileEmail) profileEmail.textContent = email;
     if (fullNameField) fullNameField.value = name;
     if (emailField) emailField.value = email;
+
+    // Log the data for debugging if names are empty
+    if (name === "MR User") console.warn("Profile Name not found in localStorage keys: kavya_user.name, signup_name");
   }
 
   populateProfile();
