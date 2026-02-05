@@ -94,7 +94,9 @@ document.addEventListener("DOMContentLoaded", () => {
     async function refreshTargetsFromApi() {
         try {
             console.log("[SALES] Fetching targets from API...");
-            const data = await apiJson(TARGETS_API_BASE);
+            const currentUserName = localStorage.getItem("signup_name") || "";
+            const url = currentUserName ? `${TARGETS_API_BASE}?mrName=${encodeURIComponent(currentUserName)}` : TARGETS_API_BASE;
+            const data = await apiJson(url);
             console.log("[SALES] API response received:", data);
 
             if (Array.isArray(data)) {
