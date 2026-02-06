@@ -1,0 +1,268 @@
+{
+  "info": {
+    "name": "Pharma Track - Expense Management API",
+    "description": "Complete API collection for testing Expense Management module",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Create Expense (JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mrName\": \"Rajesh Kumar\",\n  \"category\": \"Travel\",\n  \"amount\": 2500.00,\n  \"description\": \"Taxi fare for doctor visits\",\n  \"expenseDate\": \"2025-11-06\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses"]
+        }
+      }
+    },
+    {
+      "name": "2. Create Expense with Receipt",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "mrName",
+              "value": "Rajesh Kumar",
+              "type": "text"
+            },
+            {
+              "key": "category",
+              "value": "Travel",
+              "type": "text"
+            },
+            {
+              "key": "amount",
+              "value": "2500",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Taxi fare for doctor visits",
+              "type": "text"
+            },
+            {
+              "key": "expenseDate",
+              "value": "2025-11-06",
+              "type": "text"
+            },
+            {
+              "key": "receipt",
+              "type": "file",
+              "src": "/path/to/receipt.jpg"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses/with-receipt",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "with-receipt"]
+        }
+      }
+    },
+    {
+      "name": "3. Get All Expenses (Manager)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/expenses",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses"]
+        }
+      }
+    },
+    {
+      "name": "4. Get MR Expenses",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/expenses/mr/Rajesh Kumar",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "mr", "Rajesh Kumar"]
+        }
+      }
+    },
+    {
+      "name": "5. Get Single Expense",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/expenses/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "1"]
+        }
+      }
+    },
+    {
+      "name": "6. Update Expense",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category\": \"Meals\",\n  \"amount\": 500.00,\n  \"description\": \"Updated description\",\n  \"expenseDate\": \"2025-11-07\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "1"]
+        }
+      }
+    },
+    {
+      "name": "7. Approve Expense",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"approvedBy\": \"Manager Name\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses/1/approve",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "1", "approve"]
+        }
+      }
+    },
+    {
+      "name": "8. Reject Expense",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rejectedBy\": \"Manager Name\",\n  \"reason\": \"Exceeds budget limit\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses/1/reject",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "1", "reject"]
+        }
+      }
+    },
+    {
+      "name": "9. Delete Expense",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/expenses/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "1"]
+        }
+      }
+    },
+    {
+      "name": "10. Upload Receipt Only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "/path/to/receipt.jpg"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/expenses/upload-receipt",
+          "host": ["{{base_url}}"],
+          "path": ["api", "expenses", "upload-receipt"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    }
+  ]
+}

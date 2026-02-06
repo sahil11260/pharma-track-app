@@ -1,21 +1,11 @@
 package com.kavyapharm.farmatrack.expense.model;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "app_expense")
+@Table(name = "expenses")
 public class Expense {
 
     @Id
@@ -35,29 +25,38 @@ public class Expense {
     private String description;
 
     @Column(nullable = false)
-    private String status;
-
-    @Column(nullable = false)
-    private LocalDate submittedDate;
-
-    @Column(nullable = false)
     private LocalDate expenseDate;
 
-    @ElementCollection
-    @CollectionTable(name = "app_expense_attachment", joinColumns = @JoinColumn(name = "expense_id"))
-    @Column(name = "attachment")
-    private List<String> attachments = new ArrayList<>();
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ExpenseStatus status = ExpenseStatus.PENDING;
 
-    private String approvedBy;
+    private String receiptPath; // File path for uploaded receipt
 
-    private LocalDate approvedDate;
+    private String receiptFilename; // Original filename
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime submittedDate = LocalDateTime.now();
+
+    private LocalDateTime approvedDate;
+
+    private String approvedBy; // Manager who approved/rejected
+
     private String rejectionReason;
 
+    // Constructors
     public Expense() {
     }
 
+    public Expense(String mrName, String category, Double amount, String description, LocalDate expenseDate) {
+        this.mrName = mrName;
+        this.category = category;
+        this.amount = amount;
+        this.description = description;
+        this.expenseDate = expenseDate;
+    }
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -98,22 +97,6 @@ public class Expense {
         this.description = description;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public LocalDate getSubmittedDate() {
-        return submittedDate;
-    }
-
-    public void setSubmittedDate(LocalDate submittedDate) {
-        this.submittedDate = submittedDate;
-    }
-
     public LocalDate getExpenseDate() {
         return expenseDate;
     }
@@ -122,12 +105,44 @@ public class Expense {
         this.expenseDate = expenseDate;
     }
 
-    public List<String> getAttachments() {
-        return attachments;
+    public ExpenseStatus getStatus() {
+        return status;
     }
 
-    public void setAttachments(List<String> attachments) {
-        this.attachments = attachments;
+    public void setStatus(ExpenseStatus status) {
+        this.status = status;
+    }
+
+    public String getReceiptPath() {
+        return receiptPath;
+    }
+
+    public void setReceiptPath(String receiptPath) {
+        this.receiptPath = receiptPath;
+    }
+
+    public String getReceiptFilename() {
+        return receiptFilename;
+    }
+
+    public void setReceiptFilename(String receiptFilename) {
+        this.receiptFilename = receiptFilename;
+    }
+
+    public LocalDateTime getSubmittedDate() {
+        return submittedDate;
+    }
+
+    public void setSubmittedDate(LocalDateTime submittedDate) {
+        this.submittedDate = submittedDate;
+    }
+
+    public LocalDateTime getApprovedDate() {
+        return approvedDate;
+    }
+
+    public void setApprovedDate(LocalDateTime approvedDate) {
+        this.approvedDate = approvedDate;
     }
 
     public String getApprovedBy() {
@@ -138,19 +153,17 @@ public class Expense {
         this.approvedBy = approvedBy;
     }
 
-    public LocalDate getApprovedDate() {
-        return approvedDate;
-    }
-
-    public void setApprovedDate(LocalDate approvedDate) {
-        this.approvedDate = approvedDate;
-    }
-
     public String getRejectionReason() {
         return rejectionReason;
     }
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public enum ExpenseStatus {
+        PENDING,
+        APPROVED,
+        REJECTED
     }
 }
