@@ -221,7 +221,6 @@
           <td class="table-actions">
             ${isPending ? `<button class="btn btn-outline-success btn-sm btn-approve me-1" data-id="${exp.id}" title="Approve"><i class="bi bi-check-lg"></i></button>` : `<button class="btn btn-outline-success btn-sm me-1 disabled-btn" disabled><i class="bi bi-check-lg"></i></button>`}
             <button class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${exp.id}" title="Edit"><i class="bi bi-pencil"></i></button>
-            ${isApproved ? `<button class="btn btn-outline-danger btn-sm me-1 disabled-btn" disabled title="Cannot reject approved"><i class="bi bi-x-lg"></i></button>` : `<button class="btn btn-outline-danger btn-sm btn-reject me-1" data-id="${exp.id}" title="Reject"><i class="bi bi-x-lg"></i></button>`}
             <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
@@ -318,7 +317,13 @@
     // Action handlers
     async function onApprove(e) {
         const id = Number(e.currentTarget.dataset.id);
-        if (!confirm("Approve this expense?")) return;
+        const exp = expensesData.find(x => x.id === id);
+        if (!exp) {
+            showToast("Expense not found", "error");
+            return;
+        }
+
+        if (!confirm(`Approve expense from ${exp.mrName}?\n\nCategory: ${exp.category}\nAmount: ₹${Number(exp.amount).toFixed(2)}\n\nClick OK to approve.`)) return;
 
         try {
             const approvedBy = localStorage.getItem("signup_name") || "Manager";
@@ -327,20 +332,29 @@
                 body: JSON.stringify({ approvedBy }),
             });
 
-            showToast("Expense approved successfully!");
+            showToast(`✅ Expense approved! ₹${Number(exp.amount).toFixed(2)} from ${exp.mrName}`);
             await loadExpenses();
             applyFilters();
             renderSummary();
         } catch (error) {
             console.error("Approve error:", error);
-            showToast("Failed to approve expense", "error");
+            showToast("Failed to approve expense. Please try again.", "error");
         }
     }
 
     async function onReject(e) {
         const id = Number(e.currentTarget.dataset.id);
-        const reason = prompt("Enter rejection reason:");
-        if (!reason || !reason.trim()) return alert("Rejection cancelled - reason required.");
+        const exp = expensesData.find(x => x.id === id);
+        if (!exp) {
+            showToast("Expense not found", "error");
+            return;
+        }
+
+        const reason = prompt(`Reject expense from ${exp.mrName}?\n\nCategory: ${exp.category}\nAmount: ₹${Number(exp.amount).toFixed(2)}\n\nPlease enter rejection reason:`);
+        if (!reason || !reason.trim()) {
+            showToast("Rejection cancelled - reason is required", "error");
+            return;
+        }
 
         try {
             const rejectedBy = localStorage.getItem("signup_name") || "Manager";
@@ -349,31 +363,35 @@
                 body: JSON.stringify({ rejectedBy, reason: reason.trim() }),
             });
 
-            showToast("Expense rejected successfully!");
+            showToast(`❌ Expense rejected: ${exp.mrName} - ${exp.category}`);
             await loadExpenses();
             applyFilters();
             renderSummary();
         } catch (error) {
             console.error("Reject error:", error);
-            showToast("Failed to reject expense", "error");
+            showToast("Failed to reject expense. Please try again.", "error");
         }
     }
 
     async function onDelete(e) {
         const id = Number(e.currentTarget.dataset.id);
         const exp = expensesData.find((x) => x.id === id);
-        if (!exp) return alert("Expense not found");
-        if (!confirm(`Delete expense #${id} (${exp.mrName} - ₹${Number(exp.amount).toFixed(2)})?`)) return;
+        if (!exp) {
+            showToast("Expense not found", "error");
+            return;
+        }
+
+        if (!confirm(`⚠️ DELETE EXPENSE?\n\nMR: ${exp.mrName}\nCategory: ${exp.category}\nAmount: ₹${Number(exp.amount).toFixed(2)}\nStatus: ${exp.status}\n\nThis action cannot be undone. Click OK to delete.`)) return;
 
         try {
             await apiJson(`${EXPENSES_API}/${id}`, { method: "DELETE" });
-            showToast("Expense deleted successfully!");
+            showToast(`🗑️ Expense deleted: ${exp.mrName} - ₹${Number(exp.amount).toFixed(2)}`);
             await loadExpenses();
             applyFilters();
             renderSummary();
         } catch (error) {
             console.error("Delete error:", error);
-            showToast("Failed to delete expense", "error");
+            showToast("Failed to delete expense. Please try again.", "error");
         }
     }
 
@@ -418,7 +436,7 @@
                   <div class="mt-2"><label class="form-label">Description</label><textarea id="editDescription" rows="3" class="form-control"></textarea></div>
                   <div class="row g-2 mt-3">
                     <div class="col-md-6"><label class="form-label">Status</label><select id="editStatus" class="form-select"><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></select></div>
-                    <div class="col-md-6"><label class="form-label">Rejection Reason (optional)</label><input id="editRejectionReason" class="form-control" placeholder="If rejected, provide reason" /></div>
+                    <div class="col-md-6" id="rejectionReasonContainer" style="display: none;"><label class="form-label">Rejection Reason</label><input id="editRejectionReason" class="form-control" placeholder="Provide reason for rejection" /></div>
                   </div>
                 </form>
               </div>
@@ -432,10 +450,19 @@
       `;
             document.body.insertAdjacentHTML("beforeend", html);
 
+            // Toggle rejection reason visibility
+            const statusSelect = document.getElementById("editStatus");
+            const reasonContainer = document.getElementById("rejectionReasonContainer");
+            const toggleReason = () => {
+                reasonContainer.style.display = statusSelect.value === "REJECTED" ? "block" : "none";
+            };
+            statusSelect.addEventListener("change", toggleReason);
+
             // Populate MR select
             const mrSel = document.getElementById("editMrSelect");
-            if (mrSel && Array.isArray(mrData)) {
-                mrSel.innerHTML = mrData.map((m) => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
+            if (mrSel) {
+                const mrs = mrData.length > 0 ? mrData : [...new Set(expensesData.map(e => e.mrName))].map(name => ({ name }));
+                mrSel.innerHTML = mrs.map((m) => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
             }
 
             // Save handler
@@ -448,12 +475,27 @@
                 const status = document.getElementById("editStatus").value;
                 const rejectionReason = document.getElementById("editRejectionReason").value;
 
-                if (!category || !expenseDate || amount <= 0) {
-                    return alert("Please fill required fields correctly.");
+                if (!category) {
+                    showToast("Please select a category", "error");
+                    return;
+                }
+                if (!expenseDate) {
+                    showToast("Please select an expense date", "error");
+                    return;
+                }
+                if (amount <= 0) {
+                    showToast("Amount must be greater than 0", "error");
+                    return;
+                }
+
+                // Validate rejection reason if status is REJECTED
+                if (status === "REJECTED" && (!rejectionReason || !rejectionReason.trim())) {
+                    showToast("Rejection reason is required when status is Rejected", "error");
+                    return;
                 }
 
                 try {
-                    // Update expense
+                    // Update expense including status
                     await apiJson(`${EXPENSES_API}/${id}`, {
                         method: "PUT",
                         body: JSON.stringify({
@@ -461,31 +503,13 @@
                             amount,
                             description,
                             expenseDate,
+                            status,
+                            rejectionReason
                         }),
                     });
 
-                    // Update status if changed
-                    const currentExp = expensesData.find(x => x.id === id);
-                    if (currentExp && status !== currentExp.status) {
-                        if (status === "APPROVED") {
-                            await apiJson(`${EXPENSES_API}/${id}/approve`, {
-                                method: "PUT",
-                                body: JSON.stringify({ approvedBy: localStorage.getItem("signup_name") || "Manager" }),
-                            });
-                        } else if (status === "REJECTED") {
-                            const reason = rejectionReason || prompt("Enter rejection reason:");
-                            if (!reason) return alert("Rejection reason required");
-                            await apiJson(`${EXPENSES_API}/${id}/reject`, {
-                                method: "PUT",
-                                body: JSON.stringify({
-                                    rejectedBy: localStorage.getItem("signup_name") || "Manager",
-                                    reason
-                                }),
-                            });
-                        }
-                    }
-
-                    showToast("Expense updated successfully!");
+                    const statusMsg = status === "APPROVED" ? "✅ Approved" : status === "REJECTED" ? "❌ Rejected" : "📝 Updated";
+                    showToast(`${statusMsg}: ${category} - ₹${amount.toFixed(2)}`);
                     bootstrap.Modal.getInstance(document.getElementById("editExpenseModal"))?.hide();
                     await loadExpenses();
                     applyFilters();
@@ -504,8 +528,11 @@
         document.getElementById("editAmount").value = Number(exp.amount || 0);
         document.getElementById("editExpenseDate").value = exp.expenseDate || "";
         document.getElementById("editDescription").value = exp.description || "";
-        document.getElementById("editStatus").value = exp.status || "PENDING";
+        document.getElementById("editStatus").value = exp.status ? exp.status.toUpperCase() : "PENDING";
         document.getElementById("editRejectionReason").value = exp.rejectionReason || "";
+
+        // Initial visibility check
+        document.getElementById("rejectionReasonContainer").style.display = (exp.status || "").toUpperCase() === "REJECTED" ? "block" : "none";
 
         const modal = new bootstrap.Modal(document.getElementById("editExpenseModal"));
         modal.show();
@@ -536,8 +563,21 @@
             const description = document.getElementById("addDescription").value;
             const fileEl = document.getElementById("addAttachment");
 
-            if (!mrName || !category || !expenseDate || amount <= 0) {
-                return alert("Please fill required fields correctly.");
+            if (!mrName) {
+                showToast("Please select an MR", "error");
+                return;
+            }
+            if (!category) {
+                showToast("Please select a category", "error");
+                return;
+            }
+            if (!expenseDate) {
+                showToast("Please select an expense date", "error");
+                return;
+            }
+            if (amount <= 0) {
+                showToast("Amount must be greater than 0", "error");
+                return;
             }
 
             try {
@@ -557,7 +597,7 @@
                     body: formData,
                 });
 
-                showToast("Expense added successfully!");
+                showToast(`✅ Expense added: ${mrName} - ₹${amount.toFixed(2)}`);
                 form.reset();
                 bootstrap.Modal.getInstance(document.getElementById("addExpenseModal"))?.hide();
                 await loadExpenses();

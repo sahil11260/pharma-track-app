@@ -109,12 +109,41 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setDescription(request.description());
         expense.setExpenseDate(request.expenseDate());
 
+        if (request.status() != null && !request.status().isBlank()) {
+            handleStatusChange(expense, request.status(), request.rejectionReason());
+        }
+
         if (request.receiptFilename() != null) {
             expense.setReceiptFilename(request.receiptFilename());
         }
 
         Expense updated = expenseRepository.save(expense);
         return ExpenseResponse.from(updated);
+    }
+
+    private void handleStatusChange(Expense expense, String statusStr, String rejectionReason) {
+        try {
+            ExpenseStatus newStatus = ExpenseStatus.valueOf(statusStr.toUpperCase());
+            if (expense.getStatus() != newStatus) {
+                expense.setStatus(newStatus);
+                if (newStatus == ExpenseStatus.PENDING) {
+                    expense.setApprovedBy(null);
+                    expense.setApprovedDate(null);
+                    expense.setRejectionReason(null);
+                } else if (newStatus == ExpenseStatus.REJECTED) {
+                    expense.setRejectionReason(rejectionReason);
+                    expense.setApprovedDate(LocalDateTime.now());
+                } else if (newStatus == ExpenseStatus.APPROVED) {
+                    expense.setApprovedDate(LocalDateTime.now());
+                    expense.setRejectionReason(null);
+                }
+            } else if (newStatus == ExpenseStatus.REJECTED) {
+                // Update reason even if already rejected
+                expense.setRejectionReason(rejectionReason);
+            }
+        } catch (IllegalArgumentException e) {
+            // Log or ignore invalid status
+        }
     }
 
     @Override
@@ -127,6 +156,10 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setAmount(request.amount());
         expense.setDescription(request.description());
         expense.setExpenseDate(request.expenseDate());
+
+        if (request.status() != null && !request.status().isBlank()) {
+            handleStatusChange(expense, request.status(), request.rejectionReason());
+        }
 
         if (receipt != null && !receipt.isEmpty()) {
             // Delete old receipt if exists

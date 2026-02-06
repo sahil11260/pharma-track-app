@@ -36,7 +36,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(org.springframework.security.config.Customizer.withDefaults()) // Enable CORS
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/system/reset-users").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/system/reset-users", "/api/users").permitAll()
+                        // Temporarily allow sales/target endpoints for testing
+                        .requestMatchers("/api/manager/sales-targets/**", "/api/mr/*/sales-targets",
+                                "/api/mr/sales-achievements", "/api/sales-targets/**")
+                        .permitAll()
                         .requestMatchers(
                                 "/",
                                 "/index.html",

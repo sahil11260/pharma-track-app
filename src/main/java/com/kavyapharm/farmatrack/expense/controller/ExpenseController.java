@@ -112,14 +112,18 @@ public class ExpenseController {
             @RequestParam("amount") Double amount,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam("expenseDate") String expenseDate,
-            @RequestParam(value = "receipt", required = false) MultipartFile receipt) throws IOException {
+            @RequestParam(value = "receipt", required = false) MultipartFile receipt,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "rejectionReason", required = false) String rejectionReason) throws IOException {
 
         UpdateExpenseRequest request = new UpdateExpenseRequest(
                 category,
                 amount,
                 description,
                 java.time.LocalDate.parse(expenseDate),
-                receipt != null ? receipt.getOriginalFilename() : null);
+                receipt != null ? receipt.getOriginalFilename() : null,
+                status,
+                rejectionReason);
 
         ExpenseResponse response;
         if (receipt != null && !receipt.isEmpty()) {

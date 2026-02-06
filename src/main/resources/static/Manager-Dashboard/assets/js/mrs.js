@@ -660,77 +660,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     Chart (optional) - uses Chart.js if present and element exists
-     ========================= */
-  /* =========================
-     Chart (optional) - uses Chart.js if present and element exists
-     ========================= */
-  let performanceChart = null;
-
-  function updatePerformanceChart() {
-    const chartEl = document.getElementById("mrPerformanceChart");
-    if (!chartEl || typeof Chart === "undefined") return;
-
-    const ctx = chartEl.getContext("2d");
-    const labels = mrs.map((m) => m.name.split(" ")[0]);
-    const salesData = mrs.map((m) => Number(m.sales) || 0);
-    const perfData = mrs.map((m) => Number(m.performance) || 0);
-
-    if (performanceChart) {
-      performanceChart.data.labels = labels;
-      performanceChart.data.datasets[0].data = salesData;
-      performanceChart.data.datasets[1].data = perfData;
-      performanceChart.update();
-    } else {
-      performanceChart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Sales (Units)",
-              data: salesData,
-              backgroundColor: "rgba(13, 110, 253, 0.7)",
-              borderColor: "#0d6efd",
-              borderWidth: 1
-            },
-            {
-              label: "Performance (%)",
-              data: perfData,
-              backgroundColor: "rgba(25, 135, 84, 0.7)",
-              borderColor: "#198754",
-              borderWidth: 1,
-              yAxisID: 'y1'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: { display: true, text: 'Sales' }
-            },
-            y1: {
-              beginAtZero: true,
-              position: 'right',
-              title: { display: true, text: 'Performance %' },
-              max: 100
-            }
-          }
-        }
-      });
-    }
-  }
-
-  /* =========================
      INITIAL LOAD + RENDER
      ========================= */
   loadMRsFromStorage();
   (async function () {
     await refreshMrsFromApiOrFallback();
     renderMRs();
-    updatePerformanceChart();
   })();
 });

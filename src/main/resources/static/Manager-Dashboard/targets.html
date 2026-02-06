@@ -201,14 +201,12 @@
               <tr>
                 <th style="width: 5%;">Sr.No.</th>
                 <th style="width: 10%;">Assigned Date</th>
-                <th style="width: 15%;">MR Name</th>
-                <th style="width: 15%;">Product Name</th>
-                <th style="width: 10%;">Target Type</th>
+                <th style="width: 20%;">MR Name</th>
+                <th style="width: 20%;">Product Name</th>
+                <th style="width: 15%;">Target Type</th>
                 <th style="width: 10%;">Target (Units)</th>
                 <th style="width: 10%;">Achieved (Units)</th>
                 <th style="width: 10%;">Achievement %</th>
-                <th style="width: 10%;">Progress Status</th>
-                <th style="width: 5%;">Actions</th>
               </tr>
             </thead>
             <tbody id="targetsList">
@@ -217,31 +215,7 @@
           </table>
         </div>
 
-        <!-- PERFORMANCE CHARTS -->
-        <div class="row mb-4">
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-header">
-                <h5><i class="bi bi-bar-chart"></i> Target vs Achievement</h5>
-              </div>
-              <div class="card-body">
-                <canvas id="targetAchievementChart"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-header">
-                <h5>
-                  <i class="bi bi-line-chart"></i> Monthly Performance Trend
-                </h5>
-              </div>
-              <div class="card-body">
-                <canvas id="performanceTrendChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         <!-- TOP PERFORMERS TABLE -->
         <div class="row mb-4">
@@ -561,7 +535,7 @@
 
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/targets.js"></script>
+    <script src="assets/js/targets_api.js"></script>
     <script src="assets/js/script.js"></script>
   </body>
 </html>
