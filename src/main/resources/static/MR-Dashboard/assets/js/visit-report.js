@@ -10,10 +10,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let apiMode = true;
 
+    function getAuthHeader() {
+        const token = localStorage.getItem("kavya_auth_token");
+        return token ? { "Authorization": `Bearer ${token}` } : {};
+    }
+
     async function apiJson(url, options) {
-        const res = await fetch(url, Object.assign({
-            headers: { 'Content-Type': 'application/json' }
-        }, options || {}));
+        const headers = {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+            ...(options && options.headers ? options.headers : {})
+        };
+        const res = await fetch(url, Object.assign({}, options || {}, { headers }));
         if (!res.ok) {
             const text = await res.text().catch(() => '');
             throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
@@ -83,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const [stockItems, dcrs, doctors] = await Promise.all([
                 apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`),
                 apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`),
-                apiJson(`/api/doctors?mrName=${encodeURIComponent(currentUserName)}`)
+                apiJson(`/api/doctors`) // Backend filters by authenticated user automatically
             ]);
 
             if (Array.isArray(stockItems)) {
@@ -95,11 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 saveDCRs();
             }
             if (Array.isArray(doctors)) {
+                console.log('[DCR] Loaded doctors from API:', doctors);
                 assignedDoctors = doctors.map(d => ({
                     id: d.id || d.doctorId,
                     name: d.name || d.doctorName,
                     clinic: d.clinicName || d.clinic || 'Default Clinic'
                 }));
+                console.log('[DCR] Mapped doctors:', assignedDoctors);
                 populateDoctors();
             }
             apiMode = true;
