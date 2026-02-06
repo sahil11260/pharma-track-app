@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="card-body">
               <h5 class="card-title text-success">${e.type}</h5>
               <p><strong>MR:</strong> ${e.person}</p>
-              <p><strong>Amount:</strong> â‚¹${e.amount}</p>
+              <p><strong>Amount:</strong> \u20B9${e.amount}</p>
               <p><strong>Date:</strong> ${e.date}</p>
               <p><strong>Receipt:</strong> ${e.bill
               ? `<a href="${e.bill}" target="_blank" class="text-primary">View Bill</a>`

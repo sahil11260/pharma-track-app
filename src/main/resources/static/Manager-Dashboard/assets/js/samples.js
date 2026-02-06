@@ -520,7 +520,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${sample.totalStock}</td>
                 <td>${sample.distributed}</td>
                 <td>${sample.remaining}</td>
-                <td>â‚¹${sample.unitPrice}</td>
+                <td>\u20B9${sample.unitPrice}</td>
                 <td>${formatDate(sample.expiryDate)}</td>
                 <td>
                   <button class="btn btn-outline-info btn-sm me-1" onclick="viewMRStocks()">

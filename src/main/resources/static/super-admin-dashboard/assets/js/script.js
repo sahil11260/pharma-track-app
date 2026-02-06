@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, e) => sum + (Number(e.amount) || 0),
       0
     );
-    if (totalExpensesEl) totalExpensesEl.textContent = `â‚¹${Math.round(total)}`;
+    if (totalExpensesEl) totalExpensesEl.textContent = `\u20B9${Math.round(total)}`;
     expenses = expensesApi
       .reduce((acc, e) => {
         const category = e.category || "Other";
@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, t) => sum + (Number(t.salesAchievement) || 0),
       0
     );
-    if (totalSalesEl) totalSalesEl.textContent = `â‚¹${Math.round(sales)}`;
+    if (totalSalesEl) totalSalesEl.textContent = `\u20B9${Math.round(sales)}`;
 
     const sumTarget = targetsApi.reduce(
       (sum, t) => sum + (Number(t.salesTarget) || 0),

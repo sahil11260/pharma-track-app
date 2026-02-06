@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await apiJson(`${TARGETS_API_BASE}/${id}`, { method: "DELETE" });
   }
 
-  // ✅ Fetch and Populate Dropdowns
+  // \u2705 Fetch and Populate Dropdowns
   let allManagers = [];
   let allProducts = [];
 
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (product) {
       const stock = Number(product.stock) || 0;
       const after = stock - qty;
-      availableInfo.textContent = `Available: ${stock} units — After allocation: ${after >= 0 ? after : "--- (insufficient)"
+      availableInfo.textContent = `Available: ${stock} units \u2014 After allocation: ${after >= 0 ? after : "--- (insufficient)"
         }`;
       if (after < 0) availableInfo.classList.add("text-danger");
       else availableInfo.classList.remove("text-danger");

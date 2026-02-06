@@ -29,7 +29,7 @@ let mrData = [];
 
 const USERS_API_BASE = `${API_BASE}/api/users`;
 
-// start empty — will be populated from API or localStorage
+// start empty \u2014 will be populated from API or localStorage
 let doctorsData = [];
 
 // Load/save to localStorage
@@ -490,7 +490,7 @@ function editDoctor(doctorId) {
   document.getElementById("clinicName").value = doctor.clinicName;
   const doctorCityEl = document.getElementById("doctorCity");
   if (doctorCityEl) doctorCityEl.value = doctor.city || "";
-  // NOTE: Address and Notes fields were removed from modal — do not attempt to set them
+  // NOTE: Address and Notes fields were removed from modal \u2014 do not attempt to set them
   document.getElementById("assignToMR").value = doctor.assignedMR || "";
 
   modalTitle.innerHTML = '<i class="bi bi-pencil-square"></i> Edit Doctor';
@@ -640,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
           phone: document.getElementById("doctorPhone").value,
           email: document.getElementById("doctorEmail").value,
           clinicName: document.getElementById("clinicName").value,
-          // Address & Notes removed from add modal — set to empty strings
+          // Address & Notes removed from add modal \u2014 set to empty strings
           address: "",
           city: (document.getElementById("doctorCity")?.value) || "",
           assignedMR: document.getElementById("assignToMR").value,
@@ -677,7 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
           doctorsData.push(newDoctor);
           saveData();
 
-          // re-render on first page (or current) — reset to page 1 to show new record
+          // re-render on first page (or current) \u2014 reset to page 1 to show new record
           currentPage = 1;
           renderDoctorsTablePage(currentPage);
 

@@ -101,7 +101,7 @@ async function refreshZonesFromApiOrFallback() {
       zones = zones.concat(localOnly);
       saveData("zones", zones);
       zonesApiMode = true;
-      // API reachable — ensure any retry banner is hidden
+      // API reachable \u2014 ensure any retry banner is hidden
       hideApiRetryBanner();
       return;
     }
@@ -125,7 +125,7 @@ async function refreshTerritoriesFromApiOrFallback() {
       territories = territories.concat(localOnly);
       saveData("territories", territories);
       territoriesApiMode = true;
-      // API reachable — ensure any retry banner is hidden
+      // API reachable \u2014 ensure any retry banner is hidden
       hideApiRetryBanner();
       return;
     }
@@ -225,7 +225,7 @@ function showApiRetryBanner() {
   banner.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
   banner.style.zIndex = "2000";
   banner.innerHTML = `<div style=\"display:flex;gap:12px;align-items:center;\">` +
-    `<div style=\"font-weight:600;color:#856404;\">Regions API unreachable — using local data</div>` +
+    `<div style=\"font-weight:600;color:#856404;\">Regions API unreachable \u2014 using local data</div>` +
     `<button id=\"regionApiRetryBtn\" class=\"btn btn-sm btn-outline-primary\">Retry</button>` +
     `</div>`;
   document.body.appendChild(banner);
@@ -240,7 +240,7 @@ function showApiRetryBanner() {
       renderTerritoryTable(territories);
     } catch (e) {
       console.warn("Retry failed", e);
-      alert("Retry failed — API still unavailable");
+      alert("Retry failed \u2014 API still unavailable");
     }
   });
 }
@@ -439,7 +439,7 @@ function deleteRow(type, id) {
       if (type === "zones" && zonesApiMode && isNumericId(id)) {
         try {
           await apiJson(`${ZONES_API_BASE}/${id}`, { method: "DELETE" });
-          // API delete succeeded — hide retry banner if visible
+          // API delete succeeded \u2014 hide retry banner if visible
           hideApiRetryBanner();
         } catch (e) {
           console.warn("Zone delete API failed. Falling back to localStorage.", e);
@@ -449,7 +449,7 @@ function deleteRow(type, id) {
       if (type === "territories" && territoriesApiMode && isNumericId(id)) {
         try {
           await apiJson(`${TERRITORIES_API_BASE}/${id}`, { method: "DELETE" });
-          // API delete succeeded — hide retry banner if visible
+          // API delete succeeded \u2014 hide retry banner if visible
           hideApiRetryBanner();
         } catch (e) {
           console.warn("Territory delete API failed. Falling back to localStorage.", e);
@@ -540,7 +540,7 @@ function handleAddZone(event) {
           zones.push(newZone);
           saveData("zones", zones);
           renderZoneTable(zones);
-          // API create succeeded — hide retry banner if visible
+          // API create succeeded \u2014 hide retry banner if visible
           hideApiRetryBanner();
         }
       } catch (e) {
@@ -607,7 +607,7 @@ function handleEditZone(event) {
             method: "PUT",
             body: JSON.stringify({ name: name }),
           });
-          // API update succeeded — hide retry banner if visible
+          // API update succeeded \u2014 hide retry banner if visible
           hideApiRetryBanner();
         } catch (e) {
           console.warn("Zone update API failed. Falling back to localStorage.", e);
@@ -675,7 +675,7 @@ function handleAddTerritory(event) {
           territories.push(newTerritory);
           saveData("territories", territories);
           renderTerritoryTable(territories);
-          // API create succeeded — hide retry banner
+          // API create succeeded \u2014 hide retry banner
           hideApiRetryBanner();
         }
       } catch (e) {
@@ -749,7 +749,7 @@ function handleEditTerritory(event) {
             method: "PUT",
             body: JSON.stringify({ name: name, zone: zone }),
           });
-          // API update succeeded — hide retry banner if visible
+          // API update succeeded \u2014 hide retry banner if visible
           hideApiRetryBanner();
         } catch (e) {
           console.warn("Territory update API failed. Falling back to localStorage.", e);

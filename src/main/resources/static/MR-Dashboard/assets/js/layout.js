@@ -58,7 +58,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (link.textContent.toLowerCase().includes('logout')) {
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        localStorage.clear();
+        // Clear specific auth data
+        localStorage.removeItem("kavya_auth_token");
+        localStorage.removeItem("kavya_user");
+        localStorage.removeItem("kavya_user_email");
+        localStorage.removeItem("kavya_user_role");
+        localStorage.removeItem("signup_name");
+        localStorage.removeItem("signup_email");
+        localStorage.removeItem("signup_role");
+
         window.location.href = "../index.html";
       });
     }

@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function showToast(message, type = 'success') {
         // Placeholder for toast functionality (requires toast HTML)
-        console.log(`✅ ${message}`);
+        console.log(`\u2705 ${message}`);
     }
 
     function getAuthHeader() {
@@ -264,7 +264,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <td>${srNo}</td>
                 <td>${new Date(e.date).toLocaleDateString('en-IN')}</td>
                 <td>${e.category}</td>
-                <td class="fw-bold">₹${e.amount.toFixed(2)}</td>
+                <td class="fw-bold">\u20B9${e.amount.toFixed(2)}</td>
                 <td>${getAttachmentLink(e.attachment)}</td>
                 
                 <td class="small" style="word-wrap: break-word; white-space: normal; max-width: 350px;" title="${e.desc}">

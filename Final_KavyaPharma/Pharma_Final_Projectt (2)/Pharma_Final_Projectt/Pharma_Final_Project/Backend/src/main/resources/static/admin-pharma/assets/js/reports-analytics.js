@@ -107,12 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalExpense = allExpenses
       .filter(e => e.status === "APPROVED")
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    totalExpensesEl.textContent = `₹${totalExpense.toLocaleString('en-IN')}`;
+    totalExpensesEl.textContent = `\u20B9${totalExpense.toLocaleString('en-IN')}`;
 
     // Sales Achieved (sum of sales achievements from targets)
     const totalSales = allTargets
       .reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
-    salesAchievedEl.textContent = `₹${(totalSales / 100000).toFixed(2)} Lakh`;
+    salesAchievedEl.textContent = `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
 
   function renderTable(data) {
@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data: {
         labels: salesLabels.length > 0 ? salesLabels : ["No Data"],
         datasets: [{
-          label: "Sales (₹ in Lakhs)",
+          label: "Sales (\u20B9 in Lakhs)",
           data: salesData.length > 0 ? salesData : [0],
           backgroundColor: ["#0d6efd", "#198754", "#ffc107", "#dc3545", "#6f42c1"]
         }]

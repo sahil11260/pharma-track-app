@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const perPage = 5;
   let currentPage = 1;
 
-  // ✅ Render Notifications Table
+  // \u2705 Render Notifications Table
   const renderTable = () => {
     const filtered = notifications.filter(n =>
       n.message.toLowerCase().includes(searchInput.value.toLowerCase())
@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
       )
       .join("");
 
-    // ✅ Pagination Controls
+    // \u2705 Pagination Controls
     pagination.innerHTML = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
         <a class="page-link" href="#" id="prevPage">Previous</a>
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </li>
     `;
 
-    // ✅ Page Number Click
+    // \u2705 Page Number Click
     document.querySelectorAll(".page-link").forEach((btn, index) => {
       if (btn.id === "prevPage") {
         btn.addEventListener("click", (e) => {
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderTable();
 
-  // ✅ Add Notification
+  // \u2705 Add Notification
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -262,13 +262,13 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  // ✅ Search Filter
+  // \u2705 Search Filter
   searchInput.addEventListener("input", () => {
     currentPage = 1;
     renderTable();
   });
 
-  // ✅ Delete Notification
+  // \u2705 Delete Notification
   window.deleteNotification = (id) => {
     if (!confirm("Delete this notification?")) return;
 

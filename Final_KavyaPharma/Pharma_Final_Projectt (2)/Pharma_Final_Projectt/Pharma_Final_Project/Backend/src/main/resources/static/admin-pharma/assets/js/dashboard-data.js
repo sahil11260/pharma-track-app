@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sum + (Number(t.salesAchievement) || 0), 0
     );
     document.getElementById("totalSalesDisplay").textContent =
-      `₹${(totalSales / 100000).toFixed(2)} Lakh`;
+      `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
 
   // ===== Update Charts =====
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div>
           <strong>${index + 1}. ${mr.name}</strong>
           <br>
-          <small class="text-muted">Achievement: ₹${(mr.achievement / 1000).toFixed(1)}K</small>
+          <small class="text-muted">Achievement: \u20B9${(mr.achievement / 1000).toFixed(1)}K</small>
         </div>
         <span class="badge ${mr.percentage >= 80 ? 'bg-success' : mr.percentage >= 50 ? 'bg-warning' : 'bg-danger'} rounded-pill">
           ${mr.percentage}%

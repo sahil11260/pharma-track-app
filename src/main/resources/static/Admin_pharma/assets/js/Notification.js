@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
-  let notificationsApiMode = true;
 
   const tableBody = document.getElementById("notificationTableBody");
   const form = document.getElementById("notificationForm");
@@ -12,7 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const specificRecipientSelect = document.getElementById("specificRecipient");
   const specificRecipientLabel = document.getElementById("specificRecipientLabel");
 
+  let allNotifications = [];
   let allUsers = [];
+  const perPage = 10;
+  let currentPage = 1;
+
+  // Clear old problematic local storage data once
+  if (localStorage.getItem("admin_notifications_cleaned_v2") !== "true") {
+    localStorage.removeItem("notifications");
+    localStorage.setItem("admin_notifications_cleaned_v2", "true");
+  }
 
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token");
@@ -20,10 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return { Authorization: `Bearer ${token}` };
   }
 
-  async function apiJson(url, options) {
+  async function apiRequest(url, options = {}) {
     const res = await fetch(url, Object.assign({
       headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader())
-    }, options || {}));
+    }, options));
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(text || `HTTP ${res.status}`);
@@ -32,219 +41,154 @@ document.addEventListener("DOMContentLoaded", () => {
     return await res.json();
   }
 
-  // Data initialized as empty
-  let notifications = [];
-
-  async function refreshNotificationsFromApiOrFallback() {
+  async function fetchData() {
     try {
-      const data = await apiJson(NOTIFICATIONS_API_BASE);
-      if (Array.isArray(data)) {
-        notifications = data.map((n) => ({
-          id: String(n.id),
-          recipient: n.type,
-          message: n.message,
-          date: n.date ? String(n.date) : "",
-          recipientId: n.recipientId
-        }));
-        notificationsApiMode = true;
-      } else {
-        notifications = [];
+      const [notifsData, usersData] = await Promise.all([
+        apiRequest(NOTIFICATIONS_API_BASE),
+        apiRequest(`${API_BASE}/api/users`).catch(() => [])
+      ]);
+      allNotifications = Array.isArray(notifsData) ? notifsData : [];
+      allUsers = Array.isArray(usersData) ? usersData : [];
+      renderTable();
+    } catch (e) {
+      console.error("Failed to fetch data:", e);
+      renderTable();
+    }
+  }
+
+  function renderTable() {
+    if (!tableBody) return;
+
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+    const filtered = allNotifications.filter(n =>
+      (n.message || "").toLowerCase().includes(searchTerm) ||
+      (n.type || "").toLowerCase().includes(searchTerm)
+    );
+
+    const totalPages = Math.ceil(filtered.length / perPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * perPage;
+    const paginated = filtered.slice(start, start + perPage);
+
+    tableBody.innerHTML = paginated.length ? paginated.map(n => {
+      let recipientDisplay = n.type || "All";
+      if (n.recipientId) {
+        const user = allUsers.find(u => String(u.id) === String(n.recipientId));
+        if (user) recipientDisplay += ` (${user.name})`;
       }
-    } catch (e) {
-      console.warn("Notifications API unavailable.", e);
-      notificationsApiMode = false;
-      // Keep notifications empty or handle UI error state
-    }
+      return `
+                <tr>
+                    <td><span class="badge bg-info text-dark">${recipientDisplay}</span></td>
+                    <td>${n.message || "No message"}</td>
+                    <td>${n.date || "N/A"}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${n.id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+    }).join("") : '<tr><td colspan="4" class="text-center text-muted">No notifications found</td></tr>';
+
+    renderPagination(totalPages);
   }
 
-  async function fetchUsers() {
+  function renderPagination(totalPages) {
+    if (!pagination) return;
+    let html = `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+            </li>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+      html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>`;
+    }
+
+    html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+            </li>`;
+
+    pagination.innerHTML = html;
+  }
+
+  window.changePage = (page) => {
+    currentPage = page;
+    renderTable();
+  };
+
+  window.deleteNotification = async (id) => {
+    if (!confirm("Are you sure you want to delete this notification?")) return;
     try {
-      allUsers = await apiJson(`${API_BASE}/api/users`);
+      await apiRequest(`${NOTIFICATIONS_API_BASE}/${id}`, { method: "DELETE" });
+      fetchData();
     } catch (e) {
-      console.warn("Failed to fetch users for recipient selection", e);
+      alert("Failed to delete: " + e.message);
     }
-  }
+  };
 
-  recipientTypeSelect.addEventListener("change", () => {
-    const type = recipientTypeSelect.value;
-    if (type === "Managers" || type === "MRs") {
-      specificRecipientContainer.style.display = "block";
-      specificRecipientLabel.textContent = `Select ${type === "Managers" ? "Manager" : "MR"}`;
-      populateSpecificRecipients(type === "Managers" ? "MANAGER" : "MR");
-    } else {
-      specificRecipientContainer.style.display = "none";
-      specificRecipientSelect.innerHTML = '<option value="">Select...</option>';
-    }
-  });
+  if (recipientTypeSelect) {
+    recipientTypeSelect.addEventListener("change", () => {
+      const type = recipientTypeSelect.value;
+      if (type === "Managers" || type === "MRs") {
+        specificRecipientContainer.style.display = "block";
+        specificRecipientLabel.textContent = `Select ${type === "Managers" ? "Manager" : "MR"}`;
+        populateSpecificRecipients(type === "Managers" ? "MANAGER" : "MR");
+      } else {
+        specificRecipientContainer.style.display = "none";
+        specificRecipientSelect.innerHTML = '<option value="">Select...</option>';
+      }
+    });
+  }
 
   function populateSpecificRecipients(role) {
+    if (!specificRecipientSelect) return;
     const filteredUsers = allUsers.filter(u => u.role === role);
     specificRecipientSelect.innerHTML = '<option value="">All ' + (role === "MANAGER" ? "Managers" : "MRs") + '</option>' +
       filteredUsers.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
   }
 
-  const perPage = 5;
-  let currentPage = 1;
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const recipient = form.recipientType.value;
+      const message = form.notificationMessage.value.trim();
+      const recipientId = specificRecipientSelect.value || null;
 
-  // âœ… Render Notifications Table
-  const renderTable = () => {
-    const filtered = notifications.filter(n =>
-      n.message.toLowerCase().includes(searchInput.value.toLowerCase())
-    );
-
-    const totalPages = Math.ceil(filtered.length / perPage);
-    if (currentPage > totalPages) currentPage = totalPages || 1;
-    const start = (currentPage - 1) * perPage;
-    const paginated = filtered.slice(start, start + perPage);
-
-    tableBody.innerHTML = paginated
-      .map(
-        (n, i) => {
-          let recipientDisplay = n.recipient;
-          if (n.recipientId && allUsers.length > 0) {
-            const user = allUsers.find(u => String(u.id) === String(n.recipientId));
-            if (user) recipientDisplay += ` (${user.name})`;
-          }
-          return `
-          <tr>
-            <td>${recipientDisplay}</td>
-            <td>${n.message}</td>
-            <td>${n.date}</td>
-            <td>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${n.id}')">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>`;
-        }
-      )
-      .join("") || `<tr><td colspan="4" class="text-center text-muted">No notifications found</td></tr>`;
-
-    // âœ… Pagination Controls
-    pagination.innerHTML = `
-      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-        <a class="page-link" href="#" id="prevPage">Previous</a>
-      </li>
-      ${Array.from({ length: totalPages }, (_, i) => `
-        <li class="page-item ${i + 1 === currentPage ? "active" : ""}">
-          <a class="page-link" href="#">${i + 1}</a>
-        </li>`).join("")}
-      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-        <a class="page-link" href="#" id="nextPage">Next</a>
-      </li>
-    `;
-
-    // âœ… Page Number Click
-    document.querySelectorAll(".page-link").forEach((btn, index) => {
-      if (btn.id === "prevPage") {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (currentPage > 1) currentPage--;
-          renderTable();
+      try {
+        await apiRequest(NOTIFICATIONS_API_BASE, {
+          method: "POST",
+          body: JSON.stringify({
+            title: `Announcement to ${recipient}`,
+            message: message,
+            type: recipient,
+            date: new Date().toISOString().split("T")[0],
+            status: "Unread",
+            priority: "Normal",
+            recipientId: recipientId ? parseInt(recipientId) : null
+          })
         });
-      } else if (btn.id === "nextPage") {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (currentPage < totalPages) currentPage++;
-          renderTable();
-        });
-      } else {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          currentPage = parseInt(btn.textContent);
-          renderTable();
-        });
+        form.reset();
+        specificRecipientContainer.style.display = "none";
+        bootstrap.Modal.getInstance(document.getElementById("notificationModal")).hide();
+        fetchData();
+      } catch (e) {
+        alert("Failed to send: " + e.message);
       }
     });
-  };
+  }
 
-  renderTable();
-
-  // âœ… Add Notification
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const newNotif = {
-      id: `L${Date.now()}`,
-      recipient: form.recipientType.value,
-      message: form.notificationMessage.value.trim(),
-      date: new Date().toISOString().split("T")[0],
-      recipientId: specificRecipientSelect.value || null
-    };
-
-    (async function () {
-      if (notificationsApiMode) {
-        try {
-          await apiJson(NOTIFICATIONS_API_BASE, {
-            method: "POST",
-            body: JSON.stringify({
-              title: newNotif.recipient,
-              message: newNotif.message,
-              type: newNotif.recipient,
-              date: newNotif.date,
-              status: "Unread",
-              priority: "Normal",
-              recipientId: newNotif.recipientId
-            }),
-          });
-          await refreshNotificationsFromApiOrFallback();
-          renderTable();
-          form.reset();
-          const modalEl = document.getElementById("notificationModal");
-          const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-          modal.hide();
-          return;
-        } catch (e) {
-          console.warn("Notification create API failed.", e);
-          alert("Failed to create notification. Please check connectivity.");
-          notificationsApiMode = false;
-        }
-      }
-
-      notifications.unshift(newNotif);
-      localStorage.setItem("notifications", JSON.stringify(notifications));
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      currentPage = 1;
       renderTable();
-      form.reset();
-      const modalEl = document.getElementById("notificationModal");
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modal.hide();
-    })();
-  });
+    });
+  }
 
-  // âœ… Search Filter
-  searchInput.addEventListener("input", () => {
-    currentPage = 1;
-    renderTable();
-  });
-
-  // âœ… Delete Notification
-  window.deleteNotification = (id) => {
-    if (!confirm("Delete this notification?")) return;
-
-    (async function () {
-      if (notificationsApiMode && id && !String(id).startsWith("L")) {
-        try {
-          await apiJson(`${NOTIFICATIONS_API_BASE}/${id}`, { method: "DELETE" });
-          await refreshNotificationsFromApiOrFallback();
-          renderTable();
-          return;
-        } catch (e) {
-          console.warn("Notification delete API failed. Falling back to localStorage.", e);
-          notificationsApiMode = false;
-        }
-      }
-
-      const idx = notifications.findIndex((n) => String(n.id) === String(id));
-      if (idx !== -1) {
-        notifications.splice(idx, 1);
-        localStorage.setItem("notifications", JSON.stringify(notifications));
-      }
-      renderTable();
-    })();
-  };
-
-  (async function () {
-    await fetchUsers();
-    await refreshNotificationsFromApiOrFallback();
-    renderTable();
-  })();
+  fetchData();
 });
+

@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const base = name.includes('(') ? name.split('(')[0].trim() : name.trim();
                     return `${base} (${qty})`;
                 }).join('<br>')
-                : '—';
+                : '\u2014';
 
             const formattedDate = new Date(dcr.dateTime).toLocaleString('en-IN', {
                 day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
@@ -645,7 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         document.getElementById('toastBody').textContent = `Your DCR submitted successfully for ${newReportData.doctorName}.`;
                         liveToast.show();
                     } else {
-                        console.log(`✅ Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
+                        console.log(`\u2705 Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
                     }
 
                     renderSubmittedDCRTable();
@@ -706,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById('toastBody').textContent = `Your DCR submitted successfully for ${newReportData.doctorName}.`;
                 liveToast.show();
             } else {
-                console.log(`✅ Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
+                console.log(`\u2705 Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
             }
 
             // Refresh table with pagination

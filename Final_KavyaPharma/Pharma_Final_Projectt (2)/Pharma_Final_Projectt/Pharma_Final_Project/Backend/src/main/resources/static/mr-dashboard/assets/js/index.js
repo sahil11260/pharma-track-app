@@ -53,7 +53,7 @@
   function formatINR(n) {
     if (n == null) return "--";
     if (typeof n !== "number") return n;
-    return "₹" + n.toLocaleString("en-IN");
+    return "\u20B9" + n.toLocaleString("en-IN");
   }
 
   function loadDashboardFromLocalStorage() {

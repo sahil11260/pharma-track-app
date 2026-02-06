@@ -66,12 +66,12 @@ document.addEventListener("DOMContentLoaded", function () {
       doctors = data.map(d => ({
         id: d.id,
         name: d.name,
-        specialty: d.specialty || "—",
-        city: d.city || "—",
+        specialty: d.specialty || "\u2014",
+        city: d.city || "\u2014",
         assignedMR: d.assignedMR || "",
         phone: d.phone || "",
         email: d.email || "",
-        contact: d.email || d.phone || "—"
+        contact: d.email || d.phone || "\u2014"
       }));
       applyFilter();
     } catch (error) {
@@ -163,10 +163,10 @@ document.addEventListener("DOMContentLoaded", function () {
     currentEditId = id;
     modalTitle.textContent = "Edit Doctor";
     document.getElementById("doctorName").value = doc.name;
-    document.getElementById("doctorSpecialty").value = doc.specialty === "—" ? "" : doc.specialty;
-    document.getElementById("doctorCity").value = doc.city === "—" ? "" : doc.city;
+    document.getElementById("doctorSpecialty").value = doc.specialty === "\u2014" ? "" : doc.specialty;
+    document.getElementById("doctorCity").value = doc.city === "\u2014" ? "" : doc.city;
     document.getElementById("doctorPhone").value = doc.phone || "";
-    document.getElementById("doctorContact").value = doc.contact === "—" ? "" : doc.contact;
+    document.getElementById("doctorContact").value = doc.contact === "\u2014" ? "" : doc.contact;
     assignMR.value = doc.assignedMR;
     doctorModal.show();
   }

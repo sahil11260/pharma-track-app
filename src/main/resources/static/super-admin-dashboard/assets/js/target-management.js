@@ -54,7 +54,7 @@ function showApiRetryBanner() {
   banner.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
   banner.style.zIndex = "2000";
   banner.innerHTML = `<div style=\"display:flex;gap:12px;align-items:center;\">` +
-    `<div style=\"font-weight:600;color:#856404;\">API unreachable â€” using local data</div>` +
+    `<div style=\"font-weight:600;color:#856404;\">API unreachable \u2014 using local data</div>` +
     `<button id=\"apiRetryBtn\" class=\"btn btn-sm btn-outline-primary\">Retry</button>` +
     `</div>`;
   document.body.appendChild(banner);
@@ -108,8 +108,8 @@ function normalizeTargetFromApi(t) {
     name: String(t.period || "Sales Target"),
     assignedTo: String(t.mrName || ""),
     type: "Sales",
-    targetValue: `â‚¹${salesTarget}`,
-    currentProgressValue: `â‚¹${salesAch}`,
+    targetValue: `\u20B9${salesTarget}`,
+    currentProgressValue: `\u20B9${salesAch}`,
     currentProgressPercent: Number(t.achievementPercentage) || 0,
     deadline: deadline,
     status: apiStatusToUi(t.status),
@@ -156,7 +156,7 @@ function loadTargets() {
     .querySelectorAll("tr");
   const initialTargets = Array.from(initialRows).map((row) => {
     const cells = row.querySelectorAll("td");
-    const progressText = cells[5].textContent.trim(); // e.g., 'â‚¹385,000 (77%)'
+    const progressText = cells[5].textContent.trim(); // e.g., '\u20B9385,000 (77%)'
     const statusText = cells[7].querySelector(".badge").textContent.trim();
     const progressMatch = progressText.match(/(.+) \((.+)%\)/);
 
@@ -437,8 +437,8 @@ function addTarget() {
           ui.name = targetName;
           ui.assignedTo = targetAssignee;
           ui.type = targetType;
-          ui.targetValue = `â‚¹${salesTarget}`;
-          ui.currentProgressValue = `â‚¹${salesAchievement}`;
+          ui.targetValue = `\u20B9${salesTarget}`;
+          ui.currentProgressValue = `\u20B9${salesAchievement}`;
           ui.currentProgressPercent =
             salesTarget > 0
               ? Math.min(100, Math.round((salesAchievement / salesTarget) * 100))
@@ -647,10 +647,10 @@ function updateTarget() {
     // --- Logic to preserve original formatting ---
     // If the original target had currency or units, prepend/append them back.
     if (
-      originalTarget.targetValue.startsWith("â‚¹") &&
-      !updatedValueRaw.startsWith("â‚¹")
+      originalTarget.targetValue.startsWith("\u20B9") &&
+      !updatedValueRaw.startsWith("\u20B9")
     ) {
-      displayTargetValue = `â‚¹${updatedValueRaw}`;
+      displayTargetValue = `\u20B9${updatedValueRaw}`;
     } else if (
       originalTarget.targetValue.endsWith(" visits") &&
       !updatedValueRaw.endsWith(" visits")
@@ -675,10 +675,10 @@ function updateTarget() {
 
     // Check progress value formatting
     if (
-      originalTarget.currentProgressValue.startsWith("â‚¹") &&
-      !updatedProgressValueRaw.startsWith("â‚¹")
+      originalTarget.currentProgressValue.startsWith("\u20B9") &&
+      !updatedProgressValueRaw.startsWith("\u20B9")
     ) {
-      displayProgressValue = `â‚¹${updatedProgressValueRaw}`;
+      displayProgressValue = `\u20B9${updatedProgressValueRaw}`;
     } else if (
       originalTarget.currentProgressValue.endsWith(" visits") &&
       !updatedProgressValueRaw.endsWith(" visits")
@@ -747,8 +747,8 @@ function updateTarget() {
             ui.name = updatedName;
             ui.assignedTo = updatedAssignee;
             ui.type = updatedType;
-            ui.targetValue = displayTargetValue.startsWith("â‚¹") ? displayTargetValue : `â‚¹${salesTarget}`;
-            ui.currentProgressValue = displayProgressValue.startsWith("â‚¹") ? displayProgressValue : `â‚¹${salesAchievement}`;
+            ui.targetValue = displayTargetValue.startsWith("\u20B9") ? displayTargetValue : `\u20B9${salesTarget}`;
+            ui.currentProgressValue = displayProgressValue.startsWith("\u20B9") ? displayProgressValue : `\u20B9${salesAchievement}`;
             ui.currentProgressPercent = newProgressPercent;
             ui.deadline = updatedDeadline;
             ui.status = updatedStatus;

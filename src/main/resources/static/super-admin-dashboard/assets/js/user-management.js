@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const uiRole = apiRoleToUiRole(u.role);
       const territory = u.role === "DOCTOR" && u.territory && u.territory.includes("|")
         ? u.territory.split("|")[1]
-        : (u.territory || "â€”");
+        : (u.territory || "\u2014");
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -176,10 +176,10 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Name:</span> <strong>${user.name}</strong></div>
         <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Email:</span> <strong>${user.email}</strong></div>
         <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Role:</span> <strong>${apiRoleToUiRole(user.role)}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Phone:</span> <strong>${user.phone || "â€”"}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Territory:</span> <strong>${user.territory || "â€”"}</strong></div>
+        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Phone:</span> <strong>${user.phone || "\u2014"}</strong></div>
+        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Territory:</span> <strong>${user.territory || "\u2014"}</strong></div>
         <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Status:</span> <strong>${user.status || "ACTIVE"}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Last Login:</span> <strong>${user.lastLogin || "â€”"}</strong></div>
+        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Last Login:</span> <strong>${user.lastLogin || "\u2014"}</strong></div>
       </div>
     `;
     viewUserDetailsBody.innerHTML = detailsHtml;

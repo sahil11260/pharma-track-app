@@ -206,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const newDescription = document.getElementById("newDescription");
   const productSuggestions = document.getElementById("productSuggestions");
 
-  // ✅ Add Product form submission
+  // \u2705 Add Product form submission
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const payload = {
@@ -250,20 +250,20 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  // ✅ Populate product dropdown (now showing price)
+  // \u2705 Populate product dropdown (now showing price)
   function populateProductSelect() {
     productSelect.innerHTML = receivedStock
       .map(
         (p) =>
           `<option value="${p.id}">
-            ${p.name} — ₹${p.price}/unit (Available: ${p.available})
+            ${p.name} \u2014 \u20B9${p.price}/unit (Available: ${p.available})
           </option>`
       )
       .join("");
     updateAvailableInfo();
   }
 
-  // ✅ Update available info on product/qty change
+  // \u2705 Update available info on product/qty change
   productSelect.addEventListener("change", updateAvailableInfo);
   allocateQty.addEventListener("input", updateAvailableInfo);
 
@@ -273,8 +273,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const qty = Number(allocateQty.value || 0);
     if (product) {
       const after = product.available - qty;
-      availableInfo.textContent = `Available: ${product.available} units — After allocation: ${after >= 0 ? after : "--- (insufficient)"
-        } | Price: ₹${product.price}/unit`;
+      availableInfo.textContent = `Available: ${product.available} units \u2014 After allocation: ${after >= 0 ? after : "--- (insufficient)"
+        } | Price: \u20B9${product.price}/unit`;
       if (after < 0) availableInfo.classList.add("text-danger");
       else availableInfo.classList.remove("text-danger");
     } else {
@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ✅ Allocation Role Toggle Logic
+  // \u2705 Allocation Role Toggle Logic
   allocateRole && allocateRole.addEventListener("change", () => {
     const role = allocateRole.value;
     if (role === "Manager") {
@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ✅ View Mode State
+  // \u2705 View Mode State
   let summaryViewMode = "Cards"; // "Cards" or "Table"
   const btnViewCards = document.getElementById("btnViewCards");
   const btnViewTable = document.getElementById("btnViewTable");
@@ -321,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSummary();
   }
 
-  // ✅ Render received stock summary content
+  // \u2705 Render received stock summary content
   function renderSummary() {
     if (!receivedSummaryRow) return;
 
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div>
                   <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
-                  <div class="text-muted small">${p.category} | ₹${p.price}/unit</div>
+                  <div class="text-muted small">${p.category} | \u20B9${p.price}/unit</div>
                 </div>
               </div>
             </div>
@@ -388,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <tr>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
-          <td class="text-end">₹${p.price}</td>
+          <td class="text-end">\u20B9${p.price}</td>
           <td class="text-end fw-bold ${isLow ? 'text-danger' : 'text-primary'}">${p.available}</td>
           <td class="text-center">
             <span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span>
@@ -398,7 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
-  // ✅ Render distribution table
+  // \u2705 Render distribution table
   function renderTable() {
     let filtered = allocations.filter((a) => {
       if (!currentSearch) return true;
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable();
   }
 
-  // ✅ Add/Edit Allocation form
+  // \u2705 Add/Edit Allocation form
   allocateForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const editingIndex = Number(editingIndexInput.value);
@@ -567,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   });
 
-  // ✅ Global functions for edit/delete/page change
+  // \u2705 Global functions for edit/delete/page change
   window.pd_edit = function (index) {
     const item = allocations[index];
     if (!item) return;
@@ -623,7 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTable();
   };
 
-  // ✅ Initial render
+  // \u2705 Initial render
   loadFromStorageIfAny();
   (async function () {
     await refreshStockFromApiOrFallback();

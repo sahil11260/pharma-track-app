@@ -24,7 +24,8 @@
 
   const API = {
     DASHBOARD: "/api/mr-dashboard",
-    TASKS: "/api/tasks"
+    TASKS: "/api/tasks",
+    NOTIFICATIONS: "/api/notifications"
   };
 
   function getAuthHeader() {
@@ -53,7 +54,7 @@
   function formatINR(n) {
     if (n == null) return "--";
     if (typeof n !== "number") return n;
-    return "₹" + n.toLocaleString("en-IN");
+    return "\u20B9" + n.toLocaleString("en-IN");
   }
 
   function loadDashboardFromLocalStorage() {
@@ -122,6 +123,33 @@
     if (elExpApproved) elExpApproved.textContent = formatINR(Number(data.expensesApproved) || 0);
   }
 
+  async function loadNotifications() {
+    const container = document.getElementById("notificationsContent");
+    if (!container) return;
+
+    try {
+      const data = await apiJson(API.NOTIFICATIONS);
+      const notifs = Array.isArray(data) ? data : [];
+
+      if (notifs.length === 0) {
+        container.innerHTML = '<li class="p-3 text-center text-muted small">No new notifications</li>';
+        return;
+      }
+
+      container.innerHTML = notifs.slice(0, 5).map(n => `
+        <li>
+          <a class="dropdown-item small" href="#">
+            <div class="fw-bold">${n.title || "Notification"}</div>
+            <div class="text-muted text-truncate" style="max-width: 220px;">${n.message}</div>
+            <small class="text-secondary">${n.date || ""}</small>
+          </a>
+        </li>
+      `).join("");
+    } catch (e) {
+      container.innerHTML = '<li class="p-3 text-center text-danger small">Failed to load alerts</li>';
+    }
+  }
+
   // Initialization
   async function init() {
     log("Initializing MR Dashboard script");
@@ -140,6 +168,9 @@
 
     // Load Tasks
     loadTasks();
+
+    // Load Notifications
+    loadNotifications();
 
 
     // Backwards-compatible update helper

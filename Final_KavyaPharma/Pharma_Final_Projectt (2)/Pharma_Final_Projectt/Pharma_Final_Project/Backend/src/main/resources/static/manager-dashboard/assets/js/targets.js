@@ -575,7 +575,7 @@
         <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #ddd}</style>
       </head>
       <body>
-        <h1>Target Details — ${escapeHtml(t.mrName)}</h1>
+        <h1>Target Details \u2014 ${escapeHtml(t.mrName)}</h1>
         <table>
           <tr><th>Sales Target (\u20B9)</th><td>\u20B9${t.salesTarget.toLocaleString()}</td></tr>
           <tr><th>Sales Achievement (\u20B9)</th><td>\u20B9${t.salesAchievement.toLocaleString()}</td></tr>

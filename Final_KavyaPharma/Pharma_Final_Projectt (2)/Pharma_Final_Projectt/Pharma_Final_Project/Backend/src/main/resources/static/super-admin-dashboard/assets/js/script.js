@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // ✅ Dark Mode Toggle (fixed to match HTML id="themeToggle")
+  // \u2705 Dark Mode Toggle (fixed to match HTML id="themeToggle")
   const darkModeToggle = document.getElementById("themeToggle");
   if (darkModeToggle) {
     darkModeToggle.addEventListener("click", () => {
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, e) => sum + (Number(e.amount) || 0),
       0
     );
-    if (totalExpensesEl) totalExpensesEl.textContent = `₹${Math.round(total)}`;
+    if (totalExpensesEl) totalExpensesEl.textContent = `\u20B9${Math.round(total)}`;
     expenses = expensesApi
       .reduce((acc, e) => {
         const category = e.category || "Other";
@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       (sum, t) => sum + (Number(t.salesAchievement) || 0),
       0
     );
-    if (totalSalesEl) totalSalesEl.textContent = `₹${Math.round(sales)}`;
+    if (totalSalesEl) totalSalesEl.textContent = `\u20B9${Math.round(sales)}`;
 
     const sumTarget = targetsApi.reduce(
       (sum, t) => sum + (Number(t.salesTarget) || 0),

@@ -258,11 +258,11 @@
                 </div>
                 <div class="row g-2 mt-2">
                   <div class="col-md-6">
-                    <label class="form-label">Sales Target (₹)</label>
+                    <label class="form-label">Sales Target (\u20B9)</label>
                     <input id="editSalesTarget" type="number" min="0" class="form-control" required />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Sales Achievement (₹)</label>
+                    <label class="form-label">Sales Achievement (\u20B9)</label>
                     <input id="editSalesAchievement" type="number" min="0" class="form-control" required />
 
                   </div>
@@ -375,8 +375,8 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${escapeHtml(target.mrName)}</td>
-        <td>₹${target.salesTarget.toLocaleString()}</td>
-        <td>₹${target.salesAchievement.toLocaleString()}</td>
+        <td>\u20B9${target.salesTarget.toLocaleString()}</td>
+        <td>\u20B9${target.salesAchievement.toLocaleString()}</td>
 
         <td>${target.achievementPercentage}%</td>
         <td>${statusBadge}</td>
@@ -424,8 +424,8 @@
       data[0] || { mrName: "-" }
     );
     container.innerHTML = `
-      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>₹${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
-      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>₹${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>\u20B9${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>\u20B9${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
 
       <div class="col-md-3"><div class="card summary-card summary-avg-achievement"><div class="card-body"><div class="card-content"><h3>${avgAchievement}%</h3><h5>Avg Achievement</h5></div><div class="card-icon"><i class="bi bi-graph-up"></i></div></div></div></div>
       <div class="col-md-3"><div class="card summary-card summary-top-performer"><div class="card-body"><div class="card-content"><h3>${escapeHtml(
@@ -448,8 +448,8 @@
         <td><span class="badge ${rank <= 0 ? `badge-${rank}` : "bg-light text-dark"
         }">${rank}</span></td>
         <td>${escapeHtml(t.mrName)}</td>
-        <td>₹${t.salesTarget.toLocaleString()}</td>
-        <td>₹${t.salesAchievement.toLocaleString()}</td>
+        <td>\u20B9${t.salesTarget.toLocaleString()}</td>
+        <td>\u20B9${t.salesAchievement.toLocaleString()}</td>
 
         <td><strong>${t.achievementPercentage}%</strong></td>
         <td><span class="badge ${getStatusBadgeClass(t.status)}">${escapeHtml(
@@ -472,13 +472,13 @@
         labels: data.map((d) => d.mrName.split(" ")[0]),
         datasets: [
           {
-            label: "Target (₹)",
+            label: "Target (\u20B9)",
             data: data.map((d) => d.salesTarget),
 
             backgroundColor: "#6c757d",
           },
           {
-            label: "Achievement (₹)",
+            label: "Achievement (\u20B9)",
             data: data.map((d) => d.salesAchievement),
 
             backgroundColor: "#28a745",
@@ -491,7 +491,7 @@
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: (v) => "₹" + v / 1000 + "K" },
+            ticks: { callback: (v) => "\u20B9" + v / 1000 + "K" },
           },
 
         },
@@ -541,12 +541,12 @@
     content.innerHTML = `
       <h5>${escapeHtml(t.mrName)} Target</h5>
       <div class="row">
-        <div class="col-md-6"><p><strong>Sales Target:</strong> ₹${t.salesTarget.toLocaleString()}</p></div>
-        <div class="col-md-6"><p><strong>Sales Achievement:</strong> ₹${t.salesAchievement.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Target:</strong> \u20B9${t.salesTarget.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Achievement:</strong> \u20B9${t.salesAchievement.toLocaleString()}</p></div>
       </div>
 
       <p><strong>Achievement:</strong> ${t.achievementPercentage
-      }% â€” ${getAchievementBadge(t.achievementPercentage)}</p>
+      }% \u2014 ${getAchievementBadge(t.achievementPercentage)}</p>
       <p><strong>Period:</strong> ${formatDate(t.startDate)} to ${formatDate(
         t.endDate
       )}</p>
@@ -572,10 +572,10 @@
         <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}h1{font-size:18px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #ddd}</style>
       </head>
       <body>
-        <h1>Target Details â€” ${escapeHtml(t.mrName)}</h1>
+        <h1>Target Details \u2014 ${escapeHtml(t.mrName)}</h1>
         <table>
-          <tr><th>Sales Target (₹)</th><td>₹${t.salesTarget.toLocaleString()}</td></tr>
-          <tr><th>Sales Achievement (₹)</th><td>₹${t.salesAchievement.toLocaleString()}</td></tr>
+          <tr><th>Sales Target (\u20B9)</th><td>\u20B9${t.salesTarget.toLocaleString()}</td></tr>
+          <tr><th>Sales Achievement (\u20B9)</th><td>\u20B9${t.salesAchievement.toLocaleString()}</td></tr>
 
           <tr><th>Achievement %</th><td>${t.achievementPercentage}%</td></tr>
           <tr><th>Status</th><td>${escapeHtml(t.status)}</td></tr>

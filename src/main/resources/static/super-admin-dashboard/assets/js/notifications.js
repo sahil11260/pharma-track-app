@@ -52,18 +52,17 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const data = await apiJson(NOTIFICATIONS_API_BASE);
       if (Array.isArray(data)) {
-        const apiNotifs = data.map(normalizeNotificationFromApi);
-        const localExisting = loadNotifications();
-        const localOnly = localExisting.filter((n) => !isApiId(n.id));
-        allNotifications = apiNotifs.concat(localOnly);
+        allNotifications = data.map(normalizeNotificationFromApi);
         saveNotifications(allNotifications);
         notificationsApiMode = true;
-        return;
       }
-      notificationsApiMode = false;
     } catch (e) {
-      console.warn("Notifications API unavailable, using localStorage.", e);
+      console.warn("Notifications API unavailable.", e);
       notificationsApiMode = false;
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try { allNotifications = JSON.parse(stored); } catch (ex) { allNotifications = []; }
+      }
     }
   }
 
@@ -175,88 +174,18 @@ document.addEventListener("DOMContentLoaded", function () {
     return newId;
   }
 
+  // Clear old problematic local storage data once
+  if (localStorage.getItem("superadmin_notifications_cleaned_v2") !== "true") {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem("superadmin_notifications_cleaned_v2", "true");
+  }
+
   function loadNotifications() {
-    const storedNotifications = localStorage.getItem(STORAGE_KEY);
-
-    // Define initial static data with Priority added
-    const staticNotifications = [
-      {
-        id: "N001",
-        title: "System Update",
-        message: "New features have been deployed to the system.",
-        type: "System",
-        date: "2025-01-15",
-        status: "Read",
-        priority: "Normal",
-      },
-      {
-        id: "N002",
-        title: "Inventory Alert",
-        message: "Low stock for Product X. Please restock immediately.",
-        type: "Alert",
-        date: "2025-01-14",
-        status: "Unread",
-        priority: "High",
-      },
-      {
-        id: "N003",
-        title: "Welcome Message",
-        message: "Welcome to KavyaPharm Dashboard. Explore the new features!",
-        type: "User",
-        date: "2025-01-10",
-        status: "Read",
-        priority: "Low",
-      },
-      {
-        id: "N004",
-        title: "Target Missed",
-        message: "Your monthly target for Region South was missed by 15%.",
-        type: "Alert",
-        date: "2025-01-15",
-        status: "Unread",
-        priority: "High",
-      },
-      {
-        id: "N005",
-        title: "Report Generated",
-        message: "Q1 Sales Report is ready for review.",
-        type: "System",
-        date: "2025-01-16",
-        status: "Read",
-        priority: "Normal",
-      },
-    ];
-
-    if (storedNotifications) {
-      try {
-        let parsedNotifications = JSON.parse(storedNotifications);
-        // Ensure all notifications have a priority field for filtering
-        parsedNotifications = parsedNotifications.map((n) => ({
-          ...n,
-          priority: n.priority || "Normal",
-          status: n.status || "Unread",
-        }));
-        return parsedNotifications;
-      } catch (e) {
-        console.error(
-          "Error parsing stored notifications, using static data.",
-          e
-        );
-        saveNotifications(staticNotifications);
-        return staticNotifications;
-      }
-    }
-
-    // If no stored data, initialize storage with static data
-    saveNotifications(staticNotifications);
-    return staticNotifications;
+    return []; // Start empty, rely on API
   }
 
   function saveNotifications(notifications) {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(notifications)
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
   }
 
   // ==========================================================
@@ -977,7 +906,7 @@ document.addEventListener("DOMContentLoaded", function () {
           notificationObject.priority = priority;
           notificationObject.status = status;
         }
-        alertMsg = `âœ… Notification ID ${editingNotificationId} updated successfully!`;
+        alertMsg = `\u2705 Notification ID ${editingNotificationId} updated successfully!`;
 
         (async function () {
           if (notificationsApiMode && notificationObject && isNumericId(notificationObject.id)) {
@@ -1031,7 +960,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
 
           allNotifications.push(notificationObject);
-          alertMsg = `âœ… Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
+          alertMsg = `\u2705 Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
           saveNotifications(allNotifications);
 
           const filteredData = getFilteredNotifications();

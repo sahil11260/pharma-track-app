@@ -977,7 +977,7 @@ document.addEventListener("DOMContentLoaded", function () {
           notificationObject.priority = priority;
           notificationObject.status = status;
         }
-        alertMsg = `✅ Notification ID ${editingNotificationId} updated successfully!`;
+        alertMsg = `\u2705 Notification ID ${editingNotificationId} updated successfully!`;
 
         (async function () {
           if (notificationsApiMode && notificationObject && isNumericId(notificationObject.id)) {
@@ -1031,7 +1031,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
 
           allNotifications.push(notificationObject);
-          alertMsg = `✅ Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
+          alertMsg = `\u2705 Notification "${notificationObject.title}" created successfully (ID: ${notificationObject.id})!`;
           saveNotifications(allNotifications);
 
           const filteredData = getFilteredNotifications();

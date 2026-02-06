@@ -264,7 +264,7 @@
       <div class="col-md-3">
         <div class="card summary-card summary-total">
           <div class="card-body d-flex justify-content-between align-items-center">
-            <div><h5 class="mb-0">₹${totalAmt.toLocaleString()}</h5><small>Total</small></div>
+            <div><h5 class="mb-0">\u20B9${totalAmt.toLocaleString()}</h5><small>Total</small></div>
             <i class="bi bi-cash-stack fs-3 text-white"></i>
           </div>
         </div>
@@ -289,7 +289,7 @@
         const descClass = isDark ? "small text-light" : "small text-muted";
         const timeClass = isDark ? "small text-light" : "small text-muted";
 
-        // Ensure icon wrapper has reasonable contrast — iconClass typically background classes like bg-primary
+        // Ensure icon wrapper has reasonable contrast \u2014 iconClass typically background classes like bg-primary
         const iconWrapperClass = `${esc(n.iconClass || "bg-primary")} text-white me-3 p-2 rounded`;
 
         return `
@@ -328,7 +328,7 @@
         <tr>
           <td><i class="${catIcon(exp.category)} me-2"></i>${esc(exp.mrName)}</td>
           <td>${esc(exp.category)}</td>
-          <td>₹${Number(exp.amount || 0).toFixed(2)}</td>
+          <td>\u20B9${Number(exp.amount || 0).toFixed(2)}</td>
           <td>${statusBadge(exp.status)}</td>
           <td>${fmtDate(exp.submittedDate)}</td>
           <td class="table-actions">
@@ -463,7 +463,7 @@
     const id = Number(e.currentTarget.dataset.id);
     const idx = expensesData.findIndex((x) => x.id === id);
     if (idx === -1) return alert("Expense not found");
-    if (!confirm(`Delete expense #${id} (${expensesData[idx].mrName} - ₹${Number(expensesData[idx].amount).toFixed(2)})?`)) return;
+    if (!confirm(`Delete expense #${id} (${expensesData[idx].mrName} - \u20B9${Number(expensesData[idx].amount).toFixed(2)})?`)) return;
     expensesData.splice(idx, 1);
     safeSet(EXPENSES_KEY, expensesData);
     applyFilters();
@@ -610,7 +610,7 @@
     document.getElementById("editStatus").value = exp.status || "pending";
     document.getElementById("editRejectionReason").value = exp.rejectionReason || "";
 
-    // Attachments list — show as "filename [View file]" with link to assets/uploads/<filename> for local files
+    // Attachments list \u2014 show as "filename [View file]" with link to assets/uploads/<filename> for local files
     const attList = document.getElementById("editAttachmentsList");
     attList.innerHTML = "";
     if (Array.isArray(exp.attachments) && exp.attachments.length) {
@@ -635,10 +635,10 @@
       <html><head><title>Expense #${exp.id}</title>
       <style>body{font-family:Arial,Helvetica,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #ddd}</style>
       </head><body>
-      <h2>Expense #${exp.id} — ${esc(exp.mrName)}</h2>
+      <h2>Expense #${exp.id} \u2014 ${esc(exp.mrName)}</h2>
       <table>
         <tr><th>Category</th><td>${esc(exp.category)}</td></tr>
-        <tr><th>Amount</th><td>₹${Number(exp.amount).toFixed(2)}</td></tr>
+        <tr><th>Amount</th><td>\u20B9${Number(exp.amount).toFixed(2)}</td></tr>
         <tr><th>Expense Date</th><td>${fmtDate(exp.expenseDate)}</td></tr>
         <tr><th>Submitted</th><td>${fmtDate(exp.submittedDate)}</td></tr>
         <tr><th>Description</th><td>${esc(exp.description)}</td></tr>
@@ -649,7 +649,7 @@
       </body></html>
     `;
     const popup = window.open("", "_blank", "width=800,height=800,scrollbars=yes");
-    if (!popup) return alert("Popup blocked — allow popups to download.");
+    if (!popup) return alert("Popup blocked \u2014 allow popups to download.");
     popup.document.open();
     popup.document.write(html);
     popup.document.close();
@@ -733,7 +733,7 @@
     content.innerHTML = `
       <h6><i class="bi bi-person"></i> MR: ${esc(exp.mrName)}</h6>
       <p><strong>Category:</strong> ${esc(exp.category)}</p>
-      <p><strong>Amount:</strong> ₹${Number(exp.amount).toFixed(2)}</p>
+      <p><strong>Amount:</strong> \u20B9${Number(exp.amount).toFixed(2)}</p>
       <p><strong>Date:</strong> ${fmtDate(exp.submittedDate)}</p>
       <p><strong>Description:</strong><br/>${esc(exp.description)}</p>
       ${exp.attachments && exp.attachments.length
@@ -848,6 +848,6 @@
     // initial filter/render (this sets currentFiltered and draws first page)
     applyFilters();
 
-    console.info("[expenses-manager] init done — expenses:", expensesData.length, "MRs:", mrData.length);
+    console.info("[expenses-manager] init done \u2014 expenses:", expensesData.length, "MRs:", mrData.length);
   });
 })();

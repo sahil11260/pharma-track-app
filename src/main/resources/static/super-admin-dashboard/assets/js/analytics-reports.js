@@ -93,8 +93,8 @@ function loadTargets() {
       name: "Q4 Sales Target",
       assignedTo: "Rajesh Kumar",
       type: "Sales",
-      targetValue: "₹500,000",
-      currentProgressValue: "₹385,000",
+      targetValue: "\u20B9500,000",
+      currentProgressValue: "\u20B9385,000",
       currentProgressPercent: 77,
       deadline: "2025-12-31",
       status: "On Track",
@@ -159,7 +159,7 @@ function loadExpenses() {
         employee: "Rajesh Kumar",
         category: "Travel",
         description: "Client meeting travel to Delhi",
-        amount: "₹15,000",
+        amount: "\u20B915,000",
         date: "2025-10-25",
         status: "Approved",
         rawAmount: 15000,
@@ -169,7 +169,7 @@ function loadExpenses() {
         employee: "Priya Sharma",
         category: "Meals",
         description: "Doctor lunch meeting",
-        amount: "₹2,500",
+        amount: "\u20B92,500",
         date: "2025-10-24",
         status: "Pending",
         rawAmount: 2500,
@@ -179,7 +179,7 @@ function loadExpenses() {
         employee: "Amit Singh",
         category: "Medical Samples",
         description: "Product samples for doctors in Mumbai region",
-        amount: "₹8,000",
+        amount: "\u20B98,000",
         date: "2025-10-23",
         status: "Approved",
         rawAmount: 8000,
@@ -189,7 +189,7 @@ function loadExpenses() {
         employee: "Suresh Reddy",
         category: "Accommodation",
         description: "Hotel stay during national sales conference in Bangalore",
-        amount: "₹12,000",
+        amount: "\u20B912,000",
         date: "2025-10-22",
         status: "Rejected",
         rawAmount: 12000,
@@ -199,7 +199,7 @@ function loadExpenses() {
         employee: "Vikram Patel",
         category: "Transportation",
         description: "Cab charges for field visits to multiple clinics in Pune",
-        amount: "₹3,500",
+        amount: "\u20B93,500",
         date: "2025-10-21",
         status: "Approved",
         rawAmount: 3500,
@@ -209,7 +209,7 @@ function loadExpenses() {
         employee: "Anjali Rao",
         category: "Marketing",
         description: "Printed promotional materials for product launch event",
-        amount: "₹22,000",
+        amount: "\u20B922,000",
         date: "2025-10-20",
         status: "Pending",
         rawAmount: 22000,
@@ -219,7 +219,7 @@ function loadExpenses() {
         employee: "Gaurav Joshi",
         category: "Travel",
         description: "Train ticket to regional office for training",
-        amount: "₹4,200",
+        amount: "\u20B94,200",
         date: "2025-10-19",
         status: "Approved",
         rawAmount: 4200,
@@ -230,7 +230,7 @@ function loadExpenses() {
         category: "Office Supplies",
         description:
           "Purchase of stationery and printer ink for regional office",
-        amount: "₹1,800",
+        amount: "\u20B91,800",
         date: "2025-10-18",
         status: "Pending",
         rawAmount: 1800,
@@ -241,7 +241,7 @@ function loadExpenses() {
         category: "Meals",
         description:
           "Dinner with key account doctor and hospital administrator",
-        amount: "₹7,500",
+        amount: "\u20B97,500",
         date: "2025-10-17",
         status: "Approved",
         rawAmount: 7500,
@@ -251,7 +251,7 @@ function loadExpenses() {
         employee: "Deepak Yadav",
         category: "Transportation",
         description: "Fuel refill for company vehicle for month of October",
-        amount: "₹5,500",
+        amount: "\u20B95,500",
         date: "2025-10-16",
         status: "Rejected",
         rawAmount: 5500,
@@ -296,8 +296,8 @@ function resetOverviewCards() {
     "Reports Generated";
 
   // Reset Data (using initial hardcoded values from the HTML)
-  document.getElementById("totalRevenue").textContent = "₹12,45,000";
-  document.getElementById("totalSales").textContent = "₹8,90,000";
+  document.getElementById("totalRevenue").textContent = "\u20B912,45,000";
+  document.getElementById("totalSales").textContent = "\u20B98,90,000";
   document.getElementById("doctorVisits").textContent = "1,247";
   document.getElementById("reportsGenerated").textContent = "89";
 }
@@ -445,7 +445,7 @@ function generateCustomReport() {
         </thead>
     `;
 
-    reportCriteria.innerHTML = `**Criteria:** **Dates:** ${startDateStr} to ${endDateStr} | **Region:** ${region} | **Format:** ${format.toUpperCase()}. **Total Expenses in Range:** ₹${totalExpense.toLocaleString(
+    reportCriteria.innerHTML = `**Criteria:** **Dates:** ${startDateStr} to ${endDateStr} | **Region:** ${region} | **Format:** ${format.toUpperCase()}. **Total Expenses in Range:** \u20B9${totalExpense.toLocaleString(
       "en-IN",
       { minimumFractionDigits: 2 }
     )}`;
@@ -457,22 +457,22 @@ function generateCustomReport() {
     // Update Overview Cards to reflect Expense Data
     document.getElementById(
       "totalRevenue"
-    ).textContent = `₹${totalExpense.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalExpense.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
     document.getElementById(
       "totalSales"
-    ).textContent = `₹${totalApproved.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalApproved.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
     document.getElementById(
       "doctorVisits"
-    ).textContent = `₹${totalPending.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalPending.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
     document.getElementById(
       "reportsGenerated"
-    ).textContent = `₹${totalRejected.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalRejected.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
 
@@ -551,12 +551,12 @@ function generateCustomReport() {
     // --- 3. Update Overview Cards to reflect Target Data Totals ---
     document.getElementById(
       "totalRevenue"
-    ).textContent = `₹${totalTargetValue.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalTargetValue.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
     document.getElementById(
       "totalSales"
-    ).textContent = `₹${totalCurrentProgress.toLocaleString("en-IN", {
+    ).textContent = `\u20B9${totalCurrentProgress.toLocaleString("en-IN", {
       maximumFractionDigits: 0,
     })}`;
     document.getElementById(
@@ -592,7 +592,7 @@ function generateCustomReport() {
         </thead>
     `;
 
-    reportCriteria.innerHTML = `**Criteria:** **Dates:** ${startDateStr} to ${endDateStr} (Target Data Shown) | **Region:** ${region} | **Format:** ${format.toUpperCase()}. **Total Target Value:** ₹${totalTargetValue.toLocaleString(
+    reportCriteria.innerHTML = `**Criteria:** **Dates:** ${startDateStr} to ${endDateStr} (Target Data Shown) | **Region:** ${region} | **Format:** ${format.toUpperCase()}. **Total Target Value:** \u20B9${totalTargetValue.toLocaleString(
       "en-IN",
       { minimumFractionDigits: 2 }
     )}`;
@@ -743,7 +743,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ],
         datasets: [
           {
-            label: "Sales (₹)",
+            label: "Sales (\u20B9)",
             data: [
               65000, 72000, 68000, 85000, 92000, 88000, 95000, 102000, 98000,
               124500,
@@ -763,7 +763,7 @@ document.addEventListener("DOMContentLoaded", function () {
             beginAtZero: true,
             ticks: {
               callback: function (value) {
-                return "₹" + value / 1000 + "K";
+                return "\u20B9" + value / 1000 + "K";
               },
             },
           },

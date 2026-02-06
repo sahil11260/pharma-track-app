@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
     banner.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
     banner.style.zIndex = "2000";
     banner.innerHTML = `<div style=\"display:flex;gap:12px;align-items:center;\">` +
-      `<div style=\"font-weight:600;color:#856404;\">API unreachable — using local data</div>` +
+      `<div style=\"font-weight:600;color:#856404;\">API unreachable \u2014 using local data</div>` +
       `<button id=\"apiRetryBtn\" class=\"btn btn-sm btn-outline-primary\">Retry</button>` +
       `</div>`;
     document.body.appendChild(banner);
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
         renderProductTable(productsData, 1);
       } catch (e) {
         console.warn("Retry failed", e);
-        showToastNotification("Retry failed — still offline", "danger");
+        showToastNotification("Retry failed \u2014 still offline", "danger");
       }
     });
   }
@@ -278,77 +278,77 @@ document.addEventListener("DOMContentLoaded", function () {
         id: "1001",
         name: "Paracetamol 500mg",
         category: "Pain Relief",
-        price: "₹25.00",
+        price: "\u20B925.00",
         stock: 150,
       },
       {
         id: "1002",
         name: "Amoxicillin 250mg",
         category: "Antibiotic",
-        price: "₹45.00",
+        price: "\u20B945.00",
         stock: 80,
       },
       {
         id: "1003",
         name: "Vitamin C 1000mg",
         category: "Supplements",
-        price: "₹30.00",
+        price: "\u20B930.00",
         stock: 200,
       },
       {
         id: "1004",
         name: "Ibuprofen 200mg",
         category: "Pain Relief",
-        price: "₹15.00",
+        price: "\u20B915.00",
         stock: 0,
       },
       {
         id: "1005",
         name: "Aspirin 75mg",
         category: "Cardiovascular",
-        price: "₹20.00",
+        price: "\u20B920.00",
         stock: 120,
       },
       {
         id: "1006",
         name: "Metformin 500mg",
         category: "Diabetics",
-        price: "₹80.00",
+        price: "\u20B980.00",
         stock: 300,
       },
       {
         id: "1007",
         name: "Cetirizine 10mg",
         category: "Anti-Allergy",
-        price: "₹10.00",
+        price: "\u20B910.00",
         stock: 450,
       },
       {
         id: "1008",
         name: "Omeprazole 20mg",
         category: "Gastric",
-        price: "₹50.00",
+        price: "\u20B950.00",
         stock: 15,
       },
       {
         id: "1009",
         name: "Atorvastatin 10mg",
         category: "Cardiovascular",
-        price: "₹120.00",
+        price: "\u20B9120.00",
         stock: 0,
       },
       {
         id: "1010",
         name: "Clopidogrel 75mg",
         category: "Cardiovascular",
-        price: "₹150.00",
+        price: "\u20B9150.00",
         stock: 60,
       },
       {
         id: "1011",
         name: "Lisinopril 10mg",
         category: "Hypertension",
-        price: "₹90.00",
+        price: "\u20B990.00",
         stock: 180,
       },
     ];
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
       modalTitle.textContent = "Edit Product: " + productToEdit.name;
       saveButton.textContent = "Save Changes";
       document.getElementById("productId").value = productToEdit.id;
-      const priceValue = productToEdit.price.replace("₹", "");
+      const priceValue = productToEdit.price.replace("\u20B9", "");
       document.getElementById("productName").value = productToEdit.name;
       document.getElementById("productCategory").value = productToEdit.category;
       document.getElementById("productPrice").value = priceValue;
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("productStock").value
       );
 
-      // ✅ Show error if negative value
+      // \u2705 Show error if negative value
       if (priceValue < 0 || stockValue < 0) {
         showToastNotification("Does not allow negative value.", "danger");
         return;
@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", function () {
         id: document.getElementById("productId").value,
         name: document.getElementById("productName").value,
         category: document.getElementById("productCategory").value,
-        price: "₹" + priceValue.toFixed(2),
+        price: "\u20B9" + priceValue.toFixed(2),
         stock: stockValue,
       };
 

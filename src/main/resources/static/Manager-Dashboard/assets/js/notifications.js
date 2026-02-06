@@ -1,12 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
-  let notificationsApiMode = true;
 
   const tableBody = document.getElementById("notificationTableBody");
   const form = document.getElementById("notificationForm");
   const searchInput = document.getElementById("searchNotification");
   const pagination = document.getElementById("pagination");
+
+  let allNotifications = [];
+  const perPage = 10;
+  let currentPage = 1;
+
+  // Clear old problematic local storage data once
+  if (localStorage.getItem("notifications_cleaned_v2") !== "true") {
+    localStorage.removeItem("notifications");
+    localStorage.setItem("notifications_cleaned_v2", "true");
+  }
 
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token");
@@ -14,19 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return { Authorization: `Bearer ${token}` };
   }
 
-  async function apiJson(url, options) {
-    const res = await fetch(
-      url,
-      Object.assign(
-        {
-          headers: Object.assign(
-            { "Content-Type": "application/json" },
-            getAuthHeader()
-          ),
-        },
-        options || {}
-      )
-    );
+  async function apiRequest(url, options = {}) {
+    const res = await fetch(url, Object.assign({
+      headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader())
+    }, options));
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(text || `HTTP ${res.status}`);
@@ -35,262 +36,119 @@ document.addEventListener("DOMContentLoaded", () => {
     return await res.json();
   }
 
-  function isApiId(id) {
-    // Backend generates IDs like N001
-    return /^N\d{3}$/.test(String(id));
-  }
-
-  function normalizeFromApi(n) {
-    return {
-      id: String(n.id),
-      recipient: n.type,
-      message: n.message,
-      date: n.date ? String(n.date) : "",
-      recipientId: n.recipientId ?? null,
-    };
-  }
-
-  async function refreshNotificationsFromApiOrFallback() {
+  async function fetchNotifications() {
     try {
-      const data = await apiJson(NOTIFICATIONS_API_BASE);
-      if (Array.isArray(data)) {
-        const apiNotifs = data.map(normalizeFromApi);
-
-        // Keep any local-only notifications (offline use)
-        const localExisting = JSON.parse(localStorage.getItem("notifications")) || [];
-        const localOnly = localExisting.filter((n) => !isApiId(n.id));
-
-        notifications = apiNotifs.concat(localOnly);
-        localStorage.setItem("notifications", JSON.stringify(notifications));
-        notificationsApiMode = true;
-        return;
-      }
-      notificationsApiMode = false;
+      const data = await apiRequest(NOTIFICATIONS_API_BASE);
+      allNotifications = Array.isArray(data) ? data : [];
+      renderTable();
     } catch (e) {
-      console.warn("Notifications API unavailable, using localStorage.", e);
-      notificationsApiMode = false;
+      console.error("Failed to fetch notifications:", e);
+      allNotifications = [];
+      renderTable();
     }
   }
 
-  // Dummy Data
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  function renderTable() {
+    if (!tableBody) return;
 
-  const perPage = 5;
-  let currentPage = 1;
-
-  // âœ… Render Notifications Table
-  const renderTable = () => {
-    const filtered = notifications.filter(n =>
-      n.message.toLowerCase().includes(searchInput.value.toLowerCase())
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+    const filtered = allNotifications.filter(n =>
+      (n.message || "").toLowerCase().includes(searchTerm) ||
+      (n.type || "").toLowerCase().includes(searchTerm)
     );
 
-    const totalPages = Math.ceil(filtered.length / perPage);
-    if (currentPage > totalPages) currentPage = totalPages || 1;
+    const totalPages = Math.ceil(filtered.length / perPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
     const start = (currentPage - 1) * perPage;
     const paginated = filtered.slice(start, start + perPage);
 
-    tableBody.innerHTML = paginated
-      .map(
-        (n, i) => `
-        <tr>
-          <td>${n.recipient}</td>
-          <td>${n.message}</td>
-          <td>${n.date}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${String(
-          n.id ?? i + start
-        )}')">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>`
-      )
-      .join("");
+    tableBody.innerHTML = paginated.length ? paginated.map(n => `
+            <tr>
+                <td><span class="badge bg-info text-dark">${n.type || "All"}</span></td>
+                <td>${n.message || "No message"}</td>
+                <td>${n.date || "N/A"}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${n.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join("") : '<tr><td colspan="4" class="text-center text-muted">No notifications found</td></tr>';
 
-    // âœ… Pagination Controls
-    pagination.innerHTML = `
-      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-        <a class="page-link" href="#" id="prevPage">Previous</a>
-      </li>
-      ${Array.from({ length: totalPages }, (_, i) => `
-        <li class="page-item ${i + 1 === currentPage ? "active" : ""}">
-          <a class="page-link" href="#">${i + 1}</a>
-        </li>`).join("")}
-      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-        <a class="page-link" href="#" id="nextPage">Next</a>
-      </li>
-    `;
+    renderPagination(totalPages);
+  }
 
-    // âœ… Page Number Click
-    document.querySelectorAll(".page-link").forEach((btn, index) => {
-      if (btn.id === "prevPage") {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (currentPage > 1) currentPage--;
-          renderTable();
+  function renderPagination(totalPages) {
+    if (!pagination) return;
+    let html = `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+            </li>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+      html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>`;
+    }
+
+    html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+            </li>`;
+
+    pagination.innerHTML = html;
+  }
+
+  window.changePage = (page) => {
+    currentPage = page;
+    renderTable();
+  };
+
+  window.deleteNotification = async (id) => {
+    if (!confirm("Are you sure you want to delete this notification?")) return;
+    try {
+      await apiRequest(`${NOTIFICATIONS_API_BASE}/${id}`, { method: "DELETE" });
+      fetchNotifications();
+    } catch (e) {
+      alert("Failed to delete: " + e.message);
+    }
+  };
+
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const recipient = form.recipientType.value;
+      const message = form.notificationMessage.value.trim();
+
+      try {
+        await apiRequest(NOTIFICATIONS_API_BASE, {
+          method: "POST",
+          body: JSON.stringify({
+            title: `Note to ${recipient}`,
+            message: message,
+            type: recipient,
+            date: new Date().toISOString().split("T")[0],
+            status: "Unread",
+            priority: "Normal"
+          })
         });
-      } else if (btn.id === "nextPage") {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (currentPage < totalPages) currentPage++;
-          renderTable();
-        });
-      } else {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          currentPage = parseInt(btn.textContent);
-          renderTable();
-        });
+        form.reset();
+        bootstrap.Modal.getInstance(document.getElementById("notificationModal")).hide();
+        fetchNotifications();
+      } catch (e) {
+        alert("Failed to send: " + e.message);
       }
     });
-  };
+  }
 
-  renderTable();
-
-  // âœ… Add Notification
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const recipient = form.recipientType.value;
-    const message = form.notificationMessage.value.trim();
-    const date = new Date().toISOString().split("T")[0];
-
-    const localNotif = {
-      id: `L${Date.now()}`,
-      recipient,
-      message,
-      date,
-    };
-
-    (async function () {
-      if (notificationsApiMode) {
-        try {
-          await apiJson(NOTIFICATIONS_API_BASE, {
-            method: "POST",
-            body: JSON.stringify({
-              title: recipient,
-              message,
-              type: recipient,
-              date,
-              status: "Unread",
-              priority: "Normal",
-              recipientId: null,
-            }),
-          });
-          await refreshNotificationsFromApiOrFallback();
-          renderTable();
-          form.reset();
-          bootstrap.Modal.getInstance(
-            document.getElementById("notificationModal")
-          ).hide();
-          return;
-        } catch (e) {
-          console.warn(
-            "Notification create API failed. Falling back to localStorage.",
-            e
-          );
-          notificationsApiMode = false;
-        }
-      }
-
-      notifications.unshift(localNotif);
-      localStorage.setItem("notifications", JSON.stringify(notifications));
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      currentPage = 1;
       renderTable();
-      form.reset();
-      bootstrap.Modal.getInstance(document.getElementById("notificationModal")).hide();
-    })();
-  });
+    });
+  }
 
-  // âœ… Search Filter
-  searchInput.addEventListener("input", () => {
-    currentPage = 1;
-    renderTable();
-  });
-
-  // âœ… Delete Notification
-  window.deleteNotification = (id) => {
-    if (!confirm("Delete this notification?")) return;
-
-    (async function () {
-      if (notificationsApiMode && isApiId(id)) {
-        try {
-          await apiJson(`${NOTIFICATIONS_API_BASE}/${id}`, { method: "DELETE" });
-          await refreshNotificationsFromApiOrFallback();
-          renderTable();
-          return;
-        } catch (e) {
-          console.warn(
-            "Notification delete API failed. Falling back to localStorage.",
-            e
-          );
-          notificationsApiMode = false;
-        }
-      }
-
-      const idx = notifications.findIndex((n) => String(n.id) === String(id));
-      if (idx !== -1) {
-        notifications.splice(idx, 1);
-        localStorage.setItem("notifications", JSON.stringify(notifications));
-        renderTable();
-      }
-    })();
-  };
-
-  (async function () {
-    await refreshNotificationsFromApiOrFallback();
-    renderTable();
-  })();
+  fetchNotifications();
 });
-
-//-----------------------------------------------------------------------//
-document.getElementById("notifyBtn").addEventListener("click", function () {
-  loadNotificationsIntoModal();
-});
-
-function loadNotificationsIntoModal() {
-  const notificationsList = document.getElementById("notificationsList");
-  if (!notificationsList) return;
-
-  // --- Your notifications data ---
-  const recentActivities = [];
-
-  const alertsData = [];
-
-  // --- Merge ---
-  const allNotifications = [...alertsData, ...recentActivities];
-
-  // --- Priority ---
-  const priorityOrder = {
-    urgent: 5,
-    warning: 4,
-    info: 3,
-    success: 2,
-    activity: 1,
-  };
-
-  // --- Sort (top priority first) ---
-  allNotifications.sort((a, b) => {
-    return (priorityOrder[b.type] || 0) - (priorityOrder[a.type] || 0);
-  });
-
-  // --- Render inside modal ---
-  notificationsList.innerHTML = allNotifications
-    .slice(0, 10)
-    .map(n => `
-      <div class="notification-item p-3 border-bottom">
-        <div class="d-flex align-items-start">
-          <div class="notification-icon ${n.iconClass} text-white me-3 rounded-circle d-flex align-items-center justify-content-center"
-               style="width:40px;height:40px;">
-            <i class="bi ${n.icon}"></i>
-          </div>
-          <div>
-            <h6 class="mb-1">${n.title}</h6>
-            <p class="mb-1 text-muted small">${n.description}</p>
-            <small class="text-muted">${n.time || ""}</small>
-          </div>
-        </div>
-      </div>
-    `)
-    .join("");
-}
-

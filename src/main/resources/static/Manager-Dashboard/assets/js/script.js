@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return `rgba(${rgb}, ${alpha})`;
   }
 
-  // We'll create datasets per (product Ã— month) so we can control stacking order per month.
+  // We'll create datasets per (product Ã\u2014 month) so we can control stacking order per month.
   let productSalesChartInstance = null;
   let productDatasetIndexMap = {};
 
@@ -264,11 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
           y: {
             stacked: stacked,
             beginAtZero: true,
-            title: { display: true, text: 'Sales (â‚¹)' },
+            title: { display: true, text: 'Sales (\u20B9)' },
             ticks: {
               callback: function (value) {
-                if (value >= 1000) return 'â‚¹' + (value / 1000).toFixed(0) + 'K';
-                return 'â‚¹' + value;
+                if (value >= 1000) return '\u20B9' + (value / 1000).toFixed(0) + 'K';
+                return '\u20B9' + value;
               }
             }
           }
@@ -287,8 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const ds = context.dataset;
                 const value = context.raw ?? context.parsed?.y ?? 0;
                 if (value === 0) return null;
-                if (value >= 1000) return ds._productName + ': â‚¹' + (value / 1000).toLocaleString() + 'K';
-                return ds._productName + ': â‚¹' + value;
+                if (value >= 1000) return ds._productName + ': \u20B9' + (value / 1000).toLocaleString() + 'K';
+                return ds._productName + ': \u20B9' + value;
               }
             }
           },
@@ -359,43 +359,56 @@ document.addEventListener("DOMContentLoaded", () => {
     const elPendingTasks = document.getElementById("pendingTasks");
 
     if (elTotalMRs) elTotalMRs.textContent = dashboardData.totalMRs;
-    if (elTotalSales) elTotalSales.textContent = `â‚¹${(dashboardData.totalSales / 100000).toFixed(1)}L`;
+    if (elTotalSales) elTotalSales.textContent = `\u20B9${(dashboardData.totalSales / 100000).toFixed(1)}L`;
     if (elTotalVisits) elTotalVisits.textContent = dashboardData.totalVisits;
     if (elPendingTasks) elPendingTasks.textContent = dashboardData.pendingTasks;
   }
 
-  function renderNotifications() {
+  async function renderNotifications() {
     const container = document.getElementById("notificationsList");
     if (!container) return;
 
-    const allNotifications = [
-      ...alertsData.map((alert) => ({ ...alert, type: "alert" })),
-      ...recentActivities.map((activity) => ({ ...activity, type: "activity" })),
-    ];
+    container.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
 
-    container.innerHTML = allNotifications
-      .slice(0, 10)
-      .map(
-        (notification) => `
-      <div class="notification-item p-3 border-bottom">
-        <div class="d-flex align-items-start">
-          <div class="notification-icon ${notification.iconClass || "bg-primary"} text-white me-3 rounded-circle d-inline-flex align-items-center justify-content-center" style="width:40px;height:40px;">
-            <i class="bi ${notification.icon}"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h6 class="mb-1">${notification.title}</h6>
-            <p class="mb-1 text-muted small">${notification.description}</p>
-            <small class="text-muted">${notification.time || "Just now"}</small>
+    try {
+      const res = await fetch(`${API_BASE}/api/notifications`, {
+        headers: getAuthHeader()
+      });
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      const allNotifications = Array.isArray(data) ? data : [];
+
+      if (allNotifications.length === 0) {
+        container.innerHTML = '<div class="p-3 text-center text-muted small">No new notifications</div>';
+        return;
+      }
+
+      container.innerHTML = allNotifications
+        .slice(0, 10)
+        .map(
+          (n) => `
+        <div class="notification-item p-3 border-bottom">
+          <div class="d-flex align-items-start">
+            <div class="bg-primary text-white me-3 rounded-circle d-inline-flex align-items-center justify-content-center" style="min-width:40px;height:40px;">
+              <i class="bi bi-bell"></i>
+            </div>
+            <div class="flex-grow-1">
+              <h6 class="mb-1">${n.title || "Notification"}</h6>
+              <p class="mb-1 text-muted small">${n.message}</p>
+              <small class="text-secondary">${n.date || "Just now"}</small>
+            </div>
           </div>
         </div>
-      </div>
-    `
-      )
-      .join("");
+      `
+        )
+        .join("");
 
-    if (document.body.classList.contains("dark-mode")) {
-      injectDarkCardStyles();
-      applyDarkToNotificationsModal(true);
+      if (document.body.classList.contains("dark-mode")) {
+        injectDarkCardStyles();
+        applyDarkToNotificationsModal(true);
+      }
+    } catch (e) {
+      container.innerHTML = '<div class="p-3 text-center text-danger small">Failed to load notifications</div>';
     }
   }
 
@@ -431,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Team Sales (â‚¹)",
+            label: "Team Sales (\u20B9)",
             data: chartsData.salesByMonth,
             borderColor: "#667eea",
             backgroundColor: "rgba(102, 126, 234, 0.1)",
@@ -439,7 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fill: true,
           },
           {
-            label: "Target (â‚¹)",
+            label: "Target (\u20B9)",
             data: chartsData.targetsByMonth,
             borderColor: "#f093fb",
             backgroundColor: "rgba(240, 147, 251, 0.1)",
@@ -455,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; } },
+            ticks: { callback: function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; } },
           },
         },
       },
@@ -472,12 +485,12 @@ document.addEventListener("DOMContentLoaded", () => {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Sales (â‚¹)",
+            label: "Sales (\u20B9)",
             data: chartsData.salesByMonth,
             backgroundColor: "#667eea",
           },
           {
-            label: "Target (â‚¹)",
+            label: "Target (\u20B9)",
             data: chartsData.targetsByMonth,
             backgroundColor: "#f093fb",
           },
@@ -489,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; } },
+            ticks: { callback: function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; } },
           },
         },
       },
@@ -558,19 +571,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const currencyTick = function (value) { return "â‚¹" + (value / 1000).toFixed(0) + "K"; };
+    const currencyTick = function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; };
     const plainTick = function (value) { return value; };
     const percentTick = function (value) { return value + "%"; };
 
     switch (type) {
       case "sales":
         performanceChart.data.datasets[0].data = chartsData.salesByMonth;
-        performanceChart.data.datasets[0].label = "Team Sales (â‚¹)";
+        performanceChart.data.datasets[0].label = "Team Sales (\u20B9)";
         performanceChart.data.datasets[0].borderColor = "#667eea";
         performanceChart.data.datasets[0].backgroundColor = "rgba(102, 126, 234, 0.1)";
         if (performanceChart.data.datasets[1]) {
           performanceChart.data.datasets[1].data = chartsData.targetsByMonth;
-          performanceChart.data.datasets[1].label = "Target (â‚¹)";
+          performanceChart.data.datasets[1].label = "Target (\u20B9)";
           performanceChart.data.datasets[1].borderColor = "#f093fb";
           performanceChart.data.datasets[1].backgroundColor = "rgba(240, 147, 251, 0.1)";
         }
@@ -718,4 +731,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedEmail = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
   if (profileName) profileName.textContent = savedName;
   if (profileEmail) profileEmail.textContent = savedEmail;
+
+  /* ============================
+     🚪 Logout Handler
+  ============================ */
+  const logoutLinks = document.querySelectorAll('a[href="../index.html"], a[href="#logout"], a[href="#"]');
+  logoutLinks.forEach(link => {
+    if (link.textContent.toLowerCase().includes('logout')) {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Clear auth data
+        localStorage.removeItem("kavya_auth_token");
+        localStorage.removeItem("kavya_user");
+        localStorage.removeItem("kavya_user_email");
+        localStorage.removeItem("kavya_user_role");
+        localStorage.removeItem("signup_name");
+        localStorage.removeItem("signup_email");
+        localStorage.removeItem("signup_role");
+
+        // Redirect to home
+        window.location.href = "../index.html";
+      });
+    }
+  });
 });
