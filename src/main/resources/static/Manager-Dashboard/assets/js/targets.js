@@ -140,92 +140,8 @@
     }
   }
 
-  const initialTargetsData = [
-    {
-      id: 1,
-      mrName: "Rajesh Kumar",
-      period: "monthly",
-      salesTarget: 80000,
-      salesAchievement: 75000,
-      visitsTarget: 120,
-      visitsAchievement: 98,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 94,
-      status: "excellent",
-      lastUpdated: "2025-11-08",
-    },
-    {
-      id: 2,
-      mrName: "Priya Sharma",
-      period: "monthly",
-      salesTarget: 75000,
-      salesAchievement: 68000,
-      visitsTarget: 110,
-      visitsAchievement: 95,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 91,
-      status: "excellent",
-      lastUpdated: "2025-11-08",
-    },
-    {
-      id: 3,
-      mrName: "Amit Singh",
-      period: "monthly",
-      salesTarget: 70000,
-      salesAchievement: 55000,
-      visitsTarget: 100,
-      visitsAchievement: 78,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 79,
-      status: "good",
-      lastUpdated: "2025-11-07",
-    },
-    {
-      id: 4,
-      mrName: "Sneha Patel",
-      period: "monthly",
-      salesTarget: 65000,
-      salesAchievement: 62000,
-      visitsTarget: 95,
-      visitsAchievement: 88,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 95,
-      status: "excellent",
-      lastUpdated: "2025-11-08",
-    },
-    {
-      id: 5,
-      mrName: "Manish Patel",
-      period: "monthly",
-      salesTarget: 70000,
-      salesAchievement: 35000,
-      visitsTarget: 105,
-      visitsAchievement: 52,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 50,
-      status: "average",
-      lastUpdated: "2025-11-06",
-    },
-    {
-      id: 6,
-      mrName: "Kavita Jain",
-      period: "monthly",
-      salesTarget: 75000,
-      salesAchievement: 72000,
-      visitsTarget: 115,
-      visitsAchievement: 102,
-      startDate: "2025-11-01",
-      endDate: "2025-11-30",
-      achievementPercentage: 96,
-      status: "excellent",
-      lastUpdated: "2025-11-08",
-    },
-  ];
+  const initialTargetsData = [];
+
 
   window.targetsData = [];
 
@@ -342,12 +258,13 @@
                 </div>
                 <div class="row g-2 mt-2">
                   <div class="col-md-6">
-                    <label class="form-label">Sales Target (â‚¹)</label>
+                    <label class="form-label">Sales Target (₹)</label>
                     <input id="editSalesTarget" type="number" min="0" class="form-control" required />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Sales Achievement (â‚¹)</label>
+                    <label class="form-label">Sales Achievement (₹)</label>
                     <input id="editSalesAchievement" type="number" min="0" class="form-control" required />
+
                   </div>
                 </div>
                 <div class="row g-2 mt-2">
@@ -458,8 +375,9 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${escapeHtml(target.mrName)}</td>
-        <td>â‚¹${target.salesTarget.toLocaleString()}</td>
-        <td>â‚¹${target.salesAchievement.toLocaleString()}</td>
+        <td>₹${target.salesTarget.toLocaleString()}</td>
+        <td>₹${target.salesAchievement.toLocaleString()}</td>
+
         <td>${target.achievementPercentage}%</td>
         <td>${statusBadge}</td>
         <td>
@@ -506,8 +424,9 @@
       data[0] || { mrName: "-" }
     );
     container.innerHTML = `
-      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>â‚¹${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
-      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>â‚¹${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-target"><div class="card-body"><div class="card-content"><h3>₹${totalTarget.toLocaleString()}</h3><h5>Total Target</h5></div><div class="card-icon"><i class="bi bi-bullseye"></i></div></div></div></div>
+      <div class="col-md-3"><div class="card summary-card summary-total-achievement"><div class="card-body"><div class="card-content"><h3>₹${totalAchievement.toLocaleString()}</h3><h5>Total Achievement</h5></div><div class="card-icon"><i class="bi bi-trophy"></i></div></div></div></div>
+
       <div class="col-md-3"><div class="card summary-card summary-avg-achievement"><div class="card-body"><div class="card-content"><h3>${avgAchievement}%</h3><h5>Avg Achievement</h5></div><div class="card-icon"><i class="bi bi-graph-up"></i></div></div></div></div>
       <div class="col-md-3"><div class="card summary-card summary-top-performer"><div class="card-body"><div class="card-content"><h3>${escapeHtml(
       (topPerformer.mrName || "-").split(" ")[0]
@@ -529,8 +448,9 @@
         <td><span class="badge ${rank <= 0 ? `badge-${rank}` : "bg-light text-dark"
         }">${rank}</span></td>
         <td>${escapeHtml(t.mrName)}</td>
-        <td>â‚¹${t.salesTarget.toLocaleString()}</td>
-        <td>â‚¹${t.salesAchievement.toLocaleString()}</td>
+        <td>₹${t.salesTarget.toLocaleString()}</td>
+        <td>₹${t.salesAchievement.toLocaleString()}</td>
+
         <td><strong>${t.achievementPercentage}%</strong></td>
         <td><span class="badge ${getStatusBadgeClass(t.status)}">${escapeHtml(
           t.status.charAt(0).toUpperCase() + t.status.slice(1)
@@ -552,13 +472,15 @@
         labels: data.map((d) => d.mrName.split(" ")[0]),
         datasets: [
           {
-            label: "Target (â‚¹)",
+            label: "Target (₹)",
             data: data.map((d) => d.salesTarget),
+
             backgroundColor: "#6c757d",
           },
           {
-            label: "Achievement (â‚¹)",
+            label: "Achievement (₹)",
             data: data.map((d) => d.salesAchievement),
+
             backgroundColor: "#28a745",
           },
         ],
@@ -569,8 +491,9 @@
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: (v) => "â‚¹" + v / 1000 + "K" },
+            ticks: { callback: (v) => "₹" + v / 1000 + "K" },
           },
+
         },
         plugins: { legend: { position: "top" } },
       },
@@ -618,9 +541,10 @@
     content.innerHTML = `
       <h5>${escapeHtml(t.mrName)} Target</h5>
       <div class="row">
-        <div class="col-md-6"><p><strong>Sales Target:</strong> â‚¹${t.salesTarget.toLocaleString()}</p></div>
-        <div class="col-md-6"><p><strong>Sales Achievement:</strong> â‚¹${t.salesAchievement.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Target:</strong> ₹${t.salesTarget.toLocaleString()}</p></div>
+        <div class="col-md-6"><p><strong>Sales Achievement:</strong> ₹${t.salesAchievement.toLocaleString()}</p></div>
       </div>
+
       <p><strong>Achievement:</strong> ${t.achievementPercentage
       }% â€” ${getAchievementBadge(t.achievementPercentage)}</p>
       <p><strong>Period:</strong> ${formatDate(t.startDate)} to ${formatDate(
@@ -650,8 +574,9 @@
       <body>
         <h1>Target Details â€” ${escapeHtml(t.mrName)}</h1>
         <table>
-          <tr><th>Sales Target (â‚¹)</th><td>â‚¹${t.salesTarget.toLocaleString()}</td></tr>
-          <tr><th>Sales Achievement (â‚¹)</th><td>â‚¹${t.salesAchievement.toLocaleString()}</td></tr>
+          <tr><th>Sales Target (₹)</th><td>₹${t.salesTarget.toLocaleString()}</td></tr>
+          <tr><th>Sales Achievement (₹)</th><td>₹${t.salesAchievement.toLocaleString()}</td></tr>
+
           <tr><th>Achievement %</th><td>${t.achievementPercentage}%</td></tr>
           <tr><th>Status</th><td>${escapeHtml(t.status)}</td></tr>
           <tr><th>Start Date</th><td>${formatDate(t.startDate)}</td></tr>
