@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
   </head>
 
   <body>
-    <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
       <div class="container-fluid">
         <button class="btn btn-outline-secondary me-3" id="sidebarToggle">
@@ -19,10 +19,7 @@
         </button>
         <div class="d-flex">
           
-          <!-- <button class="btn btn-outline-secondary me-2" id="notifyBtn">
-            <i class="bi bi-bell"></i>
-          </button> -->
-                   <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Notification Dropdown -->
+          <!-- Notification Dropdown -->
 <div class="dropdown">
   <button class="btn btn-outline-secondary me-2 position-relative" 
           id="notificationsBtn" 
@@ -59,7 +56,7 @@
       </div>
     </nav>
 
-    <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
@@ -75,30 +72,27 @@
         <li><a href="Target.html"><i class="bi bi-bullseye"></i> Targets (Regional)</a></li>
         <li><a href="Expenses.html"><i class="bi bi-cash-stack"></i> Expenses (Approval)</a></li>
         <li><a href="reports-analytics.html"><i class="bi bi-graph-up"></i> Reports & Analytics</a></li>
-        <!-- <li><a href="Reports.html"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a></li> -->
-        <!-- <li><a href="Analytics.html"><i class="bi bi-graph-up"></i> Analytics</a></li> -->
         <li><a href="Notification.html"><i class="bi bi-bell"></i> Announcements</a></li>
-        <!-- <li><a href="setting.html"><i class="bi bi-gear"></i>Settings</a></li> -->
       </ul>
     </div>
 
-    <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Main Content -->
+    <!-- Main Content -->
     <div class="main-content" id="mainContent">
       <div class="container-fluid mt-5 pt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h3 class="fw-bold">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚Â¨ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¼ Manager Management</h3>
+          <h3 class="fw-bold">Manager Management</h3>
           <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#managerModal">
             <i class="bi bi-plus-circle me-1"></i> Add Manager
           </button>
         </div>
 
-        <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â Search -->
+        <!-- Search -->
         <div class="input-group mb-3 w-50">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input type="text" id="searchManager" class="form-control" placeholder="Search Manager..." />
         </div>
 
-        <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ Table -->
+        <!-- Table -->
         <div class="card">
           <div class="card-body table-responsive">
             <table class="table table-hover align-middle text-nowrap">
@@ -116,21 +110,21 @@
           </div>
         </div>
 
-        <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ PAGINATION -->
+        <!-- PAGINATION -->
         <nav>
           <ul class="pagination justify-content-center flex-wrap" id="pagination"></ul>
         </nav>
       </div>
     </div>
 
-    <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Footer -->
+    <!-- Footer -->
     <footer class="footer">
       <div class="container-fluid">
         <p>&copy; 2025 KavyaPharm | All Rights Reserved.</p>
       </div>
     </footer>
 
-    <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§Ãƒâ€šÃ‚Â¾ Add/Edit Modal -->
+    <!-- Add/Edit Modal -->
     <div class="modal fade" id="managerModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -196,7 +190,7 @@
     <script src="assets/js/script.js"></script>
     <script src="assets/js/manager-manage.js"></script>
 
-        <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚Â§ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢Ãƒâ€šÃ‚Â¼ Profile Info Modal -->
+        <!-- Profile Info Modal -->
 <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4">
