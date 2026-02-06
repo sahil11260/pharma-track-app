@@ -34,16 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return await res.json();
   }
 
-  function loadFromStorageIfAny() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) targets = parsed;
-    } catch (e) {
-      console.warn("Failed to parse stored admin targets.", e);
-    }
-  }
+  // loadFromStorageIfAny removed to enforce dynamic data
 
   function mapApiStatusToUi(t) {
     const s = String(t.status || "").toLowerCase();
@@ -73,15 +64,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await apiJson(TARGETS_API_BASE);
       if (Array.isArray(data)) {
         targets = data.map(normalizeTargetFromApi);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
         targetsApiMode = true;
         hideApiRetryBanner();
-        return;
+      } else {
+        targets = [];
+        showApiRetryBanner();
       }
-      targetsApiMode = false;
-      showApiRetryBanner();
     } catch (e) {
-      console.warn("Targets API unavailable, using localStorage.", e);
+      console.warn("Targets API unavailable.", e);
       targetsApiMode = false;
       showApiRetryBanner();
     }
@@ -514,7 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fromDate.addEventListener("change", renderTable);
   toDate.addEventListener("change", renderTable);
 
-  loadFromStorageIfAny();
+  // loadFromStorageIfAny();
   (async function () {
     await refreshTargetsFromApiOrFallback();
     await refreshUsersAndProducts();

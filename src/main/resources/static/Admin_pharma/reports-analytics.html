@@ -12,29 +12,25 @@
 </head>
 
 <body>
-  <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Navbar -->
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top shadow-sm">
     <div class="container-fluid">
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle"><i class="bi bi-list"></i></button>
       <div class="d-flex">
         
-        <!-- <button class="btn btn-outline-secondary me-2"><i class="bi bi-bell"></i></button> -->
-                  <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Notification Dropdown -->
-<div class="dropdown">
-  <button class="btn btn-outline-secondary me-2 position-relative" 
-          id="notificationsBtn" 
-          data-bs-toggle="dropdown">
-    <i class="bi bi-bell"></i>
+        <!-- Notification Dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary me-2 position-relative" 
+                  id="notificationsBtn" 
+                  data-bs-toggle="dropdown">
+            <i class="bi bi-bell"></i>
+          </button>
 
-    <!-- Red Dot -->
-    
-  </button>
-
-  <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
+          <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
             <li class="dropdown-header fw-bold">Notifications</li>
             <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
           </ul>
-</div>
+        </div>
 
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
@@ -51,7 +47,7 @@
     </div>
   </nav>
 
-  <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Sidebar -->
+  <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
@@ -68,16 +64,15 @@
       <li><a href="Expenses.html"><i class="bi bi-cash-stack"></i> Expenses (Approval)</a></li>
       <li class="active"><a href="reports-analytics.html"><i class="bi bi-graph-up"></i> Reports & Analytics</a></li>
       <li><a href="Notification.html"><i class="bi bi-bell"></i> Announcements</a></li>
-      <!-- <li><a href="setting.html"><i class="bi bi-gear"></i> Settings</a></li> -->
     </ul>
   </div>
 
-  <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Main Content -->
+  <!-- Main Content -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
       <h3 class="fw-bold mb-4 text-primary"><i class="bi bi-graph-up-arrow me-2"></i>Reports & Analytics Overview</h3>
 
-      <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â Filters -->
+      <!-- Filters -->
       <div class="row g-3 mb-4">
         <div class="col-md-3">
           <input type="text" class="form-control" id="searchReport" placeholder="Search MR / Doctor" />
@@ -98,13 +93,13 @@
         </div>
       </div>
 
-      <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¦Ã‚Â  Summary Cards -->
+      <!-- Summary Cards -->
       <div class="row g-4 mb-4">
         <div class="col-md-4">
           <div class="card bg-primary text-white shadow-sm">
             <div class="card-body">
               <h6>Total Doctor Visits</h6>
-              <h3 id="totalVisits">120</h3>
+              <h3 id="totalVisits">0</h3>
             </div>
           </div>
         </div>
@@ -112,7 +107,7 @@
           <div class="card bg-success text-white shadow-sm">
             <div class="card-body">
               <h6>Total Expenses</h6>
-              <h3 id="totalExpenses">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¹45,200</h3>
+              <h3 id="totalExpenses">₹0</h3>
             </div>
           </div>
         </div>
@@ -120,39 +115,38 @@
           <div class="card bg-warning text-dark shadow-sm">
             <div class="card-body">
               <h6>Sales Achieved</h6>
-              <h3 id="salesAchieved">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¹2.4 Cr</h3>
+              <h3 id="salesAchieved">₹0.00 Lakh</h3>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€¹Ã¢â‚¬Â  Charts (Reduced and Clean) -->
-     <div class="row mb-5">
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header"><h6>Regional Sales Overview</h6></div>
-      <div class="card-body">
-        <div class="chart-box">
-          <canvas id="regionSalesChart"></canvas>
+      <!-- Charts -->
+      <div class="row mb-5">
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header"><h6>Regional Sales Overview</h6></div>
+            <div class="card-body">
+              <div class="chart-box">
+                <canvas id="regionSalesChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-header"><h6>Expense Breakdown</h6></div>
+            <div class="card-body">
+              <div class="chart-box">
+                <canvas id="expenseChart"></canvas>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header"><h6>Expense Breakdown</h6></div>
-      <div class="card-body">
-        <div class="chart-box">
-          <canvas id="expenseChart"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-      <!-- ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ Combined Report Table -->
+      <!-- Combined Report Table -->
       <div class="card shadow-sm mb-5">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h5 class="mb-0">Doctor Visit Report</h5>
@@ -177,7 +171,7 @@
     </div>
   </div>
 
-  <!-- ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ Footer -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="container-fluid text-center">
       <p>&copy; 2025 KavyaPharm | All Rights Reserved.</p>
@@ -188,4 +182,3 @@
   <script src="assets/js/reports-analytics.js"></script>
 </body>
 </html>
-
