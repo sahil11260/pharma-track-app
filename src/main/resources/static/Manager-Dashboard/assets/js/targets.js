@@ -60,22 +60,43 @@
   }
 
   async function refreshMrsFromApi() {
-    const currentManager = localStorage.getItem("signup_name") || "";
-    const users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentManager)}`);
-    if (!Array.isArray(users)) return;
-    const onlyMrs = users
-      .filter((u) => u && String(u.role || "").toUpperCase() === "MR" && u.assignedManager === currentManager)
-      .map((u) => ({ id: String(u.id), name: u.name }))
-      .filter((u) => u && u.name);
+    try {
+      let userObj = {};
+      try {
+        userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+      } catch (e) { }
 
-    const uniqueByName = new Map();
-    onlyMrs.forEach((u) => {
-      const key = String(u.name).trim();
-      if (!key) return;
-      if (!uniqueByName.has(key)) uniqueByName.set(key, u);
-    });
+      const currentName = userObj.name || localStorage.getItem("signup_name") || "";
+      const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
 
-    window.mrData = Array.from(uniqueByName.values());
+      console.log("[TARGET] Fetching MRs for manager:", currentName || currentEmail);
+      let users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentName || currentEmail)}&role=MR`);
+
+      if ((!users || users.length === 0) && currentName && currentEmail && currentName !== currentEmail) {
+        console.log("[TARGET] First query empty, trying email fallback query...");
+        users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentEmail)}&role=MR`);
+      }
+
+      if (Array.isArray(users)) {
+        // Use backend results directly (backend handles manager identity filtering securely)
+        const onlyMrs = users
+          .filter((u) => u && u.role && String(u.role).toUpperCase().includes("MR"))
+          .map((u) => ({ id: String(u.id), name: u.name, email: u.email }))
+          .filter((u) => u && u.name);
+
+        const uniqueByEmail = new Map();
+        onlyMrs.forEach((u) => {
+          const key = String(u.email || u.name).trim().toLowerCase();
+          if (!key) return;
+          if (!uniqueByEmail.has(key)) uniqueByEmail.set(key, u);
+        });
+
+        window.mrData = Array.from(uniqueByEmail.values());
+        console.log("[TARGET] Loaded", window.mrData.length, "MRs from API");
+      }
+    } catch (e) {
+      console.warn("[TARGET] Could not load MR list from API.", e);
+    }
   }
 
   async function refreshTargetsFromApiOrFallback() {

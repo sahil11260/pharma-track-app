@@ -119,27 +119,34 @@ public class UserService {
             return (managerParam != null && !managerParam.isBlank()) ? List.of(managerParam) : List.of();
         }
 
-    if (isManager) {
-        List<String> ids = new java.util.ArrayList<>();
-        String currentEmail = auth.getName(); // Usually email
-        ids.add(currentEmail);
+        if (isManager) {
+            List<String> ids = new java.util.ArrayList<>();
+            String currentEmail = auth.getName();
+            if (currentEmail != null)
+                ids.add(currentEmail.trim());
 
-        // Also add the manager's name as an identifier
-        userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
-            if (u.getName() != null && !u.getName().isBlank()) {
-                ids.add(u.getName().trim());
+            // Also add the manager's name from database as an identifier
+            userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
+                if (u.getName() != null && !u.getName().isBlank()) {
+                    ids.add(u.getName().trim());
+                }
+            });
+
+            // If a specific manager parameter was passed (from JS), add it too as a
+            // possible identity
+            if (managerParam != null && !managerParam.isBlank()) {
+                ids.add(managerParam.trim());
             }
-        });
 
-        List<String> result = ids.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .distinct()
-                .toList();
-        
-        System.out.println("[DIAGNOSTIC] Manager '" + currentEmail + "' identified by: " + result);
-        return result;
-    }
+            List<String> result = ids.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .distinct()
+                    .toList();
+
+            System.out.println("[TASK_DEBUG] Manager identity identifiers: " + result);
+            return result;
+        }
 
         return List.of(); // Regular users shouldn't be listing others
     }

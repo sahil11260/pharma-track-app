@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const ROWS_PER_PAGE = 10;
   let activeFilterRole = "All";
   let editingUserId = null;
+  let allManagers = []; // To store list of managers for dropdowns
 
   // --- Auth Helpers ---
   function getAuthHeader() {
@@ -75,6 +76,33 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       userTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load users: ${error.message}</td></tr>`;
     }
+  }
+
+  async function fetchManagers() {
+    try {
+      // Use role=MANAGER query param if backend supports it, otherwise filter all users
+      const data = await apiRequest(`${USERS_API_BASE}?role=MANAGER`);
+      allManagers = data;
+      populateManagerDropdowns();
+    } catch (error) {
+      console.error("Failed to load managers for dropdown:", error);
+    }
+  }
+
+  function populateManagerDropdowns() {
+    const mrAssignedManagerSelect = document.getElementById("mrAssignedManager");
+    if (!mrAssignedManagerSelect) return;
+
+    // Keep the "Select Manager" option
+    mrAssignedManagerSelect.innerHTML = '<option value="">Select Manager</option>';
+
+    allManagers.forEach(mgr => {
+      const option = document.createElement("option");
+      // Use name as identifier as required by Manager Dashboard mrs.js logic
+      option.value = mgr.name;
+      option.textContent = `${mgr.name} (${mgr.email})`;
+      mrAssignedManagerSelect.appendChild(option);
+    });
   }
 
   function applyFilters() {
@@ -213,6 +241,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById(`${prefix}Phone`)) document.getElementById(`${prefix}Phone`).value = user.phone || "";
     if (document.getElementById(`${prefix}Territory`)) document.getElementById(`${prefix}Territory`).value = user.territory || "";
 
+    if (uiRole === "Medical Rep") {
+      const mgrSelect = document.getElementById("mrAssignedManager");
+      if (mgrSelect) mgrSelect.value = user.assignedManager || "";
+    }
+
     if (uiRole === "Doctor") {
       const parts = (user.territory || "").split("|");
       document.getElementById("doctorSpeciality").value = parts[0] || "";
@@ -315,4 +348,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initial Load
   fetchUsers();
+  fetchManagers();
 });

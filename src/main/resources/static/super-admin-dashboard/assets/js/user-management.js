@@ -72,9 +72,24 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await apiRequest(USERS_API_BASE);
       allUsers = data;
       applyFilters();
+      populateManagerDropdowns(); // Populate manager dropdowns after fetching users
     } catch (error) {
       userTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load users: ${error.message}</td></tr>`;
     }
+  }
+
+  function populateManagerDropdowns() {
+    const managerSelect = document.getElementById("mrAssignedManager");
+    if (!managerSelect) return;
+
+    const managers = allUsers.filter(u => String(u.role).toUpperCase() === "MANAGER");
+    managerSelect.innerHTML = '<option value="">Select Manager</option>';
+    managers.forEach(m => {
+      const option = document.createElement("option");
+      option.value = m.name;
+      option.textContent = `${m.name} (${m.email})`;
+      managerSelect.appendChild(option);
+    });
   }
 
   function applyFilters() {
@@ -222,6 +237,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     addUserModal.show();
+
+    // Set assigned manager if editing an MR
+    if (editingUserId && uiRole === "Medical Rep") {
+      const mrAssignedManager = document.getElementById("mrAssignedManager");
+      if (mrAssignedManager) mrAssignedManager.value = user.assignedManager || "";
+    }
   }
 
   async function deleteUser(id) {
