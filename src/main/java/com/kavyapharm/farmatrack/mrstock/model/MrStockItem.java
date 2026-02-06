@@ -3,7 +3,7 @@ package com.kavyapharm.farmatrack.mrstock.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "app_mr_stock")
+@Table(name = "app_mr_stock_items")
 public class MrStockItem {
 
     @Id

@@ -175,6 +175,7 @@ public class DcrService {
 
         return new DcrResponse(
                 report.getReportId(),
+                report.getMrName(),
                 report.getVisitTitle(),
                 report.getVisitType(),
                 report.getDoctorId(),

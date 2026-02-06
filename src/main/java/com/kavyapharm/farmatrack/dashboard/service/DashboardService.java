@@ -25,14 +25,16 @@ public class DashboardService {
     }
 
     public DashboardStatsResponse getStats() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
         String currentEmail = auth != null ? auth.getName() : null;
-        
+
         com.kavyapharm.farmatrack.user.model.User currentUser = null;
         if (currentEmail != null && !"anonymousUser".equals(currentEmail)) {
             try {
                 currentUser = userService.getByEmailOrThrow(currentEmail);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         List<com.kavyapharm.farmatrack.user.dto.UserResponse> allUsers = userService.list();
@@ -41,21 +43,26 @@ public class DashboardService {
 
         if (currentUser != null && currentUser.getRole() == com.kavyapharm.farmatrack.user.model.UserRole.MANAGER) {
             String managerName = currentUser.getName();
+            String managerEmail = currentUser.getEmail();
             totalMRs = allUsers.stream()
-                    .filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()) && managerName.equals(u.assignedManager()))
+                    .filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()) &&
+                            (Objects.equals(managerName, u.assignedManager())
+                                    || Objects.equals(managerEmail, u.assignedManager())))
                     .count();
             // Filter doctors by managerEmail
             totalDoctors = doctorService.list().stream()
                     .filter(d -> currentEmail.equals(d.managerEmail()))
                     .count();
         } else {
-            totalMRs = allUsers.stream().filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role())).count();
+            totalMRs = allUsers.stream().filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()))
+                    .count();
             totalDoctors = doctorService.list().size();
         }
 
         long totalUsers = allUsers.size();
-        long totalStock = mrStockRepository.findAll().stream().mapToLong(item -> item.getStock() == null ? 0 : item.getStock()).sum();
-        
+        long totalStock = mrStockRepository.findAll().stream()
+                .mapToLong(item -> item.getStock() == null ? 0 : item.getStock()).sum();
+
         return new DashboardStatsResponse(totalMRs, totalDoctors, totalUsers, totalStock);
     }
 
@@ -65,24 +72,24 @@ public class DashboardService {
         List<Integer> visitsByMonth = generateZeroSeries(6);
         List<Integer> targetsByMonth = generateZeroSeries(6);
 
-        // TODO: Replace with real aggregation logic when sales/visits/targets entities exist
+        // TODO: Replace with real aggregation logic when sales/visits/targets entities
+        // exist
         // For now, return zeros so charts render empty until data exists
         Map<String, Integer> expenseByCategory = Map.of(
                 "Travel", 0,
                 "Meals", 0,
                 "Samples", 0,
                 "Marketing", 0,
-                "Other", 0
-        );
+                "Other", 0);
 
         Map<String, List<Integer>> productSalesByMonth = Map.of(
                 "Product A", generateZeroSeries(6),
                 "Product B", generateZeroSeries(6),
                 "Product C", generateZeroSeries(6),
-                "Product D", generateZeroSeries(6)
-        );
+                "Product D", generateZeroSeries(6));
 
-        return new DashboardChartsResponse(salesByMonth, visitsByMonth, targetsByMonth, monthLabels, expenseByCategory, productSalesByMonth);
+        return new DashboardChartsResponse(salesByMonth, visitsByMonth, targetsByMonth, monthLabels, expenseByCategory,
+                productSalesByMonth);
     }
 
     private List<String> getLastSixMonthLabels() {
@@ -97,7 +104,8 @@ public class DashboardService {
 
     private List<Integer> generateZeroSeries(int size) {
         List<Integer> zeros = new ArrayList<>(size);
-        for (int i = 0; i < size; i++) zeros.add(0);
+        for (int i = 0; i < size; i++)
+            zeros.add(0);
         return zeros;
     }
 }

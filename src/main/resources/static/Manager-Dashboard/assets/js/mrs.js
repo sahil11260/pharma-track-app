@@ -50,7 +50,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
 
       console.log("[MR] Fetching MRs for manager:", currentName || currentEmail);
-      let users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentName || currentEmail)}&role=MR`);
+
+      const TARGETS_API = `${API_BASE}/api/targets`; // Define targets API endpoint
+
+      // Fetch users and targets in parallel
+      let [users, targets] = await Promise.all([
+        apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentName || currentEmail)}&role=MR`),
+        apiJson(TARGETS_API).catch(() => []) // Catch error for targets to not block MR loading
+      ]);
 
       if ((!users || users.length === 0) && currentName && currentEmail && currentName !== currentEmail) {
         console.log("[MR] First query empty, trying email fallback query...");
@@ -63,6 +70,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const onlyMrs = users.filter(u => u && u.role && String(u.role).toUpperCase().includes("MR"));
 
         mrs = onlyMrs.map(normalizeMrFromApi);
+
+        // Process targets to calculate sales and performance
+        if (Array.isArray(targets)) {
+          mrs.forEach(m => {
+            const myTargets = targets.filter(t => t.mrName === m.name);
+            const totalTarget = myTargets.reduce((sum, t) => sum + (Number(t.salesTarget) || 0), 0);
+            const totalSales = myTargets.reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
+            m.sales = totalSales;
+            m.performance = totalTarget > 0 ? Math.round((totalSales / totalTarget) * 100) : 0;
+          });
+        }
+
         saveMRsToStorage();
         mrsApiMode = true;
         hideApiRetryBanner();
@@ -643,22 +662,66 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      Chart (optional) - uses Chart.js if present and element exists
      ========================= */
-  const chartEl = document.getElementById("mrPerformanceChart");
-  if (chartEl && typeof Chart !== "undefined") {
-    try {
-      const ctx = chartEl.getContext("2d");
-      new Chart(ctx, {
+  /* =========================
+     Chart (optional) - uses Chart.js if present and element exists
+     ========================= */
+  let performanceChart = null;
+
+  function updatePerformanceChart() {
+    const chartEl = document.getElementById("mrPerformanceChart");
+    if (!chartEl || typeof Chart === "undefined") return;
+
+    const ctx = chartEl.getContext("2d");
+    const labels = mrs.map((m) => m.name.split(" ")[0]);
+    const salesData = mrs.map((m) => Number(m.sales) || 0);
+    const perfData = mrs.map((m) => Number(m.performance) || 0);
+
+    if (performanceChart) {
+      performanceChart.data.labels = labels;
+      performanceChart.data.datasets[0].data = salesData;
+      performanceChart.data.datasets[1].data = perfData;
+      performanceChart.update();
+    } else {
+      performanceChart = new Chart(ctx, {
         type: "bar",
         data: {
-          labels: mrs.map((m) => m.name.split(" ")[0]),
+          labels: labels,
           datasets: [
-            { label: "Sales", data: mrs.map((m) => Number(m.sales) || 0), backgroundColor: undefined },
-            { label: "Performance", data: mrs.map((m) => Number(m.performance) || 0), backgroundColor: undefined }
+            {
+              label: "Sales (Units)",
+              data: salesData,
+              backgroundColor: "rgba(13, 110, 253, 0.7)",
+              borderColor: "#0d6efd",
+              borderWidth: 1
+            },
+            {
+              label: "Performance (%)",
+              data: perfData,
+              backgroundColor: "rgba(25, 135, 84, 0.7)",
+              borderColor: "#198754",
+              borderWidth: 1,
+              yAxisID: 'y1'
+            }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Sales' }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              title: { display: true, text: 'Performance %' },
+              max: 100
+            }
+          }
+        }
       });
-    } catch (err) { console.warn("Chart error:", err); }
+    }
   }
 
   /* =========================
@@ -668,5 +731,6 @@ document.addEventListener("DOMContentLoaded", () => {
   (async function () {
     await refreshMrsFromApiOrFallback();
     renderMRs();
+    updatePerformanceChart();
   })();
 });
