@@ -104,7 +104,8 @@ async function refreshMrsFromApiOrFallback() {
 
 async function refreshSamplesFromApiOrFallback() {
   try {
-    const stockItems = await apiJson(MR_STOCK_API_BASE);
+    const currentUserName = localStorage.getItem("signup_name") || "";
+    const stockItems = await apiJson(`${MR_STOCK_API_BASE}?userName=${encodeURIComponent(currentUserName)}`);
     if (!Array.isArray(stockItems)) {
       samplesApiMode = false;
       return;
@@ -157,7 +158,8 @@ async function refreshSamplesFromApiOrFallback() {
 
 async function refreshDistributionsFromApiOrFallback() {
   try {
-    const list = await apiJson(DISTRIBUTIONS_API_BASE);
+    const currentUserName = localStorage.getItem("signup_name") || "";
+    const list = await apiJson(`${DISTRIBUTIONS_API_BASE}?userName=${encodeURIComponent(currentUserName)}`);
     if (!Array.isArray(list)) {
       return;
     }
@@ -742,11 +744,12 @@ document.addEventListener("DOMContentLoaded", () => {
       (async function () {
         if (samplesApiMode) {
           try {
-            const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${productId}`);
+            const currentUserName = localStorage.getItem("signup_name") || "";
+            const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserName)}`);
             const currentStock = Number(stockItem.stock) || 0;
             const nextStock = currentStock + quantityAdded;
 
-            await apiJson(`${MR_STOCK_API_BASE}/${productId}`, {
+            await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserName)}`, {
               method: "PUT",
               body: JSON.stringify({
                 name: stockItem.name || productName,
@@ -761,6 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   productId: String(productId),
                   quantity: quantityAdded,
                   date: new Date().toISOString(),
+                  userName: currentUserName,
                   notes: `Added stock via Manager Samples page`,
                 }),
               });
@@ -880,7 +884,8 @@ document.addEventListener("DOMContentLoaded", () => {
         (async function () {
           if (samplesApiMode && sample.productId) {
             try {
-              const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}`);
+              const currentUserName = localStorage.getItem("signup_name") || "";
+              const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`);
               const currentStock = Number(stockItem.stock) || 0;
               const nextStock = currentStock - quantity;
               if (nextStock < 0) {
@@ -888,13 +893,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
               }
 
-              await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}`, {
+              await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`, {
                 method: "PUT",
                 body: JSON.stringify({
                   name: stockItem.name,
                   stock: nextStock,
                 }),
               });
+
+              // SYNC with MR Stock
+              // Call stock-received API to increment the "field stock" for the receiving MR
+              try {
+                await apiJson(`${API_BASE}/api/stock-received`, {
+                  method: "POST",
+                  body: JSON.stringify({
+                    productId: String(sample.productId),
+                    quantity: Number(quantity),
+                    date: new Date().toISOString(),
+                    userName: mrName,
+                    notes: `Allocated to ${mrName} by Manager ${currentUserName}`
+                  })
+                });
+                console.log("Successfully synced with MR stock");
+              } catch (err) {
+                console.warn("MR stock sync failed", err);
+              }
 
               // Save distribution record to backend
               await apiJson(`${API_BASE}/api/distributions`, {
@@ -905,6 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   quantity: quantity,
                   recipient: recipientName,
                   notes: notes,
+                  userName: currentUserName
                 }),
               });
 

@@ -24,6 +24,9 @@ public class StockReceivedEntry {
     @Column(nullable = false)
     private String date;
 
+    @Column(nullable = true)
+    private String userName; // Recipient
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -60,6 +63,14 @@ public class StockReceivedEntry {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getNotes() {

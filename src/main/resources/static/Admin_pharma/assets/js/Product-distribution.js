@@ -529,6 +529,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if (productsApiMode) {
           try {
             await updateProductStockApi(product, product.available);
+
+            // SYNC with MR Stock / Manager Samples
+            // Call stock-received API to increment the "field stock"
+            try {
+              await apiJson(`${API_BASE}/api/stock-received`, {
+                method: "POST",
+                body: JSON.stringify({
+                  productId: String(product.id),
+                  quantity: Number(qty),
+                  date: new Date().toISOString(),
+                  userName: to,
+                  notes: `Allocated to ${to} (${role}) by Admin`
+                })
+              });
+              console.log("Successfully synced with MR stock");
+            } catch (err) {
+              console.warn("MR stock sync failed", err);
+            }
           } catch (err) {
             console.warn("Stock deduct API failed. Falling back to localStorage.", err);
             productsApiMode = false;

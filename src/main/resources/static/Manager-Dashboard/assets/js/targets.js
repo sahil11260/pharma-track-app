@@ -48,6 +48,7 @@
     return {
       id: Number(t.id),
       mrName: t.mrName,
+      product: t.period || "General",
       salesTarget: Number(t.salesTarget) || 0,
       salesAchievement: Number(t.salesAchievement) || 0,
       startDate: t.startDate || "",
@@ -363,7 +364,7 @@
     const tbody = document.getElementById("targetsList");
     if (!tbody) return;
     tbody.innerHTML = "";
-    data.forEach((target) => {
+    data.forEach((target, index) => {
       const achievementBadge = getAchievementBadge(
         target.achievementPercentage
       );
@@ -372,19 +373,26 @@
       )}">${escapeHtml(
         target.status.charAt(0).toUpperCase() + target.status.slice(1)
       )}</span>`;
+
+      const displayDate = target.startDate ? new Date(target.startDate).toLocaleDateString('en-IN') : '-';
+
       const row = document.createElement("tr");
       row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${displayDate}</td>
         <td>${escapeHtml(target.mrName)}</td>
-        <td>\u20B9${target.salesTarget.toLocaleString()}</td>
-        <td>\u20B9${target.salesAchievement.toLocaleString()}</td>
+        <td>${escapeHtml(target.product)}</td>
+        <td><span class="badge bg-secondary">Monthly</span></td>
+        <td>${target.salesTarget.toLocaleString()}</td>
+        <td>${target.salesAchievement.toLocaleString()}</td>
 
-        <td>${target.achievementPercentage}%</td>
+        <td class="${target.achievementPercentage >= 100 ? 'text-success fw-bold' : ''}">${target.achievementPercentage}%</td>
         <td>${statusBadge}</td>
         <td>
-          <button class="btn btn-outline-info btn-sm" data-action="view" data-id="${target.id
-        }"><i class="bi bi-eye"></i></button>
-          <button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="${target.id
-        }"><i class="bi bi-pencil"></i></button>
+          <div class="d-flex">
+            <button class="btn btn-outline-info btn-sm me-1" data-action="view" data-id="${target.id}" title="View"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="${target.id}" title="Edit"><i class="bi bi-pencil"></i></button>
+          </div>
         </td>
       `;
       tbody.appendChild(row);

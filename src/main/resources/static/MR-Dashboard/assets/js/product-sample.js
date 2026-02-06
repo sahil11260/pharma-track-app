@@ -175,11 +175,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         populateDistributionModal(productId, productName);
     });
 
-    // --- EXECUTE INITIALIZATION ---
-
     async function loadProductsFromApiOrFallback() {
         try {
-            const stockItems = await apiJson(API.MR_STOCK);
+            const currentUserName = localStorage.getItem('signup_name') || '';
+            const stockItems = await apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`);
             if (Array.isArray(stockItems) && stockItems.length > 0) {
                 return stockItems.map(p => ({ id: p.id, name: p.name }));
             }
@@ -192,7 +191,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function loadStockReceivedFromApiOrFallback() {
         try {
-            const received = await apiJson(API.STOCK_RECEIVED);
+            const currentUserName = localStorage.getItem('signup_name') || '';
+            const received = await apiJson(`${API.STOCK_RECEIVED}?userName=${encodeURIComponent(currentUserName)}`);
             if (Array.isArray(received)) {
                 return received.map(r => ({
                     productId: r.productId,
@@ -210,7 +210,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function loadDcrsFromApiOrFallback() {
         try {
-            const dcrs = await apiJson(API.DCRS);
+            const currentUserName = localStorage.getItem('signup_name') || '';
+            const dcrs = await apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`);
             if (Array.isArray(dcrs)) {
                 return dcrs;
             }

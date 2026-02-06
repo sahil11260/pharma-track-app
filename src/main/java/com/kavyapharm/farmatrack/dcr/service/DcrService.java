@@ -34,6 +34,13 @@ public class DcrService {
                 .stream().map(DcrService::toResponse).toList();
     }
 
+    public List<DcrResponse> listByMr(String mrName) {
+        return dcrRepository.findAll(Sort.by(Sort.Direction.DESC, "reportId"))
+                .stream()
+                .filter(r -> r.getMrName() != null && r.getMrName().equals(mrName))
+                .map(DcrService::toResponse).toList();
+    }
+
     public DcrResponse get(Long reportId) {
         Objects.requireNonNull(reportId, "reportId is required");
         return toResponse(getEntity(reportId));
@@ -45,10 +52,13 @@ public class DcrService {
 
         DcrReport report = new DcrReport();
         report.setReportId(reportId);
-        applyFields(report, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(), request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(), request.samplesGiven());
+        report.setMrName(request.mrName());
+        applyFields(report, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(),
+                request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(),
+                request.samplesGiven());
         report.setSubmissionTime(Instant.now().toString());
 
-        deductStock(report.getSamplesGiven());
+        deductStock(report.getMrName(), report.getSamplesGiven());
 
         return toResponse(dcrRepository.save(report));
     }
@@ -58,12 +68,14 @@ public class DcrService {
         Objects.requireNonNull(reportId, "reportId is required");
         DcrReport existing = getEntity(reportId);
 
-        refundStock(existing.getSamplesGiven());
+        refundStock(existing.getMrName(), existing.getSamplesGiven());
 
-        applyFields(existing, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(), request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(), request.samplesGiven());
+        applyFields(existing, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(),
+                request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(),
+                request.samplesGiven());
         existing.setSubmissionTime(Instant.now().toString());
 
-        deductStock(existing.getSamplesGiven());
+        deductStock(existing.getMrName(), existing.getSamplesGiven());
 
         return toResponse(dcrRepository.save(existing));
     }
@@ -76,12 +88,12 @@ public class DcrService {
         }
 
         DcrReport existing = getEntity(reportId);
-        refundStock(existing.getSamplesGiven());
+        refundStock(existing.getMrName(), existing.getSamplesGiven());
         dcrRepository.deleteById(reportId);
     }
 
-    private void refundStock(List<DcrSampleItem> items) {
-        if (items == null) {
+    private void refundStock(String mrName, List<DcrSampleItem> items) {
+        if (items == null || mrName == null) {
             return;
         }
         for (DcrSampleItem item : items) {
@@ -92,12 +104,12 @@ public class DcrService {
             if (qty <= 0) {
                 continue;
             }
-            mrStockService.adjustStockOrThrow(item.getProductId(), qty);
+            mrStockService.adjustStockOrThrow(item.getProductId(), mrName, qty);
         }
     }
 
-    private void deductStock(List<DcrSampleItem> items) {
-        if (items == null) {
+    private void deductStock(String mrName, List<DcrSampleItem> items) {
+        if (items == null || mrName == null) {
             return;
         }
         for (DcrSampleItem item : items) {
@@ -108,7 +120,7 @@ public class DcrService {
             if (qty <= 0) {
                 continue;
             }
-            mrStockService.adjustStockOrThrow(item.getProductId(), -qty);
+            mrStockService.adjustStockOrThrow(item.getProductId(), mrName, -qty);
         }
     }
 
@@ -122,8 +134,7 @@ public class DcrService {
             String dateTime,
             String rating,
             String remarks,
-            List<DcrSampleItemRequest> samplesGiven
-    ) {
+            List<DcrSampleItemRequest> samplesGiven) {
         report.setVisitTitle(visitTitle);
         report.setVisitType(visitType);
         report.setDoctorId(doctorId);
@@ -158,7 +169,9 @@ public class DcrService {
     public static DcrResponse toResponse(DcrReport report) {
         List<DcrSampleItemResponse> samples = report.getSamplesGiven() == null
                 ? List.of()
-                : report.getSamplesGiven().stream().filter(Objects::nonNull).map(i -> new DcrSampleItemResponse(i.getProductId(), i.getProductName(), i.getQuantity())).toList();
+                : report.getSamplesGiven().stream().filter(Objects::nonNull)
+                        .map(i -> new DcrSampleItemResponse(i.getProductId(), i.getProductName(), i.getQuantity()))
+                        .toList();
 
         return new DcrResponse(
                 report.getReportId(),
@@ -171,7 +184,6 @@ public class DcrService {
                 report.getRating(),
                 report.getRemarks(),
                 samples,
-                report.getSubmissionTime()
-        );
+                report.getSubmissionTime());
     }
 }

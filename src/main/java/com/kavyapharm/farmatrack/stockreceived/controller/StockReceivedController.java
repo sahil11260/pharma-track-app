@@ -21,12 +21,15 @@ public class StockReceivedController {
     }
 
     @GetMapping
-    public List<StockReceivedEntryResponse> list(@RequestParam(required = false) String productId) {
-        return service.list(productId);
+    public List<StockReceivedEntryResponse> list(
+            @RequestParam(required = false) String productId,
+            @RequestParam(required = false) String userName) {
+        return service.list(productId, userName);
     }
 
     @PostMapping
-    public ResponseEntity<StockReceivedEntryResponse> create(@Valid @RequestBody CreateStockReceivedEntryRequest request) {
+    public ResponseEntity<StockReceivedEntryResponse> create(
+            @Valid @RequestBody CreateStockReceivedEntryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
     }
 

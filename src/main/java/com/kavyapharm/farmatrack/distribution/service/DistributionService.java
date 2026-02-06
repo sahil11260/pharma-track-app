@@ -24,6 +24,7 @@ public class DistributionService {
         d.setQuantity(request.quantity());
         d.setRecipient(request.recipient());
         d.setNotes(request.notes());
+        d.setUserName(request.userName());
         d.setDate(LocalDate.now());
         d.setStatus("completed");
         return distributionRepository.save(d);
@@ -31,5 +32,12 @@ public class DistributionService {
 
     public List<Distribution> list() {
         return distributionRepository.findAll();
+    }
+
+    public List<Distribution> listByUser(String userName) {
+        return distributionRepository.findAll().stream()
+                .filter(d -> userName == null || userName.isBlank()
+                        || (d.getUserName() != null && d.getUserName().equals(userName)))
+                .toList();
     }
 }

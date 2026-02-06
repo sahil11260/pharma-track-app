@@ -21,7 +21,10 @@ public class DistributionController {
     }
 
     @GetMapping
-    public List<Distribution> list() {
+    public List<Distribution> list(@RequestParam(required = false) String userName) {
+        if (userName != null && !userName.isBlank()) {
+            return distributionService.listByUser(userName);
+        }
         return distributionService.list();
     }
 

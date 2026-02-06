@@ -22,22 +22,27 @@ public class MrStockController {
     }
 
     @GetMapping
-    public List<MrStockItemResponse> list() {
+    public List<MrStockItemResponse> list(@RequestParam(required = false) String userName) {
+        if (userName != null && !userName.isBlank()) {
+            return mrStockService.listForUser(userName);
+        }
         return mrStockService.list();
     }
 
     @GetMapping("/{id}")
-    public MrStockItemResponse get(@PathVariable String id) {
-        return mrStockService.get(id);
+    public MrStockItemResponse get(@PathVariable String id, @RequestParam String userName) {
+        return mrStockService.get(id, userName);
     }
 
     @PutMapping("/{id}")
-    public MrStockItemResponse update(@PathVariable String id, @Valid @RequestBody UpdateMrStockItemRequest request) {
-        return mrStockService.update(id, request);
+    public MrStockItemResponse update(@PathVariable String id, @RequestParam String userName,
+            @Valid @RequestBody UpdateMrStockItemRequest request) {
+        return mrStockService.update(id, userName, request);
     }
 
     @PostMapping
-    public ResponseEntity<MrStockItemResponse> create(@Valid @RequestBody CreateMrStockItemRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(mrStockService.create(request));
+    public ResponseEntity<MrStockItemResponse> create(@RequestParam String userName,
+            @Valid @RequestBody CreateMrStockItemRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(mrStockService.create(request, userName));
     }
 }

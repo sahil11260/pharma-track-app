@@ -53,6 +53,8 @@ document.addEventListener("DOMContentLoaded", () => {
       person: t.mrName,
       product: t.period,
       qty: Number(t.salesTarget) || 0,
+      achieved: Number(t.salesAchievement) || 0,
+      achievementPercentage: Math.round(Number(t.achievementPercentage) || 0),
       givenDate: t.startDate || "",
       deadline: t.endDate || "",
       status: mapApiStatusToUi(t)
@@ -245,19 +247,24 @@ document.addEventListener("DOMContentLoaded", () => {
           (t, i) => `
         <tr>
           <td>${start + i + 1}</td>
-          <td class="fw-bold text-primary">${t.product}</td>
-          <td>${t.person}</td>
-          <td>${t.qty} units</td>
           <td>${formatDate(t.givenDate)}</td>
-          <td>${formatDate(t.deadline)}</td>
+          <td>${t.person}</td>
+          <td class="fw-bold text-primary">${t.product}</td>
+          <td>${t.qty.toLocaleString()}</td>
+          <td>${t.achieved.toLocaleString()}</td>
+          <td class="${t.achievementPercentage >= 100 ? 'text-success fw-bold' : ''}">${t.achievementPercentage}%</td>
+          <td>
+            <span class="badge ${t.status === 'Achieved' ? 'bg-success' : 'bg-warning text-dark'}">
+              ${t.status}
+            </span>
+          </td>
           <td>
             <div class="d-flex align-items-center">
               ${t.status === "Pending"
               ? `
                 <button class="btn btn-sm btn-outline-success me-1" onclick="markAchieved(${t.id})" title="Achieved"><i class="bi bi-check-lg"></i></button>
-                <button class="btn btn-sm btn-outline-warning me-1" onclick="markPending(${t.id})" title="Pending"><i class="bi bi-arrow-repeat"></i></button>
                 `
-              : `<span class="badge bg-success me-2">${t.status}</span>`
+              : `<button class="btn btn-sm btn-outline-warning me-1" onclick="markPending(${t.id})" title="Mark Pending"><i class="bi bi-arrow-repeat"></i></button>`
             }
               <button class="btn btn-sm btn-outline-primary me-1" onclick="editTarget(${t.id})"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger" onclick="deleteTarget(${t.id})"><i class="bi bi-trash"></i></button>
@@ -265,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </td>
         </tr>`
         )
-        .join("") || `<tr><td colspan="7" class="text-center text-muted">No targets found</td></tr>`;
+        .join("") || `<tr><td colspan="9" class="text-center text-muted">No targets found</td></tr>`;
 
     renderPagination(totalPages, filtered);
   }

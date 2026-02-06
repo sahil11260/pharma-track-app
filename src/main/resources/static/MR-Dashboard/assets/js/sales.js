@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Since backend is aggregate, we label it "Total Sales"
             newProductTargets.push({
                 assignedDate: assignmentDate,
-                product: "Total Sales", // Aggregate
+                product: t.period || "General Target",
                 type: t.period || "Monthly",
                 target: t.salesTarget || 0,
                 achieved: t.salesAchievement || 0,
@@ -229,6 +229,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderAll() {
+        // Update headers with current month/year
+        const now = new Date();
+        const monthYear = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        const prodHeader = document.querySelector('.card-header h6.text-muted');
+        if (prodHeader && prodHeader.textContent.includes('Product-wise')) {
+            prodHeader.textContent = `Product-wise Target & Achievement for ${monthYear}`;
+        }
+
+        // Also update visit header if found
+        const visitCards = document.querySelectorAll('.card-header h6.text-muted');
+        visitCards.forEach(header => {
+            if (header.textContent.includes('Doctor Visit')) {
+                header.textContent = `Doctor Visit Targets & Achievement for ${monthYear}`;
+            }
+        });
+
         renderProducts();
         renderVisits();
     }

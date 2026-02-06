@@ -31,28 +31,79 @@ public class Distribution {
     @Column(nullable = false)
     private String status = "completed";
 
+    @Column(nullable = true)
+    private String userName; // Manager who made the distribution
+
     // Getters & setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getProduct() { return product; }
-    public void setProduct(String product) { this.product = product; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getMr() { return mr; }
-    public void setMr(String mr) { this.mr = mr; }
+    public String getProduct() {
+        return product;
+    }
 
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public void setProduct(String product) {
+        this.product = product;
+    }
 
-    public String getRecipient() { return recipient; }
-    public void setRecipient(String recipient) { this.recipient = recipient; }
+    public String getMr() {
+        return mr;
+    }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
+    public void setMr(String mr) {
+        this.mr = mr;
+    }
 
-    public LocalDate getDate() { return date; }
-    public void setDate(LocalDate date) { this.date = date; }
+    public Integer getQuantity() {
+        return quantity;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
 }

@@ -46,6 +46,9 @@ public class DcrReport {
     @CollectionTable(name = "app_dcr_sample_item", joinColumns = @JoinColumn(name = "report_id"))
     private List<DcrSampleItem> samplesGiven = new ArrayList<>();
 
+    @Column(nullable = true)
+    private String mrName;
+
     @Column(nullable = false)
     private String submissionTime;
 
@@ -130,6 +133,14 @@ public class DcrReport {
 
     public void setSamplesGiven(List<DcrSampleItem> samplesGiven) {
         this.samplesGiven = samplesGiven;
+    }
+
+    public String getMrName() {
+        return mrName;
+    }
+
+    public void setMrName(String mrName) {
+        this.mrName = mrName;
     }
 
     public String getSubmissionTime() {

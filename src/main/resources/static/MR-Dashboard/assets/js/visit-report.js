@@ -79,9 +79,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function refreshFromApiOrFallback() {
         try {
+            const currentUserName = localStorage.getItem('signup_name') || '';
             const [stockItems, dcrs] = await Promise.all([
-                apiJson(API.MR_STOCK),
-                apiJson(API.DCRS)
+                apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`),
+                apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`)
             ]);
 
             if (Array.isArray(stockItems)) {
@@ -594,6 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (async function () {
             if (apiMode) {
                 try {
+                    const currentUserName = localStorage.getItem('signup_name') || '';
                     const payload = {
                         visitTitle: newReportData.visitTitle,
                         visitType: newReportData.visitType,
@@ -602,6 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         clinicLocation: newReportData.clinicLocation,
                         dateTime: newReportData.dateTime,
                         rating: newReportData.rating,
+                        mrName: currentUserName,
                         remarks: newReportData.remarks,
                         samplesGiven: newReportData.samplesGiven
                     };
