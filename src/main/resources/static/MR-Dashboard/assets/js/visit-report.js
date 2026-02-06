@@ -24,8 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return await res.json();
     }
 
-    // --- MOCK DATA ---
-    const assignedDoctors = [];
+    // Doctors will be loaded from API
+    let assignedDoctors = [];
 
     let mrStock = JSON.parse(localStorage.getItem('mrProductStock')) || [];
 
@@ -80,9 +80,10 @@ document.addEventListener("DOMContentLoaded", () => {
     async function refreshFromApiOrFallback() {
         try {
             const currentUserName = localStorage.getItem('signup_name') || '';
-            const [stockItems, dcrs] = await Promise.all([
+            const [stockItems, dcrs, doctors] = await Promise.all([
                 apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`),
-                apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`)
+                apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`),
+                apiJson(`/api/doctors?mrName=${encodeURIComponent(currentUserName)}`)
             ]);
 
             if (Array.isArray(stockItems)) {
@@ -92,6 +93,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (Array.isArray(dcrs)) {
                 submittedDCRs = dcrs;
                 saveDCRs();
+            }
+            if (Array.isArray(doctors)) {
+                assignedDoctors = doctors.map(d => ({
+                    id: d.id || d.doctorId,
+                    name: d.name || d.doctorName,
+                    clinic: d.clinicName || d.clinic || 'Default Clinic'
+                }));
+                populateDoctors();
             }
             apiMode = true;
         } catch (e) {

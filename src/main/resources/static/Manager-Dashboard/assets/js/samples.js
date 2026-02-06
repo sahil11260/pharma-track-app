@@ -74,27 +74,43 @@ async function apiJson(url, options) {
 
 async function refreshMrsFromApiOrFallback() {
   try {
-    const currentManager = localStorage.getItem("signup_name") || "";
-    const users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentManager)}`);
+    let userObj = {};
+    try {
+      userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+    } catch (e) { }
+
+    const currentName = userObj.name || localStorage.getItem("signup_name") || "";
+    const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
+
+    console.log("[SAMPLES] Fetching MRs for manager:", currentName || currentEmail);
+    let users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentName || currentEmail)}&role=MR`);
+
+    if ((!users || users.length === 0) && currentName && currentEmail && currentName !== currentEmail) {
+      console.log("[SAMPLES] First query empty, trying email fallback query...");
+      users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentEmail)}&role=MR`);
+    }
+
     if (Array.isArray(users)) {
+      // Use backend results directly (backend handles manager identity filtering securely)
       const onlyMrs = users
-        .filter((u) => u && String(u.role || "").toUpperCase() === "MR" && u.assignedManager === currentManager)
-        .map((u) => ({ id: String(u.id), name: u.name }))
+        .filter((u) => u && u.role && String(u.role).toUpperCase().includes("MR"))
+        .map((u) => ({ id: String(u.id), name: u.name, email: u.email }))
         .filter((u) => u && u.name);
 
-      const uniqueByName = new Map();
+      const uniqueByEmail = new Map();
       onlyMrs.forEach((u) => {
-        const key = String(u.name).trim();
+        const key = String(u.email || u.name).trim().toLowerCase();
         if (!key) return;
-        if (!uniqueByName.has(key)) uniqueByName.set(key, u);
+        if (!uniqueByEmail.has(key)) uniqueByEmail.set(key, u);
       });
 
-      mrData = Array.from(uniqueByName.values());
+      mrData = Array.from(uniqueByEmail.values());
+      console.log("[SAMPLES] Loaded", mrData.length, "MRs from API");
       saveData("mrData", mrData);
       return;
     }
   } catch (e) {
-    console.warn("MR users API unavailable, using localStorage.", e);
+    console.warn("[SAMPLES] MR users API unavailable, using localStorage.", e);
   }
 
   // Fallback (localStorage), and if empty then mock data
