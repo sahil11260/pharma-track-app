@@ -5,16 +5,34 @@
 
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token");
-    if (!token) return {};
+    console.log("[REPORTS] Auth token exists:", !!token);
+    console.log("[REPORTS] Auth token (first 20 chars):", token ? token.substring(0, 20) + "..." : "NULL");
+    if (!token) {
+      console.error("[REPORTS] No auth token found! User needs to login.");
+      return {};
+    }
     return { Authorization: `Bearer ${token}` };
   }
 
   async function apiJson(url, options) {
+    console.log("[REPORTS] Making API call to:", url);
+    const headers = Object.assign({ "Content-Type": "application/json" }, getAuthHeader());
+    console.log("[REPORTS] Request headers:", headers);
+
     const res = await fetch(url, Object.assign({
-      headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader())
+      headers: headers
     }, options || {}));
+
+    console.log("[REPORTS] Response status:", res.status, res.statusText);
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
+      console.error("[REPORTS] API Error Response:", text);
+
+      if (res.status === 403) {
+        throw new Error("Access Forbidden (403). Your session may have expired. Please logout and login again.");
+      }
+
       throw new Error(text || `HTTP ${res.status}`);
     }
     if (res.status === 204) return null;
@@ -219,30 +237,115 @@
   let currentPage = 1;
   const pageSize = 5;
 
+
   // -------------------------
-  // Persistence
+  // Persistence & API Loading
   // -------------------------
-  function loadReportsData() {
+  async function loadReportsData() {
     try {
-      const persistedData = localStorage.getItem("reportsData");
-      if (persistedData) {
-        window.reportsData = JSON.parse(persistedData);
-      } else {
-        window.reportsData = initialReportsData;
-        saveReportsData();
+      console.log("[REPORTS] === STARTING REPORTS LOAD ===");
+      console.log("[REPORTS] Step 1: Fetching from API...");
+      console.log("[REPORTS] API URL:", `${API_BASE}/api/dcrs`);
+
+      // Fetch all DCRs from the backend
+      const dcrs = await apiJson(`${API_BASE}/api/dcrs`);
+      console.log("[REPORTS] Step 2: Received response");
+      console.log("[REPORTS] Response type:", typeof dcrs);
+      console.log("[REPORTS] Is array?", Array.isArray(dcrs));
+      console.log("[REPORTS] DCRs data:", dcrs);
+      console.log("[REPORTS] Number of DCRs:", Array.isArray(dcrs) ? dcrs.length : 0);
+
+      if (!Array.isArray(dcrs)) {
+        console.error("[REPORTS] ERROR: API did not return an array!");
+        alert(`ERROR: API returned ${typeof dcrs} instead of array. Check console for details.`);
+        window.reportsData = [];
+        return;
       }
+
+      if (dcrs.length === 0) {
+        console.warn("[REPORTS] WARNING: No DCRs found in database");
+        alert("No DCR reports found in the database. MRs need to submit DCR reports first.");
+        window.reportsData = [];
+        return;
+      }
+
+      // Get list of MR names assigned to current manager
+      console.log("[REPORTS] Step 3: Checking my MRs...");
+      console.log("[REPORTS] window.mrData:", window.mrData);
+      const myMrNames = window.mrData.map(mr => mr.name.toLowerCase().trim());
+      console.log("[REPORTS] My MR names (lowercase):", myMrNames);
+      console.log("[REPORTS] Number of my MRs:", myMrNames.length);
+
+      if (myMrNames.length === 0) {
+        console.warn("[REPORTS] WARNING: No MRs assigned to this manager");
+        alert("You have no MRs assigned to you. Please ask admin to assign MRs.");
+        window.reportsData = [];
+        return;
+      }
+
+      // Debug: Show all DCR mrNames
+      console.log("[REPORTS] Step 4: Checking DCR mrNames...");
+      dcrs.forEach((dcr, idx) => {
+        console.log(`[REPORTS]   DCR ${idx + 1}: mrName="${dcr.mrName}" (reportId: ${dcr.reportId})`);
+      });
+
+      // Transform DCRs to report format and filter by manager's MRs
+      console.log("[REPORTS] Step 5: Filtering and transforming...");
+      const filteredDcrs = dcrs.filter(dcr => {
+        const dcrMrName = (dcr.mrName || "").toLowerCase().trim();
+        const belongs = myMrNames.includes(dcrMrName);
+        console.log(`[REPORTS]   DCR from "${dcr.mrName}" -> normalized: "${dcrMrName}" -> belongs: ${belongs}`);
+        return belongs;
+      });
+
+      console.log("[REPORTS] Filtered DCRs count:", filteredDcrs.length);
+
+      window.reportsData = filteredDcrs.map(dcr => ({
+        id: dcr.reportId,
+        type: "visit-report",
+        mrName: dcr.mrName || "Unknown",
+        title: dcr.visitTitle || "DCR Report",
+        status: "pending",
+        submittedDate: dcr.submissionTime ? dcr.submissionTime.split('T')[0] : new Date().toISOString().split('T')[0],
+        visitDate: dcr.dateTime || "",
+        doctorName: dcr.doctorName || "",
+        clinicName: dcr.clinicLocation || "",
+        visitSummary: `Visit Type: ${dcr.visitType || 'N/A'}\nDoctor: ${dcr.doctorName || 'N/A'}\nLocation: ${dcr.clinicLocation || 'N/A'}`,
+        keyOutcomes: dcr.remarks || "No remarks provided",
+        followUpActions: `Rating: ${dcr.rating || 'N/A'} stars`,
+        attachments: [],
+        feedback: {
+          doctorSatisfaction: parseInt(dcr.rating) || 0,
+          productInterest: 0,
+          overallExperience: 0,
+          comments: dcr.remarks || ""
+        },
+        approvedBy: null,
+        approvedDate: null,
+        rejectionReason: null
+      }));
+
+      console.log("[REPORTS] Step 6: Final transformed reports:", window.reportsData);
+      console.log("[REPORTS] Final count:", window.reportsData.length);
+      console.log("[REPORTS] === REPORTS LOAD COMPLETE ===");
+
+      // Alert user about results
+      if (window.reportsData.length === 0) {
+        alert(`Found ${dcrs.length} total DCRs, but none from your assigned MRs.\n\nYour MRs: ${myMrNames.join(', ')}\n\nDCR MR names: ${dcrs.map(d => d.mrName).join(', ')}`);
+      } else {
+        console.log(`[REPORTS] SUCCESS: Loaded ${window.reportsData.length} reports`);
+      }
+
     } catch (e) {
-      console.error("Error loading reports data from localStorage:", e);
-      window.reportsData = initialReportsData;
+      console.error("[REPORTS] FATAL ERROR:", e);
+      console.error("[REPORTS] Error stack:", e.stack);
+      alert(`ERROR loading reports: ${e.message}\n\nCheck browser console for details.`);
+      window.reportsData = [];
     }
   }
 
   function saveReportsData() {
-    try {
-      localStorage.setItem("reportsData", JSON.stringify(window.reportsData));
-    } catch (e) {
-      console.error("Error saving reports data to localStorage:", e);
-    }
+    console.log("[REPORTS] saveReportsData called (no-op for API-based data)");
   }
 
   // -------------------------
@@ -536,14 +639,23 @@
   // -------------------------
   // Initialization
   // -------------------------
-  function initialize() {
-    refreshMrList().then(() => {
-      loadReportsData();
+  async function initialize() {
+    try {
+      // First load MR list
+      await refreshMrList();
+
+      // Then load DCR reports (which filters by MR list)
+      await loadReportsData();
+
+      // Wire up filter controls
       wireFilterControls();
-      // initial render
+
+      // Initial render with loaded data
       refreshAndPersist(window.reportsData);
       populateNotifications();
-    });
+    } catch (e) {
+      console.error("[REPORTS] Initialization error:", e);
+    }
 
     // notifications button: populate and open modal
     const notifyBtn = document.getElementById("notifyBtn");
@@ -553,10 +665,6 @@
         try { new bootstrap.Modal(document.getElementById("notificationsModal")).show(); } catch (e) { }
       });
     }
-
-    // initial render
-    refreshAndPersist(window.reportsData);
-    populateNotifications();
   }
 
   function refreshAndPersist(filtered = null) {

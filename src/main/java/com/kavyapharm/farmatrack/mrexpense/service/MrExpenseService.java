@@ -41,6 +41,9 @@ public class MrExpenseService {
 
     public MrExpenseResponse create(CreateMrExpenseRequest request) {
         String mrName = getCurrentMrName();
+        System.out.println("[MR-EXPENSE] Creating expense for: '" + mrName + "', amount: " + request.amount()
+                + ", category: " + request.category());
+
         long id = request.id() == null ? System.currentTimeMillis() : request.id();
         if (repository.existsById(id)) {
             id = System.currentTimeMillis();
@@ -56,7 +59,10 @@ public class MrExpenseService {
         expense.setStatus("Pending");
         expense.setMrName(mrName);
 
-        return toResponse(repository.save(expense));
+        MrExpense saved = repository.save(expense);
+        System.out.println(
+                "[MR-EXPENSE] Successfully saved expense ID: " + saved.getId() + " for MR: " + saved.getMrName());
+        return toResponse(saved);
     }
 
     public MrExpenseResponse update(Long id, UpdateMrExpenseRequest request) {
@@ -95,7 +101,7 @@ public class MrExpenseService {
         }
         String email = auth.getName();
         return userRepository.findByEmailIgnoreCase(email)
-                .map(com.kavyapharm.farmatrack.user.model.User::getName)
+                .map(user -> user.getName() != null ? user.getName().trim() : email)
                 .orElse(email);
     }
 

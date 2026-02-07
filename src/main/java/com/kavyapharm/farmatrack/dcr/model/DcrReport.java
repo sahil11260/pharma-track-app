@@ -42,7 +42,7 @@ public class DcrReport {
     @Column(columnDefinition = "TEXT")
     private String remarks;
 
-    @ElementCollection
+    @ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
     @CollectionTable(name = "app_dcr_sample_item", joinColumns = @JoinColumn(name = "report_id"))
     private List<DcrSampleItem> samplesGiven = new ArrayList<>();
 
