@@ -86,38 +86,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function refreshFromApiOrFallback() {
-        try {
-            const currentUserName = localStorage.getItem('signup_name') || '';
-            const [stockItems, dcrs, doctors] = await Promise.all([
-                apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`),
-                apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`),
-                apiJson(`/api/doctors`) // Backend filters by authenticated user automatically
-            ]);
+        const currentUserName = localStorage.getItem('signup_name') || '';
+        console.log('[DCR] Refreshing data for user:', currentUserName);
 
+        // 1. Fetch Stock
+        try {
+            const stockItems = await apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`);
             if (Array.isArray(stockItems)) {
                 mrStock = stockItems.map(p => ({ id: p.id, name: p.name, stock: Number(p.stock) || 0 }));
                 saveStock();
+                console.log('[DCR] Loaded stock:', mrStock.length);
             }
+        } catch (e) {
+            console.warn('[DCR] Failed to load stock from API.', e);
+        }
+
+        // 2. Fetch DCRs
+        try {
+            const dcrs = await apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`);
             if (Array.isArray(dcrs)) {
                 submittedDCRs = dcrs;
                 saveDCRs();
+                console.log('[DCR] Loaded DCRs:', submittedDCRs.length);
             }
+        } catch (e) {
+            console.warn('[DCR] Failed to load DCRs from API.', e);
+        }
+
+        // 3. Fetch Doctors
+        let doctorsLoaded = false;
+        try {
+            const doctors = await apiJson(`/api/doctors`);
             if (Array.isArray(doctors)) {
-                console.log('[DCR] Loaded doctors from API:', doctors);
                 assignedDoctors = doctors.map(d => ({
-                    id: d.id || d.doctorId,
-                    name: d.name || d.doctorName,
+                    id: d.id || d.doctorId || d.id,
+                    name: d.name || d.doctorName || 'Unknown Doctor',
                     clinic: d.clinicName || d.clinic || 'Default Clinic'
                 }));
-                console.log('[DCR] Mapped doctors:', assignedDoctors);
+                console.log('[DCR] Loaded doctors:', assignedDoctors.length);
+                populateDoctors();
+                doctorsLoaded = true;
+            }
+        } catch (e) {
+            console.warn('[DCR] Failed to load doctors from API.', e);
+        }
+
+        // Fallback for doctors if API failed (shared with doctors.js storage)
+        if (!doctorsLoaded) {
+            const storedDoctors = localStorage.getItem("mrAssignedDoctors");
+            if (storedDoctors) {
+                assignedDoctors = JSON.parse(storedDoctors);
+                console.log('[DCR] Loaded doctors from localStorage backup:', assignedDoctors.length);
                 populateDoctors();
             }
-            apiMode = true;
-        } catch (e) {
-            console.warn('Failed to load visit report data from API. Falling back to localStorage.', e);
-            apiMode = false;
-            // keep existing localStorage data
         }
+
+        apiMode = true; // Still set to true as at least we tried
+        renderSubmittedDCRTable();
+        populateProductSelect(sampleProductSelect);
     }
 
     function getProductStock(productId) {
@@ -719,10 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!localStorage.getItem('mrProductStock')) {
         saveStock();
     }
-    populateDoctors();
     (async function () {
         await refreshFromApiOrFallback();
-        renderSubmittedDCRTable();
-        populateProductSelect(sampleProductSelect);
     })();
 });
