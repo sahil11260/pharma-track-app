@@ -29,7 +29,18 @@ public class MrExpense {
     @Column(nullable = false)
     private String status;
 
+    @Column(nullable = true)
+    private String mrName;
+
     public MrExpense() {
+    }
+
+    public String getMrName() {
+        return mrName;
+    }
+
+    public void setMrName(String mrName) {
+        this.mrName = mrName;
     }
 
     public Long getId() {

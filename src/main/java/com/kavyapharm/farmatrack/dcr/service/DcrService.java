@@ -35,9 +35,8 @@ public class DcrService {
     }
 
     public List<DcrResponse> listByMr(String mrName) {
-        return dcrRepository.findAll(Sort.by(Sort.Direction.DESC, "reportId"))
+        return dcrRepository.findByMrNameIgnoreCase(mrName, Sort.by(Sort.Direction.DESC, "reportId"))
                 .stream()
-                .filter(r -> r.getMrName() != null && r.getMrName().equals(mrName))
                 .map(DcrService::toResponse).toList();
     }
 

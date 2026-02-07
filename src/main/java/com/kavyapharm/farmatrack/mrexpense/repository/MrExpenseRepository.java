@@ -4,4 +4,5 @@ import com.kavyapharm.farmatrack.mrexpense.model.MrExpense;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MrExpenseRepository extends JpaRepository<MrExpense, Long> {
+    java.util.List<MrExpense> findByMrNameIgnoreCase(String mrName, org.springframework.data.domain.Sort sort);
 }

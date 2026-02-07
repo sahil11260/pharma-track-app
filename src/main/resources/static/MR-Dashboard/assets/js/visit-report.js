@@ -381,7 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
                 <td>${dcr.visitType}</td>
                 <td class="text-center">${ratingText}</td>
-                <td class="small">${samplesSummary}</td>
+                <!-- <td class="small">${samplesSummary}</td> -->
                 <td class="small">${remarks.substring(0, 50)}${remarks.length > 50 ? '...' : ''}</td>
                 <td class="text-center">
                     <div class="btn-group btn-group-sm">

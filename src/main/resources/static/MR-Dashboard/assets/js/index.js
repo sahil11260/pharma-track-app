@@ -86,28 +86,20 @@
     }
   }
 
-  async function saveDashboard(obj) {
-    try {
-      const data = await apiJson(API.DASHBOARD, {
-        method: "PUT",
-        body: JSON.stringify(obj || {})
-      });
-      return Object.assign({}, DEFAULTS, data || {});
-    } catch (e) {
-      warn("saveDashboard API error:", e);
-      saveDashboardToLocalStorage(obj);
-      return Object.assign({}, DEFAULTS, obj || {});
-    }
-  }
-
-
   function renderSummary(data) {
+    console.log("[MR-DASH] renderSummary called with data:", data);
+
     const elSales = $id("dashSales");
     const elTarget = $id("dashTarget");
     const elTargetBar = $id("dashTargetBar");
     const elVisits = $id("dashVisits");
     const elExpPending = $id("dashExpensesPending");
     const elExpApproved = $id("dashExpensesApproved");
+
+    console.log("[MR-DASH] Element check:");
+    console.log("  - elVisits:", elVisits ? "found" : "NOT FOUND");
+    console.log("  - elExpPending:", elExpPending ? "found" : "NOT FOUND");
+    console.log("  - elExpApproved:", elExpApproved ? "found" : "NOT FOUND");
 
     if (elSales) elSales.textContent = formatINR(Number(data.sales) || 0);
     if (elTarget) {
@@ -118,9 +110,24 @@
         elTargetBar.setAttribute("aria-valuenow", String(pct));
       }
     }
-    if (elVisits) elVisits.textContent = String(Number(data.visits) || 0);
-    if (elExpPending) elExpPending.textContent = formatINR(Number(data.expensesPending) || 0);
-    if (elExpApproved) elExpApproved.textContent = formatINR(Number(data.expensesApproved) || 0);
+
+    if (elVisits) {
+      const visitsValue = String(Number(data.visits) || 0);
+      elVisits.textContent = visitsValue;
+      console.log("[MR-DASH] Set visits to:", visitsValue);
+    }
+
+    if (elExpPending) {
+      const pendingValue = formatINR(Number(data.expensesPending) || 0);
+      elExpPending.textContent = pendingValue;
+      console.log("[MR-DASH] Set expensesPending to:", pendingValue, "(raw:", data.expensesPending, ")");
+    }
+
+    if (elExpApproved) {
+      const approvedValue = formatINR(Number(data.expensesApproved) || 0);
+      elExpApproved.textContent = approvedValue;
+      console.log("[MR-DASH] Set expensesApproved to:", approvedValue, "(raw:", data.expensesApproved, ")");
+    }
   }
 
   async function loadNotifications() {
@@ -163,31 +170,14 @@
       warn("#todayDate element not found.");
     }
 
+
     const dashboardData = await loadDashboard();
     renderSummary(dashboardData);
-
-    // Load Tasks
-    loadTasks();
 
     // Load Notifications
     loadNotifications();
 
-
-    // Backwards-compatible update helper
-    window._mrUpdate = function (obj) {
-      (async function () {
-        try {
-          const current = await loadDashboard();
-          const merged = Object.assign({}, current, obj);
-          const saved = await saveDashboard(merged);
-          renderSummary(saved);
-        } catch (e) {
-          err("Dashboard update failed:", e);
-        }
-      })();
-    };
-
-    log("MR Dashboard ready. Use window._mrDebugAttendance(), _mrSimulateCheckIn(), _mrSimulateCheckOut().");
+    log("MR Dashboard ready.");
   }
 
   if (document.readyState === "loading") {
