@@ -21,31 +21,28 @@
             </button>
             <div class="d-flex ms-auto">
                 <div class="dropdown">
-                    <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
-                        data-bs-toggle="dropdown">
-                        <i class="bi bi-bell"></i>
-                        <span
-                            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
-                        <li class="dropdown-header fw-bold">Notifications</li>
-                        <li>
-                            <div class="dropdown-item small"><i class="bi bi-info-circle text-primary me-2"></i> New
-                                doctor added by Super Admin</div>
-                        </li>
-                        <li>
-                            <div class="dropdown-item small"><i class="bi bi-person-check text-success me-2"></i> 3
-                                doctors assigned to MR John</div>
-                        </li>
-                        <li>
-                            <div class="dropdown-item small"><i class="bi bi-envelope-open text-warning me-2"></i>
-                                Pending approval for expenses</div>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider" />
-                        </li>
-                    </ul>
-                </div>
+  <button class="btn btn-outline-secondary me-2 position-relative" 
+          id="notificationsBtn" 
+          data-bs-toggle="dropdown">
+    <i class="bi bi-bell"></i>
+
+    <!-- Red Dot -->
+    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
+    <li class="dropdown-header fw-bold">Notifications</li>
+    <li><hr class="dropdown-divider" /></li>
+    
+    <!-- Dynamic notifications will be inserted here -->
+    <li id="notificationList">
+      <div class="dropdown-item small text-center text-muted">
+        <i class="bi bi-hourglass-split me-2"></i>Loading...
+      </div>
+    </li>
+  </ul>
+</div>
+
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle"></i>
@@ -239,6 +236,7 @@
 
     <script src="assets/js/layout.js"></script>
     <script src="assets/js/dailyplan.js"></script>
+    <script src="assets/js/notifications.js"></script>
 
 </body>
 

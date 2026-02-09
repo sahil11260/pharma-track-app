@@ -20,9 +20,10 @@
       </button>
       <div class="d-flex">
 
-        <button class="btn btn-outline-secondary me-2" id="notifyBtn" data-bs-toggle="modal"
+        <button class="btn btn-outline-secondary me-2 position-relative" id="notifyBtn" data-bs-toggle="modal"
           data-bs-target="#notificationsModal" title="Notifications">
           <i class="bi bi-bell"></i>
+          <span id="notifyBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size: 0.6rem;">0</span>
         </button>
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown"
@@ -199,8 +200,8 @@
   <!-- 2) Your general site script (if you have one). Keep a single reference only. -->
   <script src="assets/js/script.js"></script>
 
-  <!-- 3) The robust notifications script (rename/move the file to this path) -->
-  <script src="assets/js/notifications-full.js"></script>
+  <!-- 3) The robust notifications script -->
+  <script src="assets/js/navbar-notifications.js"></script>
 
   <!-- Optional: any other page scripts (do NOT include an older Notification.js) -->
   <!-- <script src="assets/js/old-Notification.js"></script> --> <!-- removed on purpose -->
