@@ -101,10 +101,26 @@
 
   async function refreshTargetsFromApiOrFallback() {
     try {
-      const data = await apiJson(TARGETS_API_BASE);
+      // Get current manager info
+      let userObj = {};
+      try {
+        userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+      } catch (e) { }
+
+      const currentName = userObj.name || localStorage.getItem("signup_name") || "";
+      const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
+
+      // Use manager-filtered endpoint
+      const managerParam = encodeURIComponent(currentName || currentEmail);
+      const url = `${TARGETS_API_BASE}?manager=${managerParam}`;
+
+      console.log("[TARGETS] Fetching targets for manager:", currentName || currentEmail);
+      const data = await apiJson(url);
+
       if (Array.isArray(data)) {
         window.targetsData = data.map(normalizeTargetFromApi);
         targetsApiMode = true;
+        console.log("[TARGETS] Loaded", window.targetsData.length, "targets for manager's MRs");
         return;
       }
     } catch (e) {
