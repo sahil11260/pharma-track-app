@@ -33,6 +33,9 @@ public class Notification {
     @Column(nullable = true)
     private Long recipientId;
 
+    @Column(nullable = true)
+    private String targetRole; // ADMIN, MANAGER, MR - for role-based filtering
+
     @Column(nullable = false)
     private String priority;
 
@@ -101,5 +104,13 @@ public class Notification {
 
     public void setPriority(String priority) {
         this.priority = priority;
+    }
+
+    public String getTargetRole() {
+        return targetRole;
+    }
+
+    public void setTargetRole(String targetRole) {
+        this.targetRole = targetRole;
     }
 }

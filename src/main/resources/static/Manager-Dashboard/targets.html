@@ -260,6 +260,7 @@
           </div>
           <div class="modal-body">
             <form id="setTargetsForm">
+              <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
                     <label class="form-label">MR</label>
@@ -279,6 +280,21 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Product Selection (Visible only when Product is selected) -->
+              <div class="row" id="productSelectContainer">
+                <div class="col-md-12">
+                  <div class="mb-3">
+                    <label class="form-label">Select Product</label>
+                    <select class="form-select" id="targetProductSelect">
+                      <option value="">Select Product (Optional)</option>
+                      <!-- Product options will be populated -->
+                    </select>
+                    <small class="text-muted">If no product is selected, it will be assigned as "General Sales".</small>
+                  </div>
+                </div>
+              </div>
+
               <div class="row">
                 <div class="col-md-12">
                   <div class="mb-3">

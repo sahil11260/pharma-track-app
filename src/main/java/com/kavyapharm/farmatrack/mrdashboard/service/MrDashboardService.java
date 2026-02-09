@@ -97,19 +97,38 @@ public class MrDashboardService {
                     .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
                     .sum();
 
-            // 3. Calculate Sales & Target
+            // 3. Calculate Sales & Target (Product Sales only)
             List<SalesTarget> targets = salesTargetRepository.findByMrIdAndPeriodMonthAndPeriodYear(userId,
                     currentMonth, currentYear);
 
-            // Total units achieved (for product sales)
-            Integer achievedUnits = salesAchievementRepository.sumAchievedUnitsByMr(userId, currentMonth, currentYear);
-            double totalSalesActual = achievedUnits != null ? achievedUnits.doubleValue() : 0.0;
-
-            // Total units targeted (for product sales)
+            // Total Targeted Units (Excluding Visits)
             double totalTargetUnits = targets.stream()
                     .filter(t -> !"Visit".equalsIgnoreCase(t.getCategory()))
                     .mapToDouble(t -> t.getTargetUnits() != null ? t.getTargetUnits() : 0.0)
                     .sum();
+
+            // Total Achieved Units from two sources:
+            // 1. Manual entries
+            Integer manualAchieved = salesAchievementRepository.sumAchievedUnitsByMr(userId, currentMonth, currentYear);
+
+            // 2. DCR reported samples
+            int dcrAchieved = (int) userDcrs.stream()
+                    .filter(dcr -> {
+                        try {
+                            String subTime = dcr.getSubmissionTime();
+                            if (subTime == null)
+                                return false;
+                            LocalDate subDate = LocalDate.parse(subTime.split("T")[0]);
+                            return subDate.getMonthValue() == currentMonth && subDate.getYear() == currentYear;
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })
+                    .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                    .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
+                    .sum();
+
+            double totalSalesActual = (manualAchieved != null ? manualAchieved : 0) + dcrAchieved;
 
             int targetPercent = 0;
             if (totalTargetUnits > 0) {

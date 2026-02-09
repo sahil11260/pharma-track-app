@@ -2,12 +2,11 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[SALES] sales.js loaded and DOM ready");
 
     // --- API Configuration ---
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-    const TARGETS_API_BASE = `${API_BASE}/api/targets`;
+    const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
     let targetsApiMode = true;
 
     function getAuthHeader() {
-        const token = localStorage.getItem("kavya_auth_token");
+        const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
         return token ? { "Authorization": `Bearer ${token}` } : {};
     }
 
@@ -84,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function refreshTargetsFromApi() {
         try {
             console.log("[SALES] Fetching targets from dynamic API...");
-            const url = `${API_BASE}/api/mr/me/sales-targets`;
+            const url = `${API_BASE}/mr/me/sales-targets`;
             const data = await apiJson(url);
             console.log("[SALES] Dynamic API response received:", data);
 
@@ -125,13 +124,13 @@ document.addEventListener("DOMContentLoaded", () => {
         let status = '';
         let colorClass = '';
 
-        if (percentage >= 100) {
-            status = 'Completed';
+        if (percentage >= 90) {
+            status = 'Excellent';
             colorClass = 'bg-success';
-        } else if (percentage >= 90) {
-            status = 'Outstanding';
+        } else if (percentage >= 75) {
+            status = 'Good';
             colorClass = 'bg-info';
-        } else if (percentage >= 70) {
+        } else if (percentage >= 50) {
             status = 'Average';
             colorClass = 'bg-warning text-dark';
         } else {

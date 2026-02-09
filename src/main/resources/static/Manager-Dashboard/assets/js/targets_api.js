@@ -3,11 +3,10 @@
  * Fixed version: Removed Actions column and Charts
  */
 
-const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8080/api'
-    : 'https://pharma-track-app.onrender.com/api';
+const API_BASE = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
 
 let targetsData = [];
+let systemProducts = []; // Global system products
 let currentMonth = new Date().getMonth() + 1;
 let currentYear = new Date().getFullYear();
 
@@ -15,6 +14,7 @@ let currentYear = new Date().getFullYear();
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. First load MRs for the current manager (needed for dropdowns in modals)
     await populateMRDropdowns();
+    await populateProductDropdowns(); // Load products for targets
 
     // 2. Load dashboard data (Shows all assigned MRs by default)
     await loadDashboard();
@@ -77,46 +77,46 @@ function renderSummaryCards(data) {
 
     summaryCardsContainer.innerHTML = `
         <div class="col-md-3">
-            <div class="card metric-card">
+            <div class="card summary-card summary-total-target">
               <div class="card-body">
-                <h6 class="text-muted mb-2">Total Target</h6>
-                <h4 class="fw-bold mb-0" data-metric="total-target">₹${(data.totalTarget || 0).toLocaleString()}</h4>
-                <div class="mt-2 small text-success">
-                  <i class="bi bi-arrow-up"></i> 12% vs last month
+                <div class="card-content">
+                  <h3>₹${(data.totalTarget || 0).toLocaleString()}</h3>
+                  <h5>Total Target</h5>
                 </div>
+                <div class="card-icon"><i class="bi bi-bullseye"></i></div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
-            <div class="card metric-card">
+            <div class="card summary-card summary-total-achievement">
               <div class="card-body">
-                <h6 class="text-muted mb-2">Total Achievement</h6>
-                <h4 class="fw-bold mb-0" data-metric="total-achievement">₹${(data.totalAchievement || 0).toLocaleString()}</h4>
-                <div class="mt-2 small text-success">
-                  <i class="bi bi-arrow-up"></i> 8% vs last month
+                <div class="card-content">
+                  <h3>₹${(data.totalAchievement || 0).toLocaleString()}</h3>
+                  <h5>Total Achievement</h5>
                 </div>
+                <div class="card-icon"><i class="bi bi-trophy"></i></div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
-            <div class="card metric-card">
+            <div class="card summary-card summary-avg-achievement">
               <div class="card-body">
-                <h6 class="text-muted mb-2">Avg Achievement %</h6>
-                <h4 class="fw-bold mb-0" data-metric="avg-achievement">${Math.round(data.avgAchievementPercentage || 0)}%</h4>
-                <div class="progress mt-2" style="height: 5px;">
-                  <div class="progress-bar bg-primary" style="width: ${data.avgAchievementPercentage || 0}%"></div>
+                <div class="card-content">
+                  <h3>${Math.round(data.avgAchievementPercentage || 0)}%</h3>
+                  <h5>Avg Achievement</h5>
                 </div>
+                <div class="card-icon"><i class="bi bi-graph-up"></i></div>
               </div>
             </div>
           </div>
           <div class="col-md-3">
-            <div class="card metric-card">
+            <div class="card summary-card summary-top-performer">
               <div class="card-body">
-                <h6 class="text-muted mb-2">Top Performer</h6>
-                <h4 class="fw-bold mb-0" data-metric="top-performer">${data.topPerformer || 'N/A'}</h4>
-                <div class="mt-2 small text-muted">
-                  Current period leader
+                <div class="card-content">
+                  <h3>${escapeHtml(data.topPerformer || 'N/A')}</h3>
+                  <h5>Top Performer</h5>
                 </div>
+                <div class="card-icon"><i class="bi bi-star"></i></div>
               </div>
             </div>
           </div>
@@ -173,40 +173,59 @@ function renderTopPerformers(performers) {
 function wireSetTargets() {
     const categoryEl = document.getElementById('targetCategory');
     const labelEl = document.getElementById('targetUnitsLabel');
+    const productContainer = document.getElementById('productSelectContainer');
+
     if (categoryEl && labelEl) {
         categoryEl.addEventListener('change', () => {
             if (categoryEl.value === 'Visit') {
                 labelEl.textContent = 'Target (Doctor Visits)';
+                if (productContainer) productContainer.style.display = 'none';
             } else {
                 labelEl.textContent = 'Target Units';
+                if (productContainer) productContainer.style.display = 'block';
             }
         });
     }
 
     const saveBtn = document.getElementById('saveTargetBtn');
     if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             const form = document.getElementById('setTargetsForm');
             const targetMrEl = document.getElementById('targetMR');
-            const category = document.getElementById('targetCategory').value;
+            const targetProductEl = document.getElementById('targetProductSelect');
+            const category = categoryEl.value;
 
             if (form.checkValidity() && targetMrEl.value) {
+                const productId = category === 'Product' ? targetProductEl.value : null;
+                let productName = "General Sales";
+
+                if (category === 'Visit') {
+                    productName = "Doctor Visits";
+                } else if (productId) {
+                    productName = targetProductEl.options[targetProductEl.selectedIndex].text;
+                }
+
                 const formData = {
                     mrId: targetMrEl.value,
                     mrName: targetMrEl.options[targetMrEl.selectedIndex].text,
-                    targetUnits: parseInt(document.getElementById('salesTarget').value),
-                    productName: category === 'Visit' ? "Doctor Visits" : "General Sales",
+                    productId: (productId && !isNaN(productId)) ? parseInt(productId) : null,
+                    productName: productName,
                     category: category,
+                    targetUnits: parseInt(document.getElementById('salesTarget').value),
                     periodMonth: currentMonth,
                     periodYear: currentYear,
                     assignedBy: localStorage.getItem("signup_name") || "Manager"
                 };
-                saveTarget(formData);
-                const modalEl = document.getElementById('setTargetsModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                if (modal) modal.hide();
-                form.reset();
-                if (labelEl) labelEl.textContent = 'Target Units';
+
+                const success = await saveTarget(formData);
+                if (success) {
+                    const modalEl = document.getElementById('setTargetsModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    form.reset();
+                    if (labelEl) labelEl.textContent = 'Target Units';
+                    if (productContainer) productContainer.style.display = 'block';
+                }
             } else {
                 if (!targetMrEl.value) alert('Please select an MR');
                 form.reportValidity();
@@ -301,6 +320,76 @@ async function populateMRDropdowns() {
 
     } catch (error) {
         console.error('Error populating MR dropdowns:', error);
+    }
+}
+
+// Populate Product Dropdown
+// Populate Product Dropdown
+async function populateProductDropdowns() {
+    const productSelect = document.getElementById('targetProductSelect');
+    if (!productSelect) return;
+
+    try {
+        let products = [];
+        const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
+
+        // 1. Fetch from system products
+        try {
+            const resProd = await fetch(`${API_BASE}/products`, {
+                headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+            });
+            if (resProd.ok) {
+                products = await resProd.json();
+            }
+        } catch (e) {
+            console.warn('[TARGETS] Failed to fetch system products:', e);
+        }
+
+        // 2. Fetch from manager's sample stock
+        const currentManager = localStorage.getItem('signup_name') || '';
+        if (currentManager) {
+            try {
+                const resStock = await fetch(`${API_BASE}/mr-stock?userName=${encodeURIComponent(currentManager)}`, {
+                    headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+                });
+                if (resStock.ok) {
+                    const stockItems = await resStock.json();
+                    stockItems.forEach(s => {
+                        // Avoid duplicates
+                        if (!products.some(p => p.name.toLowerCase() === s.name.toLowerCase())) {
+                            products.push({ id: s.id, name: s.name, category: 'Sample' });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('[TARGETS] Failed to fetch manager stock:', e);
+            }
+        }
+
+        // 3. Fallback/Common Samples (present in all modules)
+        const commonSamples = [
+            { id: "S1", name: "Diabetex 500mg", category: "Sample" },
+            { id: "S2", name: "CardioCare 10mg", category: "Sample" },
+            { id: "S3", name: "PainRelief 200mg", category: "Sample" },
+            { id: "S4", name: "NeuroMax 50mg", category: "Sample" },
+            { id: "S5", name: "ImmunoBoost 100mg", category: "Sample" },
+            { id: "S6", name: "Cetrizin - 10mg", category: "Sample" },
+            { id: "S7", name: "Amlo-5", category: "Sample" }
+        ];
+
+        commonSamples.forEach(cs => {
+            if (!products.some(p => p.name.toLowerCase() === cs.name.toLowerCase())) {
+                products.push(cs);
+            }
+        });
+
+        systemProducts = products;
+        console.log('[TARGETS] Final product list for dropdown:', systemProducts.length);
+
+        productSelect.innerHTML = '<option value="">Select Product (Optional)</option>' +
+            systemProducts.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    } catch (error) {
+        console.error('Error populating product dropdown:', error);
     }
 }
 

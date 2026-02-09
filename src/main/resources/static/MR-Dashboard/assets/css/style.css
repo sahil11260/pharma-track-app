@@ -30,6 +30,7 @@
   .sidebar {
     transform: translateX(-250px);
   }
+
   .sidebar.mobile-open {
     transform: translateX(0);
   }
@@ -116,12 +117,15 @@
 .card-primary {
   background: linear-gradient(45deg, #512da8, #7e57c2);
 }
+
 .card-success {
   background: linear-gradient(45deg, #2e7d32, #66bb6a);
 }
+
 .card-info {
   background: linear-gradient(45deg, #0288d1, #4fc3f7);
 }
+
 .card-warning {
   background: linear-gradient(45deg, #ef6c00, #ffb74d);
 }
@@ -175,11 +179,21 @@ body.dark-mode .card {
 } */
 
 /* Logo Toggle */
-.light-logo { display: block; }
-.dark-logo { display: none; }
+.light-logo {
+  display: block;
+}
 
-body.dark-mode .light-logo { display: none; }
-body.dark-mode .dark-logo { display: block; }
+.dark-logo {
+  display: none;
+}
+
+body.dark-mode .light-logo {
+  display: none;
+}
+
+body.dark-mode .dark-logo {
+  display: block;
+}
 
 /* ===========================================================
    PERFECT MOBILE RESPONSIVE FIX
@@ -189,7 +203,8 @@ body.dark-mode .dark-logo { display: block; }
 @media (max-width: 768px) {
 
   /* Prevent full-page horizontal scrolling */
-  html, body {
+  html,
+  body {
     overflow-x: hidden !important;
   }
 
@@ -224,13 +239,81 @@ body.dark-mode .dark-logo { display: block; }
 
 /* REMOVE EXTRA GAP BELOW NAVBAR (all pages) */
 .main-content {
-  padding-top: 10px !important;   /* reduce gap */
-  margin-top: 10px !important;    /* aligns exactly below navbar */
+  padding-top: 10px !important;
+  /* reduce gap */
+  margin-top: 10px !important;
+  /* aligns exactly below navbar */
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding-top: 0 !important;   /* mobile gap remove */
+    padding-top: 0 !important;
+    /* mobile gap remove */
     margin-top: 10px !important;
   }
+}
+
+/* ============================
+   Password Strength Meter
+   ============================ */
+.strength-meter {
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.strength-meter span {
+  display: block;
+  height: 100%;
+  transition: all 0.3s ease;
+  width: 0;
+}
+
+.strength-weak {
+  width: 33%;
+  background: linear-gradient(90deg, #dc3545, #ff6b6b);
+}
+
+.strength-medium {
+  width: 66%;
+  background: linear-gradient(90deg, #ffc107, #ffdd57);
+}
+
+.strength-strong {
+  width: 100%;
+  background: linear-gradient(90deg, #28a745, #51cf66);
+}
+
+/* Password hint text */
+.password-hint {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* Eye button styling */
+.eye-btn {
+  border-left: none !important;
+}
+
+.eye-btn:hover {
+  background-color: #e9ecef;
+}
+
+.eye-btn i {
+  font-size: 1rem;
+}
+
+/* Dark mode support */
+body.dark-mode .strength-meter {
+  background: #333;
+}
+
+body.dark-mode .password-hint {
+  color: #adb5bd;
+}
+
+body.dark-mode .eye-btn:hover {
+  background-color: #2d2d2d;
 }

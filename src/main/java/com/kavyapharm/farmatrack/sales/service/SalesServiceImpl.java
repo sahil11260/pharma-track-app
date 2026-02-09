@@ -62,93 +62,44 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional(readOnly = true)
     public ManagerDashboardSummary getManagerDashboardSummary(Integer month, Integer year) {
-        // Get currently logged in manager
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String managerIden = auth != null ? auth.getName() : null;
 
         List<Long> assignedMrIds = new ArrayList<>();
         if (managerIden != null) {
-            // Find all MRs assigned to this manager (by name or email)
             List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
                     .findByAssignedManagerIgnoreCase(managerIden);
-            // Also try by manager name if managerIden is an email
             userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
                 mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
             });
-
             assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct().toList();
         }
 
         List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
-        List<SalesAchievement> allAchievements = achievementRepository.findByPeriodMonthAndPeriodYear(month, year);
-
-        // Filter by assigned MRs if not Admin
         boolean isAdmin = auth != null && auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
         final List<Long> finalAssignedMrIds = assignedMrIds;
         List<SalesTarget> targets = isAdmin ? allTargets
-                : allTargets.stream()
-                        .filter(t -> finalAssignedMrIds.contains(t.getMrId())).toList();
-        List<SalesAchievement> achievements = isAdmin ? allAchievements
-                : allAchievements.stream()
-                        .filter(a -> finalAssignedMrIds.contains(a.getMrId())).toList();
+                : allTargets.stream().filter(t -> finalAssignedMrIds.contains(t.getMrId())).toList();
+
+        // Build response list with calculated achievements
+        List<TargetWithAchievementResponse> targetResponses = targets.stream()
+                .map(target -> calculateTargetAchievement(target, month, year))
+                .collect(Collectors.toList());
 
         // Calculate totals
-        int totalTarget = targets.stream().mapToInt(SalesTarget::getTargetUnits).sum();
-        int totalAchievement = achievements.stream().mapToInt(SalesAchievement::getAchievedUnits).sum();
+        int totalTarget = targetResponses.stream().mapToInt(TargetWithAchievementResponse::targetUnits).sum();
+        int totalAchievement = targetResponses.stream().mapToInt(TargetWithAchievementResponse::achievedUnits).sum();
         double avgPercentage = totalTarget > 0 ? (totalAchievement * 100.0 / totalTarget) : 0.0;
-
-        // Build target-achievement map
-        Map<String, Integer> achievementMap = new HashMap<>();
-        for (SalesAchievement ach : achievements) {
-            String key = ach.getMrId() + "_" + (ach.getProductId() != null ? ach.getProductId() : "null");
-            achievementMap.put(key, achievementMap.getOrDefault(key, 0) + ach.getAchievedUnits());
-        }
-
-        // Build response list
-        List<TargetWithAchievementResponse> targetResponses = targets.stream()
-                .map((SalesTarget target) -> {
-                    String key = target.getMrId() + "_"
-                            + (target.getProductId() != null ? target.getProductId() : "null");
-                    Integer achieved;
-
-                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                        achieved = (int) dcrRepository.findAll().stream()
-                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                                .count();
-                    } else {
-                        achieved = achievementMap.getOrDefault(key, 0);
-                    }
-
-                    return TargetWithAchievementResponse.from(
-                            target.getId(),
-                            target.getMrId(),
-                            target.getMrName(),
-                            target.getProductName(),
-                            target.getCategory(),
-                            target.getTargetType().name(),
-                            target.getTargetUnits(),
-                            achieved,
-                            target.getAssignedDate(),
-                            target.getPeriodMonth(),
-                            target.getPeriodYear());
-                })
-                .collect(Collectors.toList());
 
         // Calculate top performers by MR
         Map<Long, MrPerformance> mrPerformanceMap = new HashMap<>();
-        for (SalesTarget target : targets) {
-            mrPerformanceMap.putIfAbsent(target.getMrId(),
-                    new MrPerformance(target.getMrId(), target.getMrName()));
-            mrPerformanceMap.get(target.getMrId()).addTarget(target.getTargetUnits());
-        }
-
-        for (SalesAchievement ach : achievements) {
-            if (mrPerformanceMap.containsKey(ach.getMrId())) {
-                mrPerformanceMap.get(ach.getMrId()).addAchievement(ach.getAchievedUnits());
-            }
+        for (TargetWithAchievementResponse res : targetResponses) {
+            mrPerformanceMap.putIfAbsent(res.mrId(), new MrPerformance(res.mrId(), res.mrName()));
+            mrPerformanceMap.get(res.mrId()).addTarget(res.targetUnits());
+            mrPerformanceMap.get(res.mrId()).addAchievement(res.achievedUnits());
         }
 
         List<ManagerDashboardSummary.TopPerformerData> topPerformers = mrPerformanceMap.values().stream()
@@ -160,36 +111,79 @@ public class SalesServiceImpl implements SalesService {
                             .toList()
                             .size() + 1;
 
-                    String status;
                     double pct = perf.getPercentage();
-                    if (pct >= 90)
-                        status = "Excellent";
-                    else if (pct >= 75)
-                        status = "Good";
-                    else if (pct >= 50)
-                        status = "Average";
-                    else
-                        status = "Poor";
+                    String status = getStatusFromPercentage(pct);
 
                     return new ManagerDashboardSummary.TopPerformerData(
-                            rank,
-                            perf.getMrName(),
-                            perf.getTotalTarget(),
-                            perf.getTotalAchievement(),
-                            Math.round(pct * 100.0) / 100.0,
-                            status);
+                            rank, perf.getMrName(), perf.getTotalTarget(), perf.getTotalAchievement(),
+                            Math.round(pct * 100.0) / 100.0, status);
                 })
                 .collect(Collectors.toList());
 
         String topPerformer = topPerformers.isEmpty() ? "N/A" : topPerformers.get(0).mrName();
 
-        return new ManagerDashboardSummary(
-                totalTarget,
-                totalAchievement,
-                Math.round(avgPercentage * 100.0) / 100.0,
-                topPerformer,
-                targetResponses,
-                topPerformers);
+        return new ManagerDashboardSummary(totalTarget, totalAchievement, Math.round(avgPercentage * 100.0) / 100.0,
+                topPerformer, targetResponses, topPerformers);
+    }
+
+    private TargetWithAchievementResponse calculateTargetAchievement(SalesTarget target, Integer month, Integer year) {
+        Integer achieved;
+        if ("Visit".equalsIgnoreCase(target.getCategory())) {
+            achieved = (int) dcrRepository.findAll().stream()
+                    .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                    .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                    .count();
+        } else {
+            // Sum from two sources:
+            // 1. DCR Reported Samples
+            int dcrSum = dcrRepository.findAll().stream()
+                    .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                    .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                    .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                    .filter(item -> isProductMatch(target, item))
+                    .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
+                    .sum();
+
+            // 2. Manual entry achievements
+            int manualSum = achievementRepository.sumAchievedUnitsByMrAndProduct(
+                    target.getMrId(), target.getProductId(), month, year);
+
+            achieved = dcrSum + manualSum;
+        }
+
+        return TargetWithAchievementResponse.from(
+                target.getId(), target.getMrId(), target.getMrName(), target.getProductName(),
+                target.getCategory(), target.getTargetType().name(), target.getTargetUnits(),
+                achieved, target.getAssignedDate(), target.getPeriodMonth(), target.getPeriodYear());
+    }
+
+    private boolean isWithinPeriod(String dateTimeStr, Integer month, Integer year) {
+        try {
+            if (dateTimeStr == null)
+                return false;
+            LocalDate date = LocalDate.parse(dateTimeStr.substring(0, 10));
+            return date.getMonthValue() == month && date.getYear() == year;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isProductMatch(SalesTarget target, com.kavyapharm.farmatrack.dcr.model.DcrSampleItem item) {
+        if (target.getProductId() != null) {
+            return String.valueOf(target.getProductId()).equals(item.getProductId());
+        } else {
+            return target.getProductName().equalsIgnoreCase(item.getProductName());
+        }
+    }
+
+    private String getStatusFromPercentage(double pct) {
+        if (pct >= 90)
+            return "Excellent";
+        if (pct >= 75)
+            return "Good";
+        if (pct >= 50)
+            return "Average";
+        return "Poor";
     }
 
     @Override
@@ -215,34 +209,11 @@ public class SalesServiceImpl implements SalesService {
 
         final List<Long> finalAssignedMrIds = assignedMrIds;
         List<SalesTarget> targets = isAdmin ? allTargets
-                : allTargets.stream()
-                        .filter(t -> finalAssignedMrIds.contains(t.getMrId())).collect(Collectors.toList());
+                : allTargets.stream().filter(t -> finalAssignedMrIds.contains(t.getMrId()))
+                        .collect(Collectors.toList());
 
         return targets.stream()
-                .map((SalesTarget target) -> {
-                    Integer achieved;
-                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                        achieved = (int) dcrRepository.findAll().stream()
-                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                                .count();
-                    } else {
-                        achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                                target.getMrId(), target.getProductId(), month, year);
-                    }
-
-                    return TargetWithAchievementResponse.from(
-                            target.getId(),
-                            target.getMrId(),
-                            target.getMrName(),
-                            target.getProductName(),
-                            target.getCategory(),
-                            target.getTargetType().name(),
-                            target.getTargetUnits(),
-                            achieved,
-                            target.getAssignedDate(),
-                            target.getPeriodMonth(),
-                            target.getPeriodYear());
-                })
+                .map(target -> calculateTargetAchievement(target, month, year))
                 .collect(Collectors.toList());
     }
 
@@ -250,50 +221,23 @@ public class SalesServiceImpl implements SalesService {
     @Transactional(readOnly = true)
     public List<TargetWithAchievementResponse> getMrTargets(Long mrId, Integer month, Integer year) {
         List<SalesTarget> targets = targetRepository.findByMrIdAndPeriodMonthAndPeriodYear(mrId, month, year);
-
         return targets.stream()
-                .map((SalesTarget target) -> {
-                    Integer achieved;
-                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                        achieved = (int) dcrRepository.findAll().stream()
-                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                                .count();
-                    } else {
-                        achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                                target.getMrId(), target.getProductId(), month, year);
-                    }
-
-                    return TargetWithAchievementResponse.from(
-                            target.getId(),
-                            target.getMrId(),
-                            target.getMrName(),
-                            target.getProductName(),
-                            target.getCategory(),
-                            target.getTargetType().name(),
-                            target.getTargetUnits(),
-                            achieved,
-                            target.getAssignedDate(),
-                            target.getPeriodMonth(),
-                            target.getPeriodYear());
-                })
+                .map(target -> calculateTargetAchievement(target, month, year))
                 .collect(Collectors.toList());
     }
 
     @Override
     public SalesAchievement recordAchievement(RecordAchievementRequest request) {
-        // Check if achievement already exists
         List<SalesAchievement> existingList = achievementRepository
                 .findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                         request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
 
         SalesAchievement achievement;
         if (!existingList.isEmpty()) {
-            // Update existing (take first if duplicates exist)
             achievement = existingList.get(0);
             achievement.setAchievedUnits(achievement.getAchievedUnits() + request.achievedUnits());
             achievement.setRemarks(request.remarks());
         } else {
-            // Create new
             achievement = new SalesAchievement();
             achievement.setMrId(request.mrId());
             achievement.setProductId(request.productId());
@@ -303,7 +247,6 @@ public class SalesServiceImpl implements SalesService {
             achievement.setRemarks(request.remarks());
             achievement.setAchievementDate(LocalDate.now());
 
-            // Get MR and Product names from target
             List<SalesTarget> targets = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                     request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
 
@@ -334,7 +277,6 @@ public class SalesServiceImpl implements SalesService {
                 .orElseGet(() -> userRepository.findByNameIgnoreCase(username).orElse(null));
     }
 
-    // Helper class for calculating MR performance
     private static class MrPerformance {
         private final Long mrId;
         private final String mrName;
@@ -352,10 +294,6 @@ public class SalesServiceImpl implements SalesService {
 
         public void addAchievement(int units) {
             this.totalAchievement += units;
-        }
-
-        public Long getMrId() {
-            return mrId;
         }
 
         public String getMrName() {

@@ -687,3 +687,68 @@ body.dark-mode .expense-card:hover {
           max-height: 220px;
         }
       }
+
+/* ============================
+   Password Strength Meter
+   ============================ */
+.strength-meter {
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.strength-meter span {
+  display: block;
+  height: 100%;
+  transition: all 0.3s ease;
+  width: 0;
+}
+
+.strength-weak {
+  width: 33%;
+  background: linear-gradient(90deg, #dc3545, #ff6b6b);
+}
+
+.strength-medium {
+  width: 66%;
+  background: linear-gradient(90deg, #ffc107, #ffdd57);
+}
+
+.strength-strong {
+  width: 100%;
+  background: linear-gradient(90deg, #28a745, #51cf66);
+}
+
+/* Password hint text */
+.password-hint {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* Eye button styling */
+.eye-btn {
+  border-left: none !important;
+}
+
+.eye-btn:hover {
+  background-color: #e9ecef;
+}
+
+.eye-btn i {
+  font-size: 1rem;
+}
+
+/* Dark mode support */
+body.dark-mode .strength-meter {
+  background: #333;
+}
+
+body.dark-mode .password-hint {
+  color: #adb5bd;
+}
+
+body.dark-mode .eye-btn:hover {
+  background-color: #2d2d2d;
+}
