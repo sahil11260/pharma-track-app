@@ -56,12 +56,13 @@ public class UserService {
 
         // IMPROVED FOR TESTING: If anonymous or no specific manager filter, return all
         // (for testing convenience)
+        // REMOVED FOR SECURITY: No longer returning all users for anonymous users
         if (auth == null || "anonymousUser".equals(auth.getName())) {
             if (managerName != null && !managerName.isBlank()) {
                 return userRepository.findByAssignedManagerIgnoreCase(managerName.trim())
                         .stream().map(UserService::toResponse).toList();
             }
-            return list();
+            return List.of(); // Anonymous and no manager filter -> nothing
         }
 
         List<String> identifiers = getManagerIdentifiers(managerName);
@@ -105,12 +106,13 @@ public class UserService {
                     .map(UserService::toResponse).toList();
         }
 
-        // IMPROVED FOR TESTING: If anonymous and permitted, return all MRs
+        // REMOVED FOR SECURITY: No longer returning all MRs for anonymous users
         if (auth == null || "anonymousUser".equals(auth.getName())) {
-            System.out.println("[TASK_DEBUG] Anonymous listing MRs - returning all for testing convenience");
-            return userRepository.findAll().stream()
-                    .filter(u -> u.getRole() == role)
-                    .map(UserService::toResponse).toList();
+            if (managerName != null && !managerName.isBlank()) {
+                return userRepository.findByRoleAndAssignedManagerIgnoreCase(role, managerName.trim())
+                        .stream().map(UserService::toResponse).toList();
+            }
+            return List.of(); // Anonymous and no manager filter -> nothing
         }
 
         List<String> identifiers = getManagerIdentifiers(managerName);

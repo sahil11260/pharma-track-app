@@ -118,7 +118,21 @@
       const data = await apiJson(url);
 
       if (Array.isArray(data)) {
-        window.targetsData = data.map(normalizeTargetFromApi);
+        // Additional client-side filtering to ensure only manager's MRs are shown
+        // Get the list of MR names that belong to this manager
+        const managerMrNames = window.mrData.map(mr => mr.name.trim().toLowerCase());
+        console.log("[TARGETS] Manager's MRs:", managerMrNames);
+
+        // Filter targets to only include those for the manager's MRs
+        const filteredData = data.filter(t => {
+          const targetMrName = (t.mrName || "").trim().toLowerCase();
+          return managerMrNames.includes(targetMrName);
+        });
+
+        console.log("[TARGETS] Total targets from API:", data.length);
+        console.log("[TARGETS] Filtered targets for manager's MRs:", filteredData.length);
+
+        window.targetsData = filteredData.map(normalizeTargetFromApi);
         targetsApiMode = true;
         console.log("[TARGETS] Loaded", window.targetsData.length, "targets for manager's MRs");
         return;
@@ -703,10 +717,14 @@
     const performanceMRSelection = document.getElementById(
       "performanceMRSelection"
     );
-    if (filterMR)
-      filterMR.innerHTML =
-        `<option value="">All MRs</option>` +
-        window.mrData
+
+    // For filterMR: Only show manager's assigned MRs (no "All MRs" option)
+    if (filterMR) {
+      if (window.mrData.length === 0) {
+        filterMR.innerHTML = `<option value="">No MRs assigned</option>`;
+      } else if (window.mrData.length === 1) {
+        // If only one MR, show just that MR
+        filterMR.innerHTML = window.mrData
           .map(
             (m) =>
               `<option value="${escapeHtml(m.name)}">${escapeHtml(
@@ -714,6 +732,19 @@
               )}</option>`
           )
           .join("");
+      } else {
+        // Multiple MRs: Show all without "All MRs" option
+        filterMR.innerHTML = window.mrData
+          .map(
+            (m) =>
+              `<option value="${escapeHtml(m.name)}">${escapeHtml(
+                m.name
+              )}</option>`
+          )
+          .join("");
+      }
+    }
+
     if (targetMR)
       targetMR.innerHTML =
         `<option value="">Select MR</option>` +
@@ -725,10 +756,13 @@
               )}</option>`
           )
           .join("");
-    if (performanceMRSelection)
-      performanceMRSelection.innerHTML =
-        `<option value="">All MRs</option>` +
-        window.mrData
+
+    // For performance report: Only show manager's assigned MRs
+    if (performanceMRSelection) {
+      if (window.mrData.length === 0) {
+        performanceMRSelection.innerHTML = `<option value="">No MRs assigned</option>`;
+      } else if (window.mrData.length === 1) {
+        performanceMRSelection.innerHTML = window.mrData
           .map(
             (m) =>
               `<option value="${escapeHtml(m.name)}">${escapeHtml(
@@ -736,6 +770,17 @@
               )}</option>`
           )
           .join("");
+      } else {
+        performanceMRSelection.innerHTML = window.mrData
+          .map(
+            (m) =>
+              `<option value="${escapeHtml(m.name)}">${escapeHtml(
+                m.name
+              )}</option>`
+          )
+          .join("");
+      }
+    }
   }
 
   function applyFilters() {
@@ -868,7 +913,16 @@
       populateMRDropdowns();
 
       await refreshTargetsFromApiOrFallback();
+
+      // Auto-select the first MR in the filter dropdown
+      const filterMR = document.getElementById("filterMR");
+      if (filterMR && window.mrData.length > 0) {
+        filterMR.value = window.mrData[0].name;
+        console.log("[TARGETS] Auto-selected MR:", window.mrData[0].name);
+      }
+
       refreshAllDisplays();
+      applyFilters(); // Apply filters to show only the selected MR's targets
     })();
     renderNotificationsIfPresent();
 

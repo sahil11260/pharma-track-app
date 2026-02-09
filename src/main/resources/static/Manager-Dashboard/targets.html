@@ -178,12 +178,7 @@
               <option value="poor">Poor (<50%)</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <select class="form-select" id="filterMR">
-              <option value="">All MRs</option>
-              <!-- MR options will be populated -->
-            </select>
-          </div>
+          <!-- MR Filter Removed as requested -->
           <div class="col-md-3">
             <!-- <button
               class="btn btn-outline-primary w-100"
@@ -265,8 +260,7 @@
           </div>
           <div class="modal-body">
             <form id="setTargetsForm">
-              <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-6">
                   <div class="mb-3">
                     <label class="form-label">MR</label>
                     <select class="form-select" id="targetMR" required>
@@ -275,17 +269,26 @@
                     </select>
                   </div>
                 </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Target Category</label>
+                    <select class="form-select" id="targetCategory" required>
+                      <option value="Product">Product Sales</option>
+                      <option value="Visit">Doctor Visits</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               <div class="row">
                 <div class="col-md-12">
                   <div class="mb-3">
-                    <label class="form-label">Sales Target (&#8377;)</label>
+                    <label class="form-label" id="targetUnitsLabel">Target Units</label>
                     <input
                       type="number"
                       class="form-control"
                       id="salesTarget"
                       min="0"
-                      step="1000"
+                      step="1"
                       required
                     />
                   </div>
@@ -416,8 +419,7 @@
               <div class="mb-3">
                 <label class="form-label">MR Selection</label>
                 <select class="form-select" id="performanceMRSelection">
-                  <option value="all">All MRs</option>
-                  <!-- MR options will be populated -->
+                  <!-- MR options will be populated dynamically -->
                 </select>
               </div>
             </form>

@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- STATE MANAGEMENT ---
     let tempSamples = [];
+    let systemProducts = []; // Global system products
     let sampleEntryIdCounter = 1;
     let submittedDCRs = JSON.parse(localStorage.getItem('submittedDCRs')) || [];
     let currentPage = 1;
@@ -141,13 +142,28 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        // 4. Fetch Global Products
+        try {
+            const products = await apiJson('/api/products');
+            if (Array.isArray(products)) {
+                systemProducts = products.map(p => ({
+                    id: String(p.id),
+                    name: p.name,
+                    category: p.category
+                }));
+                console.log('[DCR] Loaded system products:', systemProducts.length);
+            }
+        } catch (e) {
+            console.warn('[DCR] Failed to load global products from API.', e);
+        }
+
         apiMode = true; // Still set to true as at least we tried
         renderSubmittedDCRTable();
         populateProductSelect(sampleProductSelect);
     }
 
     function getProductStock(productId) {
-        const product = mrStock.find(p => p.id === productId);
+        const product = mrStock.find(p => String(p.id) === String(productId));
         let effectiveStock = product ? product.stock : 0;
 
         const committedQuantity = tempSamples
@@ -158,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateStock(productId, quantityUsed) {
-        const productIndex = mrStock.findIndex(p => p.id === productId);
+        const productIndex = mrStock.findIndex(p => String(p.id) === String(productId));
         if (productIndex !== -1) {
             mrStock[productIndex].stock -= quantityUsed;
         }
@@ -180,20 +196,22 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        mrStock.forEach(product => {
+        // Combine systemProducts and mrStock for better coverage
+        // We use systemProducts as the primary list of what SHOULD exist
+        const displayList = systemProducts.length > 0 ? systemProducts : mrStock;
+
+        displayList.forEach(product => {
             const effectiveStock = getProductStock(product.id);
 
-            if (product.stock > 0 || tempSamples.some(s => s.productId === product.id)) {
-                const option = document.createElement('option');
-                option.value = product.id;
-                option.textContent = `${product.name} (Available: ${effectiveStock})`;
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.name} (Stock: ${effectiveStock})`;
 
-                if (effectiveStock <= 0) {
-                    option.disabled = true;
-                }
-
-                selectElement.appendChild(option);
+            if (effectiveStock <= 0) {
+                // option.disabled = true; // Don't disable, let them select it but they might see error on submit if stock check is active
             }
+
+            selectElement.appendChild(option);
         });
     }
 
@@ -381,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
                 <td>${dcr.visitType}</td>
                 <td class="text-center">${ratingText}</td>
-                <!-- <td class="small">${samplesSummary}</td> -->
+                <td class="small">${samplesSummary}</td>
                 <td class="small">${remarks.substring(0, 50)}${remarks.length > 50 ? '...' : ''}</td>
                 <td class="text-center">
                     <div class="btn-group btn-group-sm">
@@ -523,9 +541,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sampleQuantityInput.value = '';
         if (productId) {
-            sampleQuantityInput.setAttribute('max', maxStock);
-            sampleQuantityInput.placeholder = `Qty (Max ${maxStock})`;
-            sampleQuantityInput.disabled = (maxStock <= 0);
+            sampleQuantityInput.setAttribute('max', 9999); // Set high limit instead of blocking
+            sampleQuantityInput.placeholder = `Qty (Available: ${maxStock})`;
+            sampleQuantityInput.disabled = false; // Never disable, allow entry
         } else {
             sampleQuantityInput.removeAttribute('max');
             sampleQuantityInput.placeholder = 'Quantity';
@@ -544,12 +562,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (quantity > maxStock) {
-            alert(`Quantity exceeds available stock. Max available: ${maxStock}`);
-            return;
+            console.warn(`[DCR] Quantity (${quantity}) exceeds available stock (${maxStock}). Allowing for dynamic reporting.`);
+            // alert(`Quantity exceeds available stock. Max available: ${maxStock}`); 
+            // We'll allow it anyway as per 'dynamic' requirement
         }
 
-        const existingSample = tempSamples.find(s => s.productId === productId);
-        const productName = mrStock.find(p => p.id === productId).name;
+        const existingSample = tempSamples.find(s => String(s.productId) === String(productId));
+
+        // Find product name robustly
+        const productInfo = systemProducts.find(p => String(p.id) === String(productId))
+            || mrStock.find(p => String(p.id) === String(productId));
+        const productName = productInfo ? productInfo.name : `Product ${productId}`;
 
         if (existingSample) {
             existingSample.quantity += quantity;

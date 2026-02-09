@@ -103,9 +103,9 @@ public class MrStockService {
 
         int current = item.getStock() == null ? 0 : item.getStock();
         int next = current + delta;
-        if (next < 0) {
-            throw new IllegalArgumentException("Insufficient stock for product " + productId + " for user " + userName);
-        }
+
+        // Dynamic reporting: Allow negative stock so MRs can submit reports even if
+        // their digital inventory hasn't been updated yet.
         item.setStock(next);
         mrStockRepository.save(item);
     }

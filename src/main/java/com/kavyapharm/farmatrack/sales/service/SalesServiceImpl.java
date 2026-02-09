@@ -18,20 +18,37 @@ public class SalesServiceImpl implements SalesService {
 
     private final SalesTargetRepository targetRepository;
     private final SalesAchievementRepository achievementRepository;
+    private final com.kavyapharm.farmatrack.user.repository.UserRepository userRepository;
+    private final com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository;
 
     public SalesServiceImpl(SalesTargetRepository targetRepository,
-            SalesAchievementRepository achievementRepository) {
+            SalesAchievementRepository achievementRepository,
+            com.kavyapharm.farmatrack.user.repository.UserRepository userRepository,
+            com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository) {
         this.targetRepository = targetRepository;
         this.achievementRepository = achievementRepository;
+        this.userRepository = userRepository;
+        this.dcrRepository = dcrRepository;
     }
 
     @Override
     public SalesTarget assignTarget(CreateTargetRequest request) {
-        SalesTarget target = new SalesTarget();
+        // Check for existing target for the same MR, product, and period
+        List<SalesTarget> existing = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
+                request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
+
+        SalesTarget target;
+        if (!existing.isEmpty()) {
+            target = existing.get(0);
+        } else {
+            target = new SalesTarget();
+        }
+
         target.setMrId(request.mrId());
         target.setMrName(request.mrName());
         target.setProductId(request.productId());
         target.setProductName(request.productName());
+        target.setCategory(request.category() != null ? request.category() : "Product");
         target.setTargetUnits(request.targetUnits());
         target.setPeriodMonth(request.periodMonth());
         target.setPeriodYear(request.periodYear());
@@ -45,8 +62,38 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional(readOnly = true)
     public ManagerDashboardSummary getManagerDashboardSummary(Integer month, Integer year) {
-        List<SalesTarget> targets = targetRepository.findAllByPeriod(month, year);
-        List<SalesAchievement> achievements = achievementRepository.findByPeriodMonthAndPeriodYear(month, year);
+        // Get currently logged in manager
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String managerIden = auth != null ? auth.getName() : null;
+
+        List<Long> assignedMrIds = new ArrayList<>();
+        if (managerIden != null) {
+            // Find all MRs assigned to this manager (by name or email)
+            List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
+                    .findByAssignedManagerIgnoreCase(managerIden);
+            // Also try by manager name if managerIden is an email
+            userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
+                mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+            });
+
+            assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct().toList();
+        }
+
+        List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
+        List<SalesAchievement> allAchievements = achievementRepository.findByPeriodMonthAndPeriodYear(month, year);
+
+        // Filter by assigned MRs if not Admin
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
+
+        final List<Long> finalAssignedMrIds = assignedMrIds;
+        List<SalesTarget> targets = isAdmin ? allTargets
+                : allTargets.stream()
+                        .filter(t -> finalAssignedMrIds.contains(t.getMrId())).toList();
+        List<SalesAchievement> achievements = isAdmin ? allAchievements
+                : allAchievements.stream()
+                        .filter(a -> finalAssignedMrIds.contains(a.getMrId())).toList();
 
         // Calculate totals
         int totalTarget = targets.stream().mapToInt(SalesTarget::getTargetUnits).sum();
@@ -54,26 +101,33 @@ public class SalesServiceImpl implements SalesService {
         double avgPercentage = totalTarget > 0 ? (totalAchievement * 100.0 / totalTarget) : 0.0;
 
         // Build target-achievement map
-        Map<String, Map<String, Integer>> achievementMap = new HashMap<>();
+        Map<String, Integer> achievementMap = new HashMap<>();
         for (SalesAchievement ach : achievements) {
-            String key = ach.getMrId() + "_" + ach.getProductId();
-            achievementMap.putIfAbsent(key, new HashMap<>());
-            achievementMap.get(key).put("achieved",
-                    achievementMap.get(key).getOrDefault("achieved", 0) + ach.getAchievedUnits());
+            String key = ach.getMrId() + "_" + (ach.getProductId() != null ? ach.getProductId() : "null");
+            achievementMap.put(key, achievementMap.getOrDefault(key, 0) + ach.getAchievedUnits());
         }
 
         // Build response list
         List<TargetWithAchievementResponse> targetResponses = targets.stream()
-                .map(target -> {
-                    String key = target.getMrId() + "_" + target.getProductId();
-                    Integer achieved = achievementMap.getOrDefault(key, new HashMap<>())
-                            .getOrDefault("achieved", 0);
+                .map((SalesTarget target) -> {
+                    String key = target.getMrId() + "_"
+                            + (target.getProductId() != null ? target.getProductId() : "null");
+                    Integer achieved;
+
+                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
+                        achieved = (int) dcrRepository.findAll().stream()
+                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                                .count();
+                    } else {
+                        achieved = achievementMap.getOrDefault(key, 0);
+                    }
 
                     return TargetWithAchievementResponse.from(
                             target.getId(),
                             target.getMrId(),
                             target.getMrName(),
                             target.getProductName(),
+                            target.getCategory(),
                             target.getTargetType().name(),
                             target.getTargetUnits(),
                             achieved,
@@ -141,18 +195,47 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional(readOnly = true)
     public List<TargetWithAchievementResponse> getAllTargetsWithAchievements(Integer month, Integer year) {
-        List<SalesTarget> targets = targetRepository.findAllByPeriod(month, year);
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String managerIden = auth != null ? auth.getName() : null;
+
+        List<Long> assignedMrIds = new ArrayList<>();
+        if (managerIden != null) {
+            List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
+                    .findByAssignedManagerIgnoreCase(managerIden);
+            userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
+                mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+            });
+            assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).toList();
+        }
+
+        List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
+
+        final List<Long> finalAssignedMrIds = assignedMrIds;
+        List<SalesTarget> targets = isAdmin ? allTargets
+                : allTargets.stream()
+                        .filter(t -> finalAssignedMrIds.contains(t.getMrId())).collect(Collectors.toList());
 
         return targets.stream()
-                .map(target -> {
-                    Integer achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                            target.getMrId(), target.getProductId(), month, year);
+                .map((SalesTarget target) -> {
+                    Integer achieved;
+                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
+                        achieved = (int) dcrRepository.findAll().stream()
+                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                                .count();
+                    } else {
+                        achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
+                                target.getMrId(), target.getProductId(), month, year);
+                    }
 
                     return TargetWithAchievementResponse.from(
                             target.getId(),
                             target.getMrId(),
                             target.getMrName(),
                             target.getProductName(),
+                            target.getCategory(),
                             target.getTargetType().name(),
                             target.getTargetUnits(),
                             achieved,
@@ -169,15 +252,23 @@ public class SalesServiceImpl implements SalesService {
         List<SalesTarget> targets = targetRepository.findByMrIdAndPeriodMonthAndPeriodYear(mrId, month, year);
 
         return targets.stream()
-                .map(target -> {
-                    Integer achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                            target.getMrId(), target.getProductId(), month, year);
+                .map((SalesTarget target) -> {
+                    Integer achieved;
+                    if ("Visit".equalsIgnoreCase(target.getCategory())) {
+                        achieved = (int) dcrRepository.findAll().stream()
+                                .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                                .count();
+                    } else {
+                        achieved = achievementRepository.sumAchievedUnitsByMrAndProduct(
+                                target.getMrId(), target.getProductId(), month, year);
+                    }
 
                     return TargetWithAchievementResponse.from(
                             target.getId(),
                             target.getMrId(),
                             target.getMrName(),
                             target.getProductName(),
+                            target.getCategory(),
                             target.getTargetType().name(),
                             target.getTargetUnits(),
                             achieved,
@@ -191,14 +282,14 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public SalesAchievement recordAchievement(RecordAchievementRequest request) {
         // Check if achievement already exists
-        Optional<SalesAchievement> existing = achievementRepository
+        List<SalesAchievement> existingList = achievementRepository
                 .findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                         request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
 
         SalesAchievement achievement;
-        if (existing.isPresent()) {
-            // Update existing
-            achievement = existing.get();
+        if (!existingList.isEmpty()) {
+            // Update existing (take first if duplicates exist)
+            achievement = existingList.get(0);
             achievement.setAchievedUnits(achievement.getAchievedUnits() + request.achievedUnits());
             achievement.setRemarks(request.remarks());
         } else {
@@ -213,12 +304,12 @@ public class SalesServiceImpl implements SalesService {
             achievement.setAchievementDate(LocalDate.now());
 
             // Get MR and Product names from target
-            Optional<SalesTarget> target = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
+            List<SalesTarget> targets = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                     request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
 
-            if (target.isPresent()) {
-                achievement.setMrName(target.get().getMrName());
-                achievement.setProductName(target.get().getProductName());
+            if (!targets.isEmpty()) {
+                achievement.setMrName(targets.get(0).getMrName());
+                achievement.setProductName(targets.get(0).getProductName());
             }
         }
 
@@ -235,6 +326,12 @@ public class SalesServiceImpl implements SalesService {
     @Override
     public void deleteTarget(Long id) {
         targetRepository.deleteById(id);
+    }
+
+    @Override
+    public com.kavyapharm.farmatrack.user.model.User getUserByUsername(String username) {
+        return userRepository.findByEmailIgnoreCase(username)
+                .orElseGet(() -> userRepository.findByNameIgnoreCase(username).orElse(null));
     }
 
     // Helper class for calculating MR performance

@@ -53,37 +53,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Data Mapping ---
     function processTargets(backendTargets) {
-        // Backend returns a list of targets (TargetResponse)
-        // Each target has salesTarget, salesAchievement, visitsTarget, visitsAchievement
-        // We will split each backend target into one "Product/Sales" entry and one "Visit" entry for the UI.
-
+        // backendTargets is a list of TargetWithAchievementResponse
         const newProductTargets = [];
         const newVisitTargets = [];
 
         backendTargets.forEach(t => {
-            // Safe date handling
-            const assignmentDate = t.startDate || t.lastUpdated || new Date().toISOString().split('T')[0];
-
-            // 1. Sales/Product Target Entry
-            // Since backend is aggregate, we label it "Total Sales"
-            newProductTargets.push({
+            const assignmentDate = t.assignedDate || new Date().toISOString().split('T')[0];
+            const entry = {
                 assignedDate: assignmentDate,
-                product: t.period || "General Target",
-                type: t.period || "Monthly",
-                target: t.salesTarget || 0,
-                achieved: t.salesAchievement || 0,
-                remark: t.status || "-"
-            });
+                product: t.productName,
+                category: t.category || (t.productName === 'Doctor Visits' ? 'Visit' : 'Product'),
+                type: t.targetType || "Monthly",
+                target: t.targetUnits || 0,
+                achieved: t.achievedUnits || 0,
+                remark: t.progressStatus || "-"
+            };
 
-            // 2. Visit Target Entry
-            newVisitTargets.push({
-                assignedDate: assignmentDate,
-                category: "Doctor Visits",
-                type: t.period || "Monthly",
-                target: t.visitsTarget || 0,
-                achieved: t.visitsAchievement || 0,
-                remark: t.status || "-"
-            });
+            if (entry.category === 'Visit') {
+                newVisitTargets.push(entry);
+            } else {
+                newProductTargets.push(entry);
+            }
         });
 
         productTargetsData = newProductTargets;
@@ -93,11 +83,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- API Functions ---
     async function refreshTargetsFromApi() {
         try {
-            console.log("[SALES] Fetching targets from API...");
-            const currentUserName = localStorage.getItem("signup_name") || "";
-            const url = currentUserName ? `${TARGETS_API_BASE}?mrName=${encodeURIComponent(currentUserName)}` : TARGETS_API_BASE;
+            console.log("[SALES] Fetching targets from dynamic API...");
+            const url = `${API_BASE}/api/mr/me/sales-targets`;
             const data = await apiJson(url);
-            console.log("[SALES] API response received:", data);
+            console.log("[SALES] Dynamic API response received:", data);
 
             if (Array.isArray(data)) {
                 processTargets(data);
@@ -110,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error("Invalid API response format");
             }
         } catch (e) {
-            console.error("[SALES] API call failed:", e);
+            console.error("[SALES] Dynamic API call failed:", e);
             targetsApiMode = false;
             showApiRetryBanner();
             loadLocalData(); // Fallback to local storage

@@ -2,8 +2,9 @@ package com.kavyapharm.farmatrack.mrdashboard.service;
 
 import com.kavyapharm.farmatrack.mrdashboard.dto.MrDashboardResponse;
 import com.kavyapharm.farmatrack.dcr.repository.DcrRepository;
-import com.kavyapharm.farmatrack.mrexpense.model.MrExpense;
-import com.kavyapharm.farmatrack.mrexpense.repository.MrExpenseRepository;
+import com.kavyapharm.farmatrack.expense.model.Expense;
+import com.kavyapharm.farmatrack.expense.model.Expense.ExpenseStatus;
+import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
 import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesAchievementRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
@@ -21,13 +22,13 @@ import java.util.List;
 public class MrDashboardService {
 
     private final DcrRepository dcrRepository;
-    private final MrExpenseRepository expenseRepository;
+    private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
     private final SalesAchievementRepository salesAchievementRepository;
     private final SalesTargetRepository salesTargetRepository;
 
     public MrDashboardService(DcrRepository dcrRepository,
-            MrExpenseRepository expenseRepository,
+            ExpenseRepository expenseRepository,
             UserRepository userRepository,
             SalesAchievementRepository salesAchievementRepository,
             SalesTargetRepository salesTargetRepository) {
@@ -60,75 +61,65 @@ public class MrDashboardService {
             String userName = userOpt.get().getName() != null ? userOpt.get().getName().trim() : email;
             System.out.println("[MR-DASHBOARD] User: ID=" + userId + ", Name='" + userName + "'");
 
-            // 1. Calculate Visits
-            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> allDcrs = dcrRepository.findAll();
-            int visits = (int) allDcrs.stream()
+            // 1. Calculate Visits for the current month
+            LocalDate today = LocalDate.now();
+            int currentMonth = today.getMonthValue();
+            int currentYear = today.getYear();
+
+            // Use repository method to get DCRs for this MR for better performance
+            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> userDcrs = dcrRepository
+                    .findByMrNameIgnoreCase(userName);
+            int visits = (int) userDcrs.stream()
                     .filter(dcr -> {
-                        String dcrMrName = dcr.getMrName() != null ? dcr.getMrName().trim() : null;
-                        boolean matches = dcrMrName != null && userName.equalsIgnoreCase(dcrMrName);
-                        if (matches && !userName.equals(dcr.getMrName())) {
-                            try {
-                                dcr.setMrName(userName);
-                                dcrRepository.save(dcr);
-                            } catch (Exception e) {
+                        // Filter by current month/year
+                        try {
+                            String subTime = dcr.getSubmissionTime(); // e.g., 2026-02-09T15:51:35.000Z
+                            if (subTime != null) {
+                                LocalDate subDate = LocalDate.parse(subTime.split("T")[0]);
+                                return subDate.getMonthValue() == currentMonth && subDate.getYear() == currentYear;
                             }
+                        } catch (Exception e) {
+                            // Fallback
                         }
-                        return matches;
+                        return true;
                     })
                     .count();
 
-            // 2. Calculate Expenses
-            List<MrExpense> allExpenses = expenseRepository.findAll();
-            List<MrExpense> userExpenses = allExpenses.stream()
-                    .filter(exp -> {
-                        String expMrName = exp.getMrName() != null ? exp.getMrName().trim() : null;
-                        boolean matches = expMrName != null && userName.equalsIgnoreCase(expMrName);
-                        if (matches && !userName.equals(exp.getMrName())) {
-                            try {
-                                exp.setMrName(userName);
-                                expenseRepository.save(exp);
-                            } catch (Exception e) {
-                            }
-                        }
-                        return matches;
-                    })
-                    .toList();
+            // 2. Calculate Expenses using the correct ExpenseRepository
+            List<Expense> userExpenses = expenseRepository.findByMrNameIgnoreCase(userName);
 
             double pending = userExpenses.stream()
-                    .filter(e -> "Pending".equalsIgnoreCase(e.getStatus()))
+                    .filter(e -> e.getStatus() == ExpenseStatus.PENDING)
                     .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
                     .sum();
             double approved = userExpenses.stream()
-                    .filter(e -> "Approved".equalsIgnoreCase(e.getStatus()))
+                    .filter(e -> e.getStatus() == ExpenseStatus.APPROVED)
                     .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
                     .sum();
 
             // 3. Calculate Sales & Target
-            LocalDate today = LocalDate.now();
-            int month = today.getMonthValue();
-            int year = today.getYear();
+            List<SalesTarget> targets = salesTargetRepository.findByMrIdAndPeriodMonthAndPeriodYear(userId,
+                    currentMonth, currentYear);
 
-            List<SalesAchievement> achievements = salesAchievementRepository
-                    .findByMrIdAndPeriodMonthAndPeriodYear(userId, month, year);
-            double totalSales = achievements.stream()
-                    .mapToDouble(a -> a.getAchievedUnits() != null ? a.getAchievedUnits() : 0.0)
-                    .sum();
+            // Total units achieved (for product sales)
+            Integer achievedUnits = salesAchievementRepository.sumAchievedUnitsByMr(userId, currentMonth, currentYear);
+            double totalSalesActual = achievedUnits != null ? achievedUnits.doubleValue() : 0.0;
 
-            List<SalesTarget> targets = salesTargetRepository.findByMrIdAndPeriodMonthAndPeriodYear(userId, month,
-                    year);
+            // Total units targeted (for product sales)
             double totalTargetUnits = targets.stream()
+                    .filter(t -> !"Visit".equalsIgnoreCase(t.getCategory()))
                     .mapToDouble(t -> t.getTargetUnits() != null ? t.getTargetUnits() : 0.0)
                     .sum();
 
             int targetPercent = 0;
             if (totalTargetUnits > 0) {
-                targetPercent = (int) ((totalSales / totalTargetUnits) * 100);
+                targetPercent = (int) ((totalSalesActual / totalTargetUnits) * 100);
             }
 
             System.out.println("[MR-DASHBOARD] Results -> Visits: " + visits + ", Pending: " + pending +
-                    ", Approved: " + approved + ", Sales: " + totalSales + ", Target%: " + targetPercent);
+                    ", Approved: " + approved + ", Sales: " + totalSalesActual + ", Target%: " + targetPercent);
 
-            return new MrDashboardResponse(totalSales, targetPercent, visits, pending, approved);
+            return new MrDashboardResponse(totalSalesActual, targetPercent, visits, pending, approved);
 
         } catch (Exception e) {
             System.err.println("[MR-DASHBOARD] CRITICAL ERROR: " + e.getMessage());

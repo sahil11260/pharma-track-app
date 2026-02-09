@@ -93,17 +93,27 @@ public class SalesController {
     }
 
     /**
-     * MR: Get own targets using "me" identifier (requires auth to get mrId)
+     * MR: Get own targets using authentication context
      */
     @GetMapping("/mr/me/sales-targets")
     public ResponseEntity<List<TargetWithAchievementResponse>> getMyTargets(
             @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestParam(required = false) Integer year) {
 
-        // In production, get userId from JWT token
-        // For now, use header or throw error
-        if (userId == null) {
+        // Get user from SecurityContext
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Ideally we'd have a way to get the database ID here.
+        // For now, let's find the user by their identifier (email or name)
+        String identifier = auth.getName();
+        com.kavyapharm.farmatrack.user.model.User user = salesService.getUserByUsername(identifier);
+
+        if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -111,7 +121,7 @@ public class SalesController {
         int targetMonth = month != null ? month : now.getMonthValue();
         int targetYear = year != null ? year : now.getYear();
 
-        List<TargetWithAchievementResponse> targets = salesService.getMrTargets(userId, targetMonth, targetYear);
+        List<TargetWithAchievementResponse> targets = salesService.getMrTargets(user.getId(), targetMonth, targetYear);
         return ResponseEntity.ok(targets);
     }
 

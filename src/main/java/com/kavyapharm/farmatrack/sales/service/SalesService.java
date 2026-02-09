@@ -24,4 +24,6 @@ public interface SalesService {
     SalesTarget getTargetById(Long id);
 
     void deleteTarget(Long id);
+
+    com.kavyapharm.farmatrack.user.model.User getUserByUsername(String username);
 }

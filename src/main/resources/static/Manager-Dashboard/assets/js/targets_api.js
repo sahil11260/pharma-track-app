@@ -12,12 +12,17 @@ let currentMonth = new Date().getMonth() + 1;
 let currentYear = new Date().getFullYear();
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    loadDashboard();
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. First load MRs for the current manager (needed for dropdowns in modals)
+    await populateMRDropdowns();
+
+    // 2. Load dashboard data (Shows all assigned MRs by default)
+    await loadDashboard();
+
+    // 3. Wire other components
     wireFilters();
     wireSetTargets();
     wirePerformanceReport();
-    populateMRDropdowns();
 });
 
 // Load complete dashboard
@@ -42,10 +47,19 @@ async function loadDashboard() {
         }
 
         const data = await response.json();
-        targetsData = data.targets || [];
+        const allTargets = data.targets || [];
+
+        // Filter targets so only those belonging to manager's MRs are shown
+        const managerMrIds = window.managerMrIds || [];
+        if (managerMrIds.length > 0) {
+            targetsData = allTargets.filter(t => managerMrIds.includes(String(t.mrId)));
+            console.log('[TARGETS] Filtered targets from', allTargets.length, 'to', targetsData.length);
+        } else {
+            targetsData = allTargets;
+        }
 
         renderSummaryCards(data);
-        renderTargetsTable(data.targets);
+        renderTargetsTable(targetsData);
         renderTopPerformers(data.topPerformers);
 
         showLoading(false);
@@ -157,17 +171,32 @@ function renderTopPerformers(performers) {
 
 // Set Targets Modal
 function wireSetTargets() {
+    const categoryEl = document.getElementById('targetCategory');
+    const labelEl = document.getElementById('targetUnitsLabel');
+    if (categoryEl && labelEl) {
+        categoryEl.addEventListener('change', () => {
+            if (categoryEl.value === 'Visit') {
+                labelEl.textContent = 'Target (Doctor Visits)';
+            } else {
+                labelEl.textContent = 'Target Units';
+            }
+        });
+    }
+
     const saveBtn = document.getElementById('saveTargetBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
             const form = document.getElementById('setTargetsForm');
             const targetMrEl = document.getElementById('targetMR');
+            const category = document.getElementById('targetCategory').value;
+
             if (form.checkValidity() && targetMrEl.value) {
                 const formData = {
                     mrId: targetMrEl.value,
                     mrName: targetMrEl.options[targetMrEl.selectedIndex].text,
                     targetUnits: parseInt(document.getElementById('salesTarget').value),
-                    productName: "General Sales",
+                    productName: category === 'Visit' ? "Doctor Visits" : "General Sales",
+                    category: category,
                     periodMonth: currentMonth,
                     periodYear: currentYear,
                     assignedBy: localStorage.getItem("signup_name") || "Manager"
@@ -177,6 +206,7 @@ function wireSetTargets() {
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.hide();
                 form.reset();
+                if (labelEl) labelEl.textContent = 'Target Units';
             } else {
                 if (!targetMrEl.value) alert('Please select an MR');
                 form.reportValidity();
@@ -201,13 +231,28 @@ function wirePerformanceReport() {
     }
 }
 
-// Populate MR Dropdowns (More robust version)
+// Populate MR Dropdowns (Filtered by Manager)
 async function populateMRDropdowns() {
     try {
         const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
-        console.log('[TARGETS] Fetching MR list for dropdowns...');
 
-        const response = await fetch(`${API_BASE}/users?role=MR`, {
+        // Get current manager info from localStorage
+        let userObj = {};
+        try {
+            userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+        } catch (e) { }
+        const currentName = userObj.name || localStorage.getItem("signup_name") || "";
+        const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
+        const managerParam = currentName || currentEmail;
+
+        console.log('[TARGETS] Fetching MR list for manager:', managerParam);
+
+        // Fetch only MRs assigned to this manager
+        const url = managerParam
+            ? `${API_BASE}/users?manager=${encodeURIComponent(managerParam)}&role=MR`
+            : `${API_BASE}/users?role=MR`;
+
+        const response = await fetch(url, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
         });
 
@@ -215,17 +260,28 @@ async function populateMRDropdowns() {
             throw new Error('Failed to fetch MRs from /api/users');
         }
 
-        const mrs = await response.json();
-        console.log('[TARGETS] Found MRs:', mrs.length);
+        let mrs = await response.json();
+        console.log('[TARGETS] Found MRs for manager:', mrs.length);
 
         if (!Array.isArray(mrs)) return;
 
+        // Ensure we only have MRs (Secondary client-side filter for safety)
+        mrs = mrs.filter(u => u.role === 'MR' || (u.role && u.role.name === 'MR'));
+
+        if (mrs.length === 0) {
+            const noMrOpt = '<option value="">No MRs assigned</option>';
+            if (document.getElementById('filterMR')) document.getElementById('filterMR').innerHTML = noMrOpt;
+            if (document.getElementById('targetMR')) document.getElementById('targetMR').innerHTML = noMrOpt;
+            if (document.getElementById('performanceMRSelection')) document.getElementById('performanceMRSelection').innerHTML = noMrOpt;
+            return;
+        }
+
         const mrOptions = mrs.map(mr => `<option value="${mr.id}">${escapeHtml(mr.name)}</option>`).join('');
 
-        // Populate Main Filter
+        // Populate Main Filter (NO "All MRs" option)
         const filterMR = document.getElementById('filterMR');
         if (filterMR) {
-            filterMR.innerHTML = '<option value="">All MRs</option>' + mrOptions;
+            filterMR.innerHTML = mrOptions;
         }
 
         // Populate Set Targets Modal dropdown
@@ -234,20 +290,17 @@ async function populateMRDropdowns() {
             targetMR.innerHTML = '<option value="">Select MR</option>' + mrOptions;
         }
 
-        // Populate Performance Report Modal dropdown
+        // Populate Performance Report Modal dropdown (NO "All MRs" option)
         const performanceMRSelection = document.getElementById('performanceMRSelection');
         if (performanceMRSelection) {
-            performanceMRSelection.innerHTML = '<option value="all">All MRs</option>' + mrOptions;
+            performanceMRSelection.innerHTML = mrOptions;
         }
+
+        // Store MR names globally for filtering targetsData if needed
+        window.managerMrIds = mrs.map(m => String(m.id));
+
     } catch (error) {
         console.error('Error populating MR dropdowns:', error);
-        // If API fails, try to load from localStorage as fallback
-        const localMrs = JSON.parse(localStorage.getItem("kavyaPharmMRsData") || "[]");
-        if (localMrs.length > 0) {
-            const mrOptions = localMrs.map(mr => `<option value="${mr.id}">${escapeHtml(mr.name)}</option>`).join('');
-            const targetMR = document.getElementById('targetMR');
-            if (targetMR) targetMR.innerHTML = '<option value="">Select MR (Local)</option>' + mrOptions;
-        }
     }
 }
 
@@ -280,18 +333,7 @@ async function saveTarget(formData) {
 
 // Filters
 function wireFilters() {
-    const filterMR = document.getElementById('filterMR');
-    if (filterMR) {
-        filterMR.addEventListener('change', () => {
-            const selectedMrId = filterMR.value;
-            if (selectedMrId) {
-                const filteredTargets = targetsData.filter(t => t.mrId == selectedMrId);
-                renderTargetsTable(filteredTargets);
-            } else {
-                renderTargetsTable(targetsData);
-            }
-        });
-    }
+    // filterMR dropdown removed as requested by user - showing all team data by default
 
     const searchInput = document.getElementById('searchTarget');
     if (searchInput) {

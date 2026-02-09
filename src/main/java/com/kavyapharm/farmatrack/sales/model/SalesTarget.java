@@ -23,6 +23,9 @@ public class SalesTarget {
     @Column(name = "product_name", nullable = false)
     private String productName;
 
+    @Column(name = "category", nullable = false)
+    private String category = "Product";
+
     @Column(name = "target_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private TargetType targetType = TargetType.MONTHLY;
@@ -90,6 +93,14 @@ public class SalesTarget {
 
     public void setProductName(String productName) {
         this.productName = productName;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public TargetType getTargetType() {

@@ -51,7 +51,7 @@ public class DashboardService {
                     .count();
             // Filter doctors by managerEmail
             totalDoctors = doctorService.list().stream()
-                    .filter(d -> currentEmail.equals(d.managerEmail()))
+                    .filter(d -> Objects.equals(currentEmail, d.managerEmail()))
                     .count();
         } else {
             totalMRs = allUsers.stream().filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()))
