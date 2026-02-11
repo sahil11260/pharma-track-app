@@ -11,12 +11,15 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final com.kavyapharm.farmatrack.user.repository.UserRepository userRepository;
+    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     public NotificationService(NotificationRepository notificationRepository,
             com.kavyapharm.farmatrack.user.repository.UserRepository userRepository) {
@@ -45,10 +48,18 @@ public class NotificationService {
         String username = auth.getName();
         Long userId = getUserIdFromUsername(username);
 
+        logger.debug("Listing notifications for user: {}, role: {}, id: {}", username, userRole, userId);
+
         return notificationRepository
                 .findAll(Sort.by(Sort.Direction.DESC, "date").and(Sort.by(Sort.Direction.DESC, "id")))
                 .stream()
-                .filter(notification -> isNotificationVisibleToUser(notification, userRole, userId))
+                .filter(notification -> {
+                    boolean visible = isNotificationVisibleToUser(notification, userRole, userId);
+                    if (visible) {
+                        logger.trace("Notification {} is visible to user {}", notification.getId(), username);
+                    }
+                    return visible;
+                })
                 .map(NotificationService::toResponse)
                 .toList();
     }
@@ -59,12 +70,31 @@ public class NotificationService {
             return notification.getRecipientId().equals(userId);
         }
 
-        // If notification has a target role, check if it matches current user's role
-        if (notification.getTargetRole() != null && !notification.getTargetRole().isBlank()) {
-            return notification.getTargetRole().equalsIgnoreCase(userRole);
+        String type = notification.getType();
+        String targetRole = notification.getTargetRole();
+
+        // Handle "All" recipients
+        if ("All".equalsIgnoreCase(type) || "ALL".equalsIgnoreCase(targetRole)) {
+            return true;
         }
 
-        // If no specific recipient or role, show to admins only
+        // Handle Role-specific recipients
+        if ("Managers".equalsIgnoreCase(type) || "MANAGER".equalsIgnoreCase(targetRole)) {
+            return "MANAGER".equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(userRole)
+                    || "SUPERADMIN".equalsIgnoreCase(userRole);
+        }
+
+        if ("MRs".equalsIgnoreCase(type) || "MR".equalsIgnoreCase(targetRole)) {
+            return "MR".equalsIgnoreCase(userRole) || "ADMIN".equalsIgnoreCase(userRole)
+                    || "SUPERADMIN".equalsIgnoreCase(userRole);
+        }
+
+        // If it specifically has a target role, exact match
+        if (targetRole != null && !targetRole.isBlank()) {
+            return targetRole.equalsIgnoreCase(userRole);
+        }
+
+        // Default: only admins see unspecified notifications
         return "ADMIN".equalsIgnoreCase(userRole) || "SUPERADMIN".equalsIgnoreCase(userRole);
     }
 
@@ -94,8 +124,19 @@ public class NotificationService {
         notification.setPriority(
                 request.priority() == null || request.priority().isBlank() ? "Normal" : request.priority());
         notification.setRecipientId(request.recipientId());
-        notification.setTargetRole(request.targetRole());
 
+        String tRole = request.targetRole();
+        if (tRole == null || tRole.isBlank()) {
+            if ("Managers".equalsIgnoreCase(request.type()))
+                tRole = "MANAGER";
+            else if ("MRs".equalsIgnoreCase(request.type()))
+                tRole = "MR";
+            else if ("All".equalsIgnoreCase(request.type()))
+                tRole = "ALL";
+        }
+        notification.setTargetRole(tRole);
+
+        logger.info("Created notification {} with type {} and targetRole {}", id, request.type(), tRole);
         return toResponse(notificationRepository.save(notification));
     }
 

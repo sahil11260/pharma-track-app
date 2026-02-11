@@ -166,6 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
             title: `Announcement to ${recipient}`,
             message: message,
             type: recipient,
+            targetRole: recipient === "All" ? "ALL" : (recipient === "Managers" ? "MANAGER" : (recipient === "MRs" ? "MR" : null)),
             date: new Date().toISOString().split("T")[0],
             status: "Unread",
             priority: "Normal",
