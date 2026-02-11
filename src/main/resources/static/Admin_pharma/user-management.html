@@ -19,27 +19,6 @@
 
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/images/fev.png" />
-  <title>User Management - KavyaPharm Admin</title>
-
-  <!-- Bootstrap & Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
-
-  <link href="assets/css/style.css" rel="stylesheet" />
-  <link href="assets/css/user-management.css" rel="stylesheet" />
-</head>
-
-<body>
-
-  <!-- NAVBAR -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
     <div class="container-fluid">
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle"><i class="bi bi-list"></i></button>
 
@@ -47,28 +26,17 @@
         
         <!-- Notification Dropdown -->
         <div class="dropdown">
-  <button class="btn btn-outline-secondary me-2 position-relative" 
-          id="notificationsBtn" 
-          data-bs-toggle="dropdown">
-    <i class="bi bi-bell"></i>
+          <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
+            data-bs-toggle="dropdown">
+            <i class="bi bi-bell"></i>
+            
+          </button>
 
-    <!-- Red Dot -->
-    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
-  </button>
-
-  <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
-    <li class="dropdown-header fw-bold">Notifications</li>
-    <li><hr class="dropdown-divider" /></li>
-    
-    <!-- Dynamic notifications will be inserted here -->
-    <li id="notificationList">
-      <div class="dropdown-item small text-center text-muted">
-        <i class="bi bi-hourglass-split me-2"></i>Loading...
-      </div>
-    </li>
-  </ul>
-</div>
-
+          <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;">
+            <li class="dropdown-header fw-bold">Notifications</li>
+            <li><div class="dropdown-item small text-muted text-center">No new notifications</div></li>
+          </ul>
+        </div>
 
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown"
@@ -324,8 +292,6 @@
   <script src="assets/js/script.js"></script>
   <!-- User Management Logic -->
   <script src="assets/js/user-management.js"></script>
-  <script src="assets/js/navbar-notifications.js"></script>
-
 </body>
 
 </html>
