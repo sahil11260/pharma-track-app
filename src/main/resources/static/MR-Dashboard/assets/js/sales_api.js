@@ -3,9 +3,11 @@
  * Replaces static/mock data with real backend calls
  */
 
-const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8080/api'
-    : 'https://pharma-track-app.onrender.com/api';
+// const API_BASE = window.location.hostname === 'localhost'
+//     ? 'http://localhost:8080/api'
+//     : 'https://pharma-track-app.onrender.com/api';
+const API_BASE = window.API_BASE || "/api";
+
 
 let salesTargets = [];
 let currentMonth = new Date().getMonth() + 1;

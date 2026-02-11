@@ -3,7 +3,8 @@
  * Fixed version: Removed Actions column and Charts
  */
 
-const API_BASE = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+// const API_BASE = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+const API_BASE = window.API_BASE || "/api";
 
 let targetsData = [];
 let systemProducts = []; // Global system products

@@ -97,7 +97,9 @@ let filteredTasks = []; // current filtered dataset shown in table
 let currentPage = 1;
 const pageSize = 5; // change to 10 or make selectable if you want
 
-const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+// const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+const API_BASE = window.API_BASE || "/api";
+
 const TASKS_API_BASE = `${API_BASE}/api/tasks`;
 const USERS_API_BASE = `${API_BASE}/api/users`;
 const DOCTORS_API_BASE = `${API_BASE}/api/doctors`;

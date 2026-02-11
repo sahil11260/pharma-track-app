@@ -7,7 +7,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- CONFIGURATION ---
     const PAGE_SIZE = 5; // Expenses per page
     let currentPage = 1;
-    const API_BASE = "/api/mr-expenses";
+    // const API_BASE = "/api/mr-expenses";
+    const API_BASE = window.API_BASE || "/api";
+
     let expenseList = [];
 
     // --- ELEMENTS & MODALS ---

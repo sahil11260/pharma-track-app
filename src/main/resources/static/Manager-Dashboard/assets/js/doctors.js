@@ -1,6 +1,8 @@
 // --- PERSISTENCE SETUP ---
 const STORAGE_KEY = "kavyaPharmDoctorsData";
-const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+// const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+const API_BASE = window.API_BASE || "/api";
+
 const DOCTORS_API_BASE = `${API_BASE}/api/doctors`;
 let doctorsApiMode = true;
 

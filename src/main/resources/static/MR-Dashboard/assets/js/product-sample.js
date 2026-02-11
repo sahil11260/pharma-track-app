@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("[PRODUCT-SAMPLE] Initializing Dynamic Module...");
 
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+    const API_BASE = window.API_BASE || "/api";
+
 
     function getAuthHeader() {
         const token = localStorage.getItem('kavya_auth_token') || localStorage.getItem('token');

@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/mr-expenses")
+@CrossOrigin(origins = "*")
 public class MrExpenseController {
 
     private final MrExpenseService service;

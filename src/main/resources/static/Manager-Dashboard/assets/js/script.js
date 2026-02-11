@@ -88,7 +88,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------
   // Mock / dashboard data
   // -----------------------
-  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  const API_BASE = window.API_BASE || "/api";
+
   let dashboardData = {
     totalMRs: 0,
     totalSales: 0,

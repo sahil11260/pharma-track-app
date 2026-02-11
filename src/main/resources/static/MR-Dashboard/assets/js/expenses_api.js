@@ -2,7 +2,9 @@
 // This file replaces static data with dynamic API calls
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    const API_BASE = window.API_BASE || "/api";
+
     const EXPENSES_API = `${API_BASE}/api/expenses`;
 
     const PAGE_SIZE = 5;
