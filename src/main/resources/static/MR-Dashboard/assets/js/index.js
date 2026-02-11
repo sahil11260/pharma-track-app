@@ -161,6 +161,12 @@
   async function init() {
     log("Initializing MR Dashboard script");
 
+    // Check for auth token
+    const token = localStorage.getItem("kavya_auth_token");
+    if (!token) {
+      warn("No kavya_auth_token found in localStorage. API calls will fail.");
+    }
+
     // Set Today's date in header
     const dateEl = $id("todayDate");
     if (dateEl) {
@@ -171,10 +177,13 @@
     }
 
 
+    log("Fetching dashboard data...");
     const dashboardData = await loadDashboard();
+    log("Dashboard data received:", dashboardData);
     renderSummary(dashboardData);
 
     // Load Notifications
+    log("Fetching notifications...");
     loadNotifications();
 
     log("MR Dashboard ready.");

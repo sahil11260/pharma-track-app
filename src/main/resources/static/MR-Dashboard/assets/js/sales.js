@@ -1,245 +1,154 @@
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("[SALES] sales.js loaded and DOM ready");
+    console.log("[SALES] sales.js (v2) starting...");
 
-    // --- API Configuration ---
     const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
-    let targetsApiMode = true;
 
     function getAuthHeader() {
-        const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
+        const token = localStorage.getItem('kavya_auth_token') || localStorage.getItem('token');
+        if (!token) {
+            console.error("[SALES] CRITICAL: No authentication token found. User is likely not logged in.");
+        } else {
+            console.log("[SALES] Auth token found.");
+        }
         return token ? { "Authorization": `Bearer ${token}` } : {};
     }
 
     async function apiJson(url, options = {}) {
         const headers = { "Content-Type": "application/json", ...getAuthHeader(), ...(options.headers || {}) };
-        const response = await fetch(url, { ...options, headers });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `HTTP ${response.status}`);
-        }
-        return response.json();
-    }
+        console.log(`[SALES] Calling API: ${url}`);
 
-    // --- Data Storage ---
-    let productTargetsData = [];
-    let visitTargetsData = [];
-
-    // --- Elements ---
-    const productBody = document.getElementById("salesTargetTableBody");
-    const doctorVisitBody = document.getElementById("doctorVisitTargetBody");
-    const bannerContainer = document.getElementById("salesApiRetryBanner") || createBannerContainer();
-
-    function createBannerContainer() {
-        const div = document.createElement("div");
-        div.id = "salesApiRetryBanner";
-        div.className = "alert alert-warning alert-dismissible fade show";
-        div.style.cssText = "position: fixed; top: 10px; right: 10px; z-index: 9999; max-width: 400px; display: none;";
-        div.innerHTML = `
-            <strong>âš ï¸ Offline Mode</strong>
-            <p class="mb-0">Targets API unavailable. Showing generic/empty data. <button class="btn btn-sm btn-warning" onclick="location.reload()">Retry</button></p>
-        `;
-        document.body.appendChild(div);
-        return div;
-    }
-
-    function showApiRetryBanner() {
-        if (bannerContainer) bannerContainer.style.display = "block";
-    }
-
-    function hideApiRetryBanner() {
-        if (bannerContainer) bannerContainer.style.display = "none";
-    }
-
-    // --- Data Mapping ---
-    function processTargets(backendTargets) {
-        // backendTargets is a list of TargetWithAchievementResponse
-        const newProductTargets = [];
-        const newVisitTargets = [];
-
-        backendTargets.forEach(t => {
-            const assignmentDate = t.assignedDate || new Date().toISOString().split('T')[0];
-            const entry = {
-                assignedDate: assignmentDate,
-                product: t.productName,
-                category: t.category || (t.productName === 'Doctor Visits' ? 'Visit' : 'Product'),
-                type: t.targetType || "Monthly",
-                target: t.targetUnits || 0,
-                achieved: t.achievedUnits || 0,
-                remark: t.progressStatus || "-"
-            };
-
-            if (entry.category === 'Visit') {
-                newVisitTargets.push(entry);
-            } else {
-                newProductTargets.push(entry);
-            }
-        });
-
-        productTargetsData = newProductTargets;
-        visitTargetsData = newVisitTargets;
-    }
-
-    // --- API Functions ---
-    async function refreshTargetsFromApi() {
         try {
-            console.log("[SALES] Fetching targets from dynamic API...");
-            const url = `${API_BASE}/mr/me/sales-targets`;
-            const data = await apiJson(url);
-            console.log("[SALES] Dynamic API response received:", data);
+            const response = await fetch(url, { ...options, headers });
+            console.log(`[SALES] Response for ${url}:`, response.status, response.statusText);
 
-            if (Array.isArray(data)) {
-                processTargets(data);
-                targetsApiMode = true;
-                hideApiRetryBanner();
-                saveLocalData();
-                renderAll();
-            } else {
-                console.warn("[SALES] API returned non-array response");
-                throw new Error("Invalid API response format");
+            if (!response.ok) {
+                let errorBody = "";
+                try {
+                    errorBody = await response.text();
+                } catch (e) { }
+                const msg = `HTTP ${response.status} (${response.statusText}): ${errorBody}`;
+                throw new Error(msg);
             }
+            return response.json();
+        } catch (err) {
+            console.error(`[SALES] Network or API error for ${url}:`, err);
+            throw err;
+        }
+    }
+
+    const totalSalesEl = document.getElementById("totalSales");
+    const monthlyTargetEl = document.getElementById("monthlyTarget");
+    const targetGapEl = document.getElementById("targetGap");
+    const achievementPercentEl = document.getElementById("achievementPercent");
+    const salesListBody = document.getElementById("salesListBody");
+
+    function formatINR(amount) {
+        return "₹" + Number(amount || 0).toLocaleString('en-IN');
+    }
+
+    async function refreshSalesData() {
+        const auth = getAuthHeader();
+        if (!auth.Authorization) {
+            showError("Authentication required. Please log in again.");
+            return;
+        }
+
+        try {
+            // Step 1: Summary for top cards
+            console.log("[SALES] Fetching dashboard summary...");
+            const summary = await apiJson(`${API_BASE}/mr-dashboard`).catch(err => {
+                console.warn("[SALES] Dashboard summary failed, using fallback empty values", err);
+                return { sales: 0, targetPercent: 0 };
+            });
+
+            // Step 2: Detailed targets for table
+            console.log("[SALES] Fetching detailed targets...");
+            const targets = await apiJson(`${API_BASE}/mr/me/sales-targets`).catch(err => {
+                console.error("[SALES] Detailed targets failed", err);
+                throw err;
+            });
+
+            updateTopCards(summary, targets);
+            renderMonthlyTable(targets);
+
         } catch (e) {
-            console.error("[SALES] Dynamic API call failed:", e);
-            targetsApiMode = false;
-            showApiRetryBanner();
-            loadLocalData(); // Fallback to local storage
-            renderAll();
+            console.error("[SALES] Detailed refresh failed:", e);
+            showError(`Data Load Error: ${e.message}`);
         }
     }
 
-    // --- Local Storage ---
-    function saveLocalData() {
-        localStorage.setItem("mr_sales_targets_products", JSON.stringify(productTargetsData));
-        localStorage.setItem("mr_sales_targets_visits", JSON.stringify(visitTargetsData));
-    }
+    function updateTopCards(summary, targets) {
+        // Main Sales figure from summary record
+        const totalSales = summary.sales || 0;
 
-    function loadLocalData() {
-        const p = localStorage.getItem("mr_sales_targets_products");
-        const v = localStorage.getItem("mr_sales_targets_visits");
-        if (p) productTargetsData = JSON.parse(p);
-        if (v) visitTargetsData = JSON.parse(v);
-    }
-
-    // --- Rendering ---
-    function getAchievementStatus(percentage) {
-        let status = '';
-        let colorClass = '';
-
-        if (percentage >= 90) {
-            status = 'Excellent';
-            colorClass = 'bg-success';
-        } else if (percentage >= 75) {
-            status = 'Good';
-            colorClass = 'bg-info';
-        } else if (percentage >= 50) {
-            status = 'Average';
-            colorClass = 'bg-warning text-dark';
-        } else {
-            status = 'Poor';
-            colorClass = 'bg-danger';
+        // Sum targets from the detailed list (excluding visits)
+        let totalTarget = 0;
+        if (Array.isArray(targets)) {
+            targets.forEach(t => {
+                if (t.category && t.category.toLowerCase() !== 'visit') {
+                    totalTarget += (t.targetUnits || 0);
+                }
+            });
         }
 
-        return `<span class="badge ${colorClass}">${status}</span>`;
+        const targetGap = Math.max(0, totalTarget - totalSales);
+        const achievementPct = totalTarget > 0 ? (totalSales / totalTarget) * 100 : 0;
+
+        if (totalSalesEl) totalSalesEl.textContent = formatINR(totalSales);
+        if (monthlyTargetEl) monthlyTargetEl.textContent = formatINR(totalTarget);
+        if (targetGapEl) targetGapEl.textContent = formatINR(targetGap);
+        if (achievementPercentEl) achievementPercentEl.textContent = `${achievementPct.toFixed(1)}%`;
+        console.log("[SALES] Top cards updated successfully.");
     }
 
-    function renderProducts() {
-        productBody.innerHTML = "";
+    function renderMonthlyTable(targets) {
+        if (!salesListBody) return;
+        salesListBody.innerHTML = "";
 
-        if (productTargetsData.length === 0) {
-            productBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No sales targets found for your account.</td></tr>';
+        if (!Array.isArray(targets) || targets.length === 0) {
+            salesListBody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-muted">No sales targets found for the current month.</td></tr>';
             return;
         }
 
-        productTargetsData.forEach((item, index) => {
-            const targetVal = item.target || 1; // Prevent division by zero
-            const achievementPercentage = ((item.achieved / targetVal) * 100).toFixed(1);
-            const statusBadge = getAchievementStatus(parseFloat(achievementPercentage));
-
-            const row = document.createElement('tr');
-            // Highlight successful achievement in green
-            const percentageColor = (parseFloat(achievementPercentage) >= 100) ? 'text-success fw-bold' : '';
-
-            // Format date
-            let displayDate = item.assignedDate;
-            try {
-                displayDate = new Date(item.assignedDate).toLocaleDateString('en-IN');
-            } catch (e) { }
-
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${displayDate}</td>
-                <td class="fw-medium">${item.product}</td>
-                <td><span class="badge bg-secondary">${item.type}</span></td>
-                <td>${(item.target || 0).toLocaleString()}</td>
-                <td>${(item.achieved || 0).toLocaleString()}</td>
-                <td class="${percentageColor}">${achievementPercentage}%</td>
-                <td>${statusBadge}</td>
-                <td class="small text-muted">${item.remark}</td>
-            `;
-            productBody.appendChild(row);
-        });
-    }
-
-    function renderVisits() {
-        doctorVisitBody.innerHTML = "";
-
-        if (visitTargetsData.length === 0) {
-            doctorVisitBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No visit targets found for your account.</td></tr>';
-            return;
-        }
-
-        visitTargetsData.forEach((item, index) => {
-            const targetVal = item.target || 1;
-            const achievementPercentage = ((item.achieved / targetVal) * 100).toFixed(1);
-            const statusBadge = getAchievementStatus(parseFloat(achievementPercentage));
-
-            const row = document.createElement('tr');
-            const percentageColor = (parseFloat(achievementPercentage) >= 100) ? 'text-success fw-bold' : '';
-
-            // Format date
-            let displayDate = item.assignedDate;
-            try {
-                displayDate = new Date(item.assignedDate).toLocaleDateString('en-IN');
-            } catch (e) { }
-
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${displayDate}</td>
-                <td class="fw-medium">${item.category}</td>
-                <td><span class="badge bg-primary">${item.type}</span></td>
-                <td>${(item.target || 0).toLocaleString()}</td>
-                <td>${(item.achieved || 0).toLocaleString()}</td>
-                <td class="${percentageColor}">${achievementPercentage}%</td>
-                <td>${statusBadge}</td>
-                <td class="small text-muted">${item.remark}</td>
-            `;
-            doctorVisitBody.appendChild(row);
-        });
-    }
-
-    function renderAll() {
-        // Update headers with current month/year
         const now = new Date();
         const monthYear = now.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-        const prodHeader = document.querySelector('.card-header h6.text-muted');
-        if (prodHeader && prodHeader.textContent.includes('Product-wise')) {
-            prodHeader.textContent = `Product-wise Target & Achievement for ${monthYear}`;
-        }
+        let totalTarget = 0;
+        let totalAchieved = 0;
 
-        // Also update visit header if found
-        const visitCards = document.querySelectorAll('.card-header h6.text-muted');
-        visitCards.forEach(header => {
-            if (header.textContent.includes('Doctor Visit')) {
-                header.textContent = `Doctor Visit Targets & Achievement for ${monthYear}`;
+        targets.forEach(t => {
+            if (t.category && t.category.toLowerCase() !== 'visit') {
+                totalTarget += (t.targetUnits || 0);
+                totalAchieved += (t.achievedUnits || 0);
             }
         });
 
-        renderProducts();
-        renderVisits();
+        const diff = totalAchieved - totalTarget;
+        const status = totalAchieved >= totalTarget ?
+            '<span class="badge bg-success">Achieved</span>' :
+            '<span class="badge bg-warning text-dark">On-Track</span>';
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>1</td>
+            <td>${monthYear}</td>
+            <td>${formatINR(totalTarget)}</td>
+            <td>${formatINR(totalAchieved)}</td>
+            <td class="${diff >= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatINR(diff)}</td>
+            <td>${status}</td>
+        `;
+        salesListBody.appendChild(row);
+        console.log("[SALES] Monthly table rendered.");
     }
 
-    // --- Initialization ---
-    (async function init() {
-        await refreshTargetsFromApi();
-    })();
+    function showError(msg) {
+        if (salesListBody) {
+            salesListBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger p-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${msg}
+            </td></tr>`;
+        }
+    }
+
+    // Auto-refresh once
+    refreshSalesData();
 });

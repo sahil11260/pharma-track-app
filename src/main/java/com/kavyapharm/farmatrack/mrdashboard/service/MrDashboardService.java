@@ -48,18 +48,22 @@ public class MrDashboardService {
             }
 
             String email = auth.getName();
-            System.out.println("[MR-DASHBOARD] Fetching dashboard for email: " + email);
+            System.out.println("[MR-DASHBOARD] Fetching dashboard for email: " + email + " (Auth type: "
+                    + auth.getClass().getSimpleName() + ")");
 
             // Get user details
             var userOpt = userRepository.findByEmailIgnoreCase(email);
             if (userOpt.isEmpty()) {
-                System.out.println("[MR-DASHBOARD] User not found for email: " + email);
+                System.out.println("[MR-DASHBOARD] User NOT FOUND in database for email: " + email);
+                // List first 5 users in log for debugging
+                logFirstFewUsers();
                 return new MrDashboardResponse(0.0, 0, 0, 0.0, 0.0);
             }
 
             Long userId = userOpt.get().getId();
             String userName = userOpt.get().getName() != null ? userOpt.get().getName().trim() : email;
-            System.out.println("[MR-DASHBOARD] User: ID=" + userId + ", Name='" + userName + "'");
+            System.out.println("[MR-DASHBOARD] User found: ID=" + userId + ", Name='" + userName + "', Role="
+                    + userOpt.get().getRole());
 
             // 1. Calculate Visits for the current month
             LocalDate today = LocalDate.now();
@@ -156,5 +160,15 @@ public class MrDashboardService {
         return userRepository.findByEmailIgnoreCase(email)
                 .map(com.kavyapharm.farmatrack.user.model.User::getName)
                 .orElse(email);
+    }
+
+    private void logFirstFewUsers() {
+        try {
+            userRepository.findAll().stream().limit(5)
+                    .forEach(u -> System.out.println("[MR-DASHBOARD-DEBUG] DB User: Email=" + u.getEmail() + ", Name="
+                            + u.getName() + ", Role=" + u.getRole()));
+        } catch (Exception e) {
+            System.err.println("[MR-DASHBOARD-DEBUG] Error listing users: " + e.getMessage());
+        }
     }
 }
