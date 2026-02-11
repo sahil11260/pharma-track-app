@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateSummaryCards() {
     // Total Managers
     const totalManagers = allUsers.filter(u =>
-      u.role === "MANAGER" || u.role === "ADMIN" || u.role === "SUPERADMIN"
+      u.role === "MANAGER"
     ).length;
     document.getElementById("totalManagersDisplay").textContent = totalManagers;
 

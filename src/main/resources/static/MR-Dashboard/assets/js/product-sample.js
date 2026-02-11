@@ -1,241 +1,172 @@
 document.addEventListener("DOMContentLoaded", async () => {
+    console.log("[PRODUCT-SAMPLE] Initializing Dynamic Module...");
 
-    // --- MOCK DATA SETUP ---
-    const API = {
-        MR_STOCK: '/api/mr-stock',
-        STOCK_RECEIVED: '/api/stock-received',
-        DCRS: '/api/dcrs'
-    };
+    const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
 
-    async function apiJson(url, options) {
-        const res = await fetch(url, Object.assign({
-            headers: { 'Content-Type': 'application/json' }
-        }, options || {}));
-        if (!res.ok) {
-            const text = await res.text().catch(() => '');
-            throw new Error(`HTTP ${res.status} ${res.statusText} ${text}`);
-        }
-        if (res.status === 204) {
-            return null;
-        }
-        return await res.json();
+    function getAuthHeader() {
+        const token = localStorage.getItem('kavya_auth_token') || localStorage.getItem('token');
+        return token ? { "Authorization": `Bearer ${token}` } : {};
     }
 
-    function loadLocalJson(key) {
+    async function apiJson(url, options = {}) {
+        const headers = { "Content-Type": "application/json", ...getAuthHeader(), ...(options.headers || {}) };
         try {
-            return JSON.parse(localStorage.getItem(key)) || null;
+            const response = await fetch(url, { ...options, headers });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.status === 204 ? null : response.json();
         } catch (e) {
-            return null;
+            console.error(`API Error (${url}):`, e);
+            throw e;
         }
     }
 
-    // 3. Stock Received History (Used to calculate Total Received Stock)
+    // --- State ---
+    let productsList = [];
     let stockReceivedHistory = [];
-
-    // 2. DCR History (used to calculate Total Distributed Stock)
     let submittedDCRs = [];
 
-
-    // 1. Current Stock 
-    // This value MUST be calculated based on the difference: Total Received - Total Distributed.
-    // For simplicity and dynamic calculation, we will now rely ONLY on the functions,
-    // and initialize this array with zero stock. The actual remaining stock displayed
-    // will be the difference between received and distributed.
-    let productsList = [];
-
-    // In a real app, this list is often fetched separately. We'll use this list
-    // and calculate the remaining stock dynamically during rendering.
-
-
-    // --- ELEMENTS & MODALS ---
-    const productStockTableBody = document.getElementById('productStockTableBody');
-    const distributionModal = new bootstrap.Modal(document.getElementById('distributionModal'));
+    // --- DOM Elements ---
+    const tableBody = document.getElementById('productStockTableBody');
     const modalProductName = document.getElementById('modalProductName');
     const modalTotalDistributed = document.getElementById('modalTotalDistributed');
     const distributionDetailsTableBody = document.getElementById('distributionDetailsTableBody');
 
+    // --- Robust User Identification ---
+    function getMRName() {
+        const userStr = localStorage.getItem('kavya_user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                if (user.name) return user.name;
+            } catch (e) { }
+        }
+        return localStorage.getItem('signup_name') || 'MR User';
+    }
 
-    // --- CALCULATION FUNCTIONS ---
-
-    // Calculate the total quantity received for a product
+    // --- Calculations ---
     function calculateTotalReceived(productId) {
         return stockReceivedHistory
-            .filter(item => item.productId === productId)
+            .filter(item => String(item.productId) === String(productId))
             .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     }
 
-    // Calculate the total quantity distributed (sold) for a product based on DCRs
     function calculateTotalDistributed(productId) {
         let distributed = 0;
-
         submittedDCRs.forEach(dcr => {
-            if (!dcr || !Array.isArray(dcr.samplesGiven)) {
-                return;
+            if (dcr && Array.isArray(dcr.samplesGiven)) {
+                dcr.samplesGiven.forEach(s => {
+                    if (s && String(s.productId) === String(productId)) {
+                        distributed += (Number(s.quantity) || 0);
+                    }
+                });
             }
-            dcr.samplesGiven.forEach(s => {
-                if (s && s.productId === productId) {
-                    distributed += (Number(s.quantity) || 0);
-                }
-            });
         });
-
         return distributed;
     }
 
-    // --- MAIN REPORT RENDERING FUNCTION ---
+    // --- Rendering ---
+    function renderTable() {
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
 
-    function renderProductStockReport() {
-        productStockTableBody.innerHTML = '';
+        if (productsList.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="text-muted mb-2"><i class="bi bi-box-seam fs-1"></i></div>
+                        <h6 class="text-secondary">No stock items allocated yet.</h6>
+                        <small>Samples allocated by Admin will appear here.</small>
+                    </td>
+                </tr>`;
+            return;
+        }
 
-        // Loop through the main product list
         productsList.forEach((product, index) => {
-            const totalReceived = calculateTotalReceived(product.id);
-            const totalDistributed = calculateTotalDistributed(product.id);
-            // *** CRITICAL FIX: Calculate remaining stock as the difference ***
-            const remainingStock = totalReceived - totalDistributed;
+            const received = calculateTotalReceived(product.id);
+            const distributed = calculateTotalDistributed(product.id);
+            const remaining = received - distributed;
 
-            // Determine text color based on stock level (e.g., low if below 10)
-            const stockClass = remainingStock <= 10 ? 'stock-low' : 'stock-ok';
+            const stockStatus = remaining <= 0 ?
+                '<span class="badge bg-danger">Out of Stock</span>' :
+                (remaining <= 10 ? '<span class="badge bg-warning text-dark">Low Stock</span>' : '<span class="badge bg-success">Available</span>');
 
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="text-center">${index + 1}</td>
-                <td><span class="fw-bold">${product.name}</span></td>
-                <td class="text-center">${totalReceived}</td>
-                <td class="text-center text-primary fw-bold">${totalDistributed}</td>
-                <td class="text-center ${stockClass}">${remainingStock}</td>
+                <td>
+                    <div class="fw-bold text-dark">${product.name}</div>
+                    <div class="small text-muted">ID: ${product.id}</div>
+                </td>
+                <td class="text-center fw-medium">${received}</td>
+                <td class="text-center text-primary fw-bold">${distributed}</td>
+                <td class="text-center h5 mb-0">
+                    <span class="${remaining <= 10 ? 'text-danger' : 'text-success'} fw-bold">${remaining}</span>
+                </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-info view-details-btn" data-id="${product.id}" data-name="${product.name}" data-bs-toggle="modal" data-bs-target="#distributionModal">
-                        <i class="bi bi-eye"></i> View Details
-                    </button>
+                    <div class="d-flex flex-column align-items-center gap-1">
+                        ${stockStatus}
+                        <button class="btn btn-sm btn-link text-decoration-none view-details-btn" 
+                            data-id="${product.id}" data-name="${product.name}" 
+                            data-bs-toggle="modal" data-bs-target="#distributionModal">
+                            <i class="bi bi-clock-history"></i> History
+                        </button>
+                    </div>
                 </td>
             `;
-
-            productStockTableBody.appendChild(row);
+            tableBody.appendChild(row);
         });
     }
 
-    // --- MODAL RENDERING FUNCTION (Distribution Details) ---
+    async function init() {
+        const mrName = getMRName();
+        const encodedName = encodeURIComponent(mrName);
 
-    function populateDistributionModal(productId, productName) {
-        // 1. Filter DCRs for the specific product distribution and map the data
-        const distributionEntries = submittedDCRs
-            .filter(dcr => dcr && Array.isArray(dcr.samplesGiven) && dcr.samplesGiven.some(s => s && s.productId === productId))
-            .map(dcr => {
-                const sample = dcr.samplesGiven.find(s => s && s.productId === productId);
-                return {
-                    quantity: sample ? (Number(sample.quantity) || 0) : 0,
-                    doctorName: dcr.doctorName,
-                    clinicLocation: dcr.clinicLocation,
-                    dateTime: dcr.dateTime,
-                    remarks: dcr.remarks
-                };
-            })
-            // Sort by most recent DCR submission date
-            .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+        try {
+            // Load everything in parallel
+            const [stock, received, dcrs] = await Promise.all([
+                apiJson(`${API_BASE}/mr-stock?userName=${encodedName}`),
+                apiJson(`${API_BASE}/stock-received?userName=${encodedName}`),
+                apiJson(`${API_BASE}/dcrs?mrName=${encodedName}`)
+            ]);
 
-        // 2. Calculate totals and update modal header
-        const totalDistributed = distributionEntries.reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
-        modalProductName.textContent = productName;
-        modalTotalDistributed.textContent = totalDistributed;
+            productsList = stock || [];
+            stockReceivedHistory = received || [];
+            submittedDCRs = dcrs || [];
 
-        distributionDetailsTableBody.innerHTML = '';
-
-        // 3. Populate the detail table body
-        if (distributionEntries.length === 0) {
-            distributionDetailsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No distribution records found.</td></tr>';
-            return;
+            renderTable();
+        } catch (e) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger p-4">Error loading data. Please check connection.</td></tr>`;
         }
+    }
 
-        distributionEntries.forEach(entry => {
-            const formattedDate = new Date(entry.dateTime).toLocaleString('en-IN', {
-                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-            });
+    // --- Modal Logic ---
+    const distModal = document.getElementById('distributionModal');
+    if (distModal) {
+        distModal.addEventListener('show.bs.modal', (event) => {
+            const btn = event.relatedTarget;
+            const pid = btn.dataset.id;
+            const name = btn.dataset.name;
 
-            const remarks = entry.remarks == null ? '' : String(entry.remarks);
+            modalProductName.textContent = name;
+            const entries = submittedDCRs
+                .filter(dcr => dcr.samplesGiven && dcr.samplesGiven.some(s => String(s.productId) === String(pid)))
+                .map(dcr => ({
+                    ...dcr,
+                    qty: dcr.samplesGiven.find(s => String(s.productId) === String(pid)).quantity
+                }))
+                .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${formattedDate}</td>
-                <td><span class="fw-bold">${entry.doctorName}</span><br><span class="small text-muted">${entry.clinicLocation}</span></td>
-                <td class="text-center fw-bold text-primary">${entry.quantity}</td>
-                <td class="small text-truncate">${remarks.substring(0, 50)}${remarks.length > 50 ? '...' : ''}</td>
-            `;
-            distributionDetailsTableBody.appendChild(row);
+            modalTotalDistributed.textContent = entries.reduce((s, e) => s + e.qty, 0);
+            distributionDetailsTableBody.innerHTML = entries.length ? entries.map(e => `
+                <tr>
+                    <td>${new Date(e.dateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
+                    <td><div class="fw-bold">${e.doctorName}</div><div class="small text-muted">${e.clinicLocation}</div></td>
+                    <td class="text-center fw-bold text-primary">${e.qty}</td>
+                    <td class="small text-muted">${e.remarks || ''}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" class="text-center text-muted">No history found.</td></tr>';
         });
     }
 
-    // --- EVENT LISTENERS ---
-
-    document.getElementById('distributionModal').addEventListener('show.bs.modal', (event) => {
-        const button = event.relatedTarget;
-        const productId = button.dataset.id;
-        const productName = button.dataset.name;
-
-        populateDistributionModal(productId, productName);
-    });
-
-    async function loadProductsFromApiOrFallback() {
-        try {
-            const currentUserName = localStorage.getItem('signup_name') || '';
-            const stockItems = await apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`);
-            if (Array.isArray(stockItems) && stockItems.length > 0) {
-                return stockItems.map(p => ({ id: p.id, name: p.name }));
-            }
-            return productsList;
-        } catch (e) {
-            console.warn('Failed to load MR products from API. Falling back.', e);
-            return productsList;
-        }
-    }
-
-    async function loadStockReceivedFromApiOrFallback() {
-        try {
-            const currentUserName = localStorage.getItem('signup_name') || '';
-            const received = await apiJson(`${API.STOCK_RECEIVED}?userName=${encodeURIComponent(currentUserName)}`);
-            if (Array.isArray(received)) {
-                return received.map(r => ({
-                    productId: r.productId,
-                    quantity: Number(r.quantity) || 0,
-                    date: r.date,
-                    notes: r.notes
-                }));
-            }
-            return stockReceivedHistory;
-        } catch (e) {
-            console.warn('Failed to load stock received history from API. Falling back.', e);
-            return stockReceivedHistory;
-        }
-    }
-
-    async function loadDcrsFromApiOrFallback() {
-        try {
-            const currentUserName = localStorage.getItem('signup_name') || '';
-            const dcrs = await apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`);
-            if (Array.isArray(dcrs)) {
-                return dcrs;
-            }
-            return submittedDCRs;
-        } catch (e) {
-            console.warn('Failed to load DCRs from API. Falling back.', e);
-            return submittedDCRs;
-        }
-    }
-
-    productsList = await loadProductsFromApiOrFallback();
-    stockReceivedHistory = await loadStockReceivedFromApiOrFallback();
-    submittedDCRs = await loadDcrsFromApiOrFallback();
-
-    // Save mock data for persistence across pages
-    if (!localStorage.getItem('stockReceivedHistory')) {
-        localStorage.setItem('stockReceivedHistory', JSON.stringify(stockReceivedHistory));
-    }
-    if (!localStorage.getItem('submittedDCRs')) {
-        localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
-    }
-    // Always keep localStorage in sync for fallback mode
-    localStorage.setItem('stockReceivedHistory', JSON.stringify(stockReceivedHistory));
-    localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
-
-    renderProductStockReport();
+    init();
 });

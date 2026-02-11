@@ -635,6 +635,14 @@ document.addEventListener("DOMContentLoaded", () => {
     dcrForm.addEventListener('submit', (event) => {
         event.preventDefault();
 
+        // AUTO-ADD HELPER: If user filled in sample fields but forgot to click '+', add it now
+        const pendingPid = sampleProductSelect.value;
+        const pendingQty = parseInt(sampleQuantityInput.value);
+        if (pendingPid && !isNaN(pendingQty) && pendingQty > 0) {
+            console.log("[DCR] Auto-adding pending sample before submission...");
+            addSampleBtn.click();
+        }
+
         const isEditing = reportIdField.value !== '';
         const reportId = isEditing ? parseInt(reportIdField.value) : Date.now();
 
