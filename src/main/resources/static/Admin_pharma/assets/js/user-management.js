@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
   const userTableBody = document.getElementById("userTableBody");
@@ -34,13 +34,18 @@ document.addEventListener("DOMContentLoaded", function () {
       ...getAuthHeader(),
       ...(options.headers || {}),
     };
-    const response = await fetch(url, { ...options, headers });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Error ${response.status}`);
+    try {
+      const response = await fetch(url, { ...options, headers });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Error ${response.status}`);
+      }
+      if (response.status === 204) return null;
+      return await response.json();
+    } catch (error) {
+      console.error("API Request Failed:", error);
+      throw error;
     }
-    if (response.status === 204) return null;
-    return await response.json();
   }
 
   // --- Role Mappings ---
@@ -350,3 +355,4 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchUsers();
   fetchManagers();
 });
+

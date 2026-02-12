@@ -21,7 +21,9 @@
   // Persistence setup
   const STORAGE_KEY = "kavyaPharmTargetsData";
 
-  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
   let targetsApiMode = true;
@@ -1104,3 +1106,4 @@
   // expose refresh function (optional)
   window.refreshTargetsUI = refreshAllDisplays;
 })();
+

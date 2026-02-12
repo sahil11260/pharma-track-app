@@ -21,10 +21,11 @@ async function loadNotifications() {
     // Detect if we are in a dropdown (needs <li>) or a modal/div container
     const isDropdown = notificationList.tagName === 'UL' || notificationList.id === 'notificationList';
 
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
     try {
         const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
 
-        const response = await fetch('/api/notifications', {
+        const response = await fetch(`${API_BASE}/api/notifications`, {
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
                 'Content-Type': 'application/json'

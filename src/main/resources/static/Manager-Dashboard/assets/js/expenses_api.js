@@ -2,7 +2,9 @@
 // This file replaces static data with dynamic API calls
 
 (() => {
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
     const EXPENSES_API = `${API_BASE}/api/expenses`;
     const USERS_API = `${API_BASE}/api/users`;
 
@@ -632,3 +634,4 @@
         console.log("[Manager Expenses] Initialization complete");
     });
 })();
+

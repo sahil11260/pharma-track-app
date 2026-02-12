@@ -2,7 +2,9 @@
 // Product Distribution with Price Display
 document.addEventListener("DOMContentLoaded", () => {
 
-  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;
   const STOCK_STORAGE_KEY = "receivedStock";
   const ALLOCATIONS_STORAGE_KEY = "allocations";
@@ -686,3 +688,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+

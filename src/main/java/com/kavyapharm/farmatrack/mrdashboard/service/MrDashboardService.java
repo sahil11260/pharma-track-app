@@ -2,9 +2,8 @@ package com.kavyapharm.farmatrack.mrdashboard.service;
 
 import com.kavyapharm.farmatrack.mrdashboard.dto.MrDashboardResponse;
 import com.kavyapharm.farmatrack.dcr.repository.DcrRepository;
-import com.kavyapharm.farmatrack.expense.model.Expense;
-import com.kavyapharm.farmatrack.expense.model.Expense.ExpenseStatus;
-import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
+import com.kavyapharm.farmatrack.mrexpense.model.MrExpense;
+import com.kavyapharm.farmatrack.mrexpense.repository.MrExpenseRepository;
 import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesAchievementRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
@@ -22,13 +21,13 @@ import java.util.List;
 public class MrDashboardService {
 
     private final DcrRepository dcrRepository;
-    private final ExpenseRepository expenseRepository;
+    private final MrExpenseRepository expenseRepository;
     private final UserRepository userRepository;
     private final SalesAchievementRepository salesAchievementRepository;
     private final SalesTargetRepository salesTargetRepository;
 
     public MrDashboardService(DcrRepository dcrRepository,
-            ExpenseRepository expenseRepository,
+            MrExpenseRepository expenseRepository,
             UserRepository userRepository,
             SalesAchievementRepository salesAchievementRepository,
             SalesTargetRepository salesTargetRepository) {
@@ -90,14 +89,14 @@ public class MrDashboardService {
                     .count();
 
             // 2. Calculate Expenses using the correct ExpenseRepository
-            List<Expense> userExpenses = expenseRepository.findByMrNameIgnoreCase(userName);
+            List<MrExpense> userExpenses = expenseRepository.findByMrNameIgnoreCase(userName, Sort.unsorted());
 
             double pending = userExpenses.stream()
-                    .filter(e -> e.getStatus() == ExpenseStatus.PENDING)
+                    .filter(e -> "Pending".equalsIgnoreCase(e.getStatus()))
                     .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
                     .sum();
             double approved = userExpenses.stream()
-                    .filter(e -> e.getStatus() == ExpenseStatus.APPROVED)
+                    .filter(e -> "Approved".equalsIgnoreCase(e.getStatus()))
                     .mapToDouble(e -> e.getAmount() != null ? e.getAmount() : 0.0)
                     .sum();
 

@@ -3,7 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DAILYPLAN] dailyplan.js loaded and DOM content is ready!");
 
     // --- API Configuration ---
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
     const TASKS_API_BASE = `${API_BASE}/api/tasks`;
     let tasksApiMode = true;
 
@@ -428,3 +430,4 @@ document.addEventListener("DOMContentLoaded", () => {
         renderAllTasks();
     })();
 });
+

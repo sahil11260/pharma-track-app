@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("[SALES] sales.js (v2) starting...");
 
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
 
     function getAuthHeader() {
         const token = localStorage.getItem('kavya_auth_token') || localStorage.getItem('token');
@@ -152,3 +154,4 @@ document.addEventListener("DOMContentLoaded", () => {
     // Auto-refresh once
     refreshSalesData();
 });
+

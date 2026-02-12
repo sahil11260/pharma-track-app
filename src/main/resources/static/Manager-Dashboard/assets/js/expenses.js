@@ -4,7 +4,9 @@
   const NOTIFICATIONS_KEY = "kavyaPharmNotificationsData";
   const ALERTS_KEY = "kavyaPharmAlertsData";
 
-  const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
   // Fallback data (used only if localStorage is empty/corrupt)
@@ -841,3 +843,4 @@
     console.info("[expenses-manager] init done \u2014 expenses:", expensesData.length, "MRs:", mrData.length);
   });
 })();
+
