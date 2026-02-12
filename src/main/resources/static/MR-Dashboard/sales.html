@@ -92,14 +92,10 @@
             <i class="bi bi-person-circle"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
-                Profile
-              </a></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a></li>
             <li><a class="dropdown-item" href="Profile.html">Settings</a></li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li><a class="dropdown-item text-danger" href="#">Logout</a></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item text-danger" href="../index.html">Logout</a></li>
           </ul>
         </div>
       </div>
@@ -113,15 +109,15 @@
       <!-- <img src="assets/images/logo-dark.png" class="logo dark-logo" /> -->
     </div>
     <ul class="sidebar-menu mb-5">
-            <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
-            <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
-            <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
-            <li><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
-            <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
-            <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
-            <li class="active"><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
-            
-        </ul>
+      <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
+      <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li>
+      <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
+      <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
+      <li><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
+      <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
+      <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
+      <li class="active"><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
+    </ul>
   </div>
 
   <!-- MAIN CONTENT -->
@@ -185,12 +181,14 @@
           <table class="table table-hover mb-0" id="salesTable">
             <thead class="table-light">
               <tr>
-                <th>Sr.No</th>
-                <th>Month</th>
-                <th>Target Amount (&#8377;)</th>
-                <th>Achieved Amount (&#8377;)</th>
-                <th>Difference (&#8377;)</th>
-                <th>Status</th>
+                <th style="width: 5%;">Sr.No</th>
+                <th style="width: 12%;">Assigned Date</th>
+                <th style="width: 25%;">Product Name</th>
+                <th style="width: 10%;">Type</th>
+                <th style="width: 12%;">Target (Units)</th>
+                <th style="width: 12%;">Achieved (Units)</th>
+                <th style="width: 15%;">Achievement %</th>
+                <th style="width: 10%;">Status</th>
               </tr>
             </thead>
             <tbody id="salesListBody">

@@ -38,13 +38,46 @@ document.addEventListener("DOMContentLoaded", () => {
     let user = null;
     try { if (userStr) user = JSON.parse(userStr); } catch (e) { }
 
-    const name = (user && user.name) || localStorage.getItem("signup_name") || "MR User";
-    const email = (user && user.email) || localStorage.getItem("signup_email") || localStorage.getItem("kavya_user_email") || "mr.user@kavyapharm.com";
+    const name = (user && user.name) ? user.name : (localStorage.getItem("signup_name") || "");
+    const email = (user && user.email) ? user.email : (localStorage.getItem("signup_email") || localStorage.getItem("kavya_user_email") || "");
+    const userId = (user && user.id) ? ` (ID: ${user.id})` : "";
 
-    if (profileName) profileName.textContent = name;
+    if (profileName) profileName.textContent = name + userId;
     if (profileEmail) profileEmail.textContent = email;
     if (fullNameField) fullNameField.value = name;
     if (emailField) emailField.value = email;
+
+    // Update Navbar name
+    const userDropdownBtn = document.getElementById("userDropdown");
+    if (userDropdownBtn) {
+      const icon = userDropdownBtn.querySelector('i, img');
+      userDropdownBtn.innerHTML = '';
+      if (icon) userDropdownBtn.appendChild(icon);
+      userDropdownBtn.appendChild(document.createTextNode(' ' + name));
+    }
+
+    // Load saved profile picture
+    const savedPic = localStorage.getItem('kavya_profile_pic');
+    if (savedPic) {
+      // 1. Update Profile Modal (replace icon with image if needed)
+      const profileIconContainer = document.querySelector('#profileModal .bg-light.rounded-circle');
+      if (profileIconContainer) {
+        profileIconContainer.innerHTML = `<img src="${savedPic}" alt="Profile" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">`;
+        profileIconContainer.classList.remove('p-3', 'bg-light');
+      }
+
+      // 2. Update Navbar Icon
+      const navbarIcon = document.querySelector('nav .bi-person-circle');
+      if (navbarIcon) {
+        const img = document.createElement('img');
+        img.src = savedPic;
+        img.className = 'rounded-circle';
+        img.width = 30;
+        img.height = 30;
+        img.style.objectFit = 'cover';
+        navbarIcon.parentNode.replaceChild(img, navbarIcon);
+      }
+    }
 
     // Log the data for debugging if names are empty
     if (name === "MR User") console.warn("Profile Name not found in localStorage keys: kavya_user.name, signup_name");

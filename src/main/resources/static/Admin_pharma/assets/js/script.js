@@ -62,10 +62,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileName = document.getElementById("profileName");
   const profileEmail = document.getElementById("profileEmail");
 
-  const savedName = localStorage.getItem("signup_name") || "Admin User";
-  const savedEmail = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
+  const userStr = localStorage.getItem("kavya_user");
+  let currentUser = null;
+  try { if (userStr) currentUser = JSON.parse(userStr); } catch (e) { }
 
-  if (profileName) profileName.textContent = savedName;
+  const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
+  const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
+  const userId = (currentUser && currentUser.id) ? ` (ID: ${currentUser.id})` : "";
+
+  if (profileName) profileName.textContent = savedName + userId;
   if (profileEmail) profileEmail.textContent = savedEmail;
+
+  // Update Navbar name
+  const userDropdownBtn = document.getElementById("userDropdown");
+  if (userDropdownBtn) {
+    // Keep the first child (icon or img) and replace the text
+    const icon = userDropdownBtn.querySelector('i, img');
+    userDropdownBtn.innerHTML = '';
+    if (icon) userDropdownBtn.appendChild(icon);
+    userDropdownBtn.appendChild(document.createTextNode(' ' + savedName));
+  }
+
+  // Load saved profile picture
+  const savedPic = localStorage.getItem('kavya_profile_pic');
+  if (savedPic) {
+    // 1. Update Profile Modals (any img in profileModal or with flaticon/avatar source)
+    document.querySelectorAll('img').forEach(img => {
+      if (img.src.includes('flaticon') || img.src.includes('avatar') || img.src.includes('Profile-img.png') || img.src.includes('Profile-img') || img.closest('#profileModal')) {
+        img.src = savedPic;
+      }
+    });
+
+    // 2. Update Navbar Icon
+    const navbarIcon = document.querySelector('#userDropdown i.bi-person-circle');
+    if (navbarIcon) {
+      const img = document.createElement('img');
+      img.src = savedPic;
+      img.className = 'rounded-circle';
+      img.width = 30;
+      img.height = 30;
+      img.style.objectFit = 'cover';
+      navbarIcon.parentNode.replaceChild(img, navbarIcon);
+    }
+  }
 
 });

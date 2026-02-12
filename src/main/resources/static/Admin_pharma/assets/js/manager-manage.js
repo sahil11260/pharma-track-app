@@ -180,11 +180,19 @@ document.addEventListener("DOMContentLoaded", function () {
   managerForm.addEventListener("submit", async function (e) {
     e.preventDefault();
 
+    const phone = document.getElementById("managerPhone").value;
+
+    // Phone validation: Must be exactly 10 digits
+    if (phone && phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById("managerName").value,
       email: document.getElementById("managerEmail").value,
       role: "MANAGER",
-      phone: document.getElementById("managerPhone").value,
+      phone: phone,
       territory: document.getElementById("managerTerritory").value,
       status: "ACTIVE",
       assignedManager: null
@@ -241,5 +249,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   fetchManagers();
+
+  // Fix for Phone Number: only accept digits and max 10
+  const phoneInput = document.getElementById("managerPhone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
 });
 

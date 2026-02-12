@@ -34,7 +34,7 @@ async function loadDashboard() {
         const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
 
         const response = await fetch(
-            `${API_BASE}/manager/sales-targets/summary?month=${currentMonth}&year=${currentYear}`,
+            `${API_BASE}/api/manager/sales-targets/summary?month=${currentMonth}&year=${currentYear}`,
             {
                 headers: {
                     'Authorization': token ? `Bearer ${token}` : '',
@@ -269,8 +269,8 @@ async function populateMRDropdowns() {
 
         // Fetch only MRs assigned to this manager
         const url = managerParam
-            ? `${API_BASE}/users?manager=${encodeURIComponent(managerParam)}&role=MR`
-            : `${API_BASE}/users?role=MR`;
+            ? `${API_BASE}/api/users?manager=${encodeURIComponent(managerParam)}&role=MR`
+            : `${API_BASE}/api/users?role=MR`;
 
         const response = await fetch(url, {
             headers: { 'Authorization': token ? `Bearer ${token}` : '' }
@@ -336,7 +336,7 @@ async function populateProductDropdowns() {
 
         // 1. Fetch from system products
         try {
-            const resProd = await fetch(`${API_BASE}/products`, {
+            const resProd = await fetch(`${API_BASE}/api/products`, {
                 headers: { 'Authorization': token ? `Bearer ${token}` : '' }
             });
             if (resProd.ok) {
@@ -350,7 +350,7 @@ async function populateProductDropdowns() {
         const currentManager = localStorage.getItem('signup_name') || '';
         if (currentManager) {
             try {
-                const resStock = await fetch(`${API_BASE}/mr-stock?userName=${encodeURIComponent(currentManager)}`, {
+                const resStock = await fetch(`${API_BASE}/api/mr-stock?userName=${encodeURIComponent(currentManager)}`, {
                     headers: { 'Authorization': token ? `Bearer ${token}` : '' }
                 });
                 if (resStock.ok) {
@@ -398,7 +398,7 @@ async function populateProductDropdowns() {
 async function saveTarget(formData) {
     try {
         const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
-        const response = await fetch(`${API_BASE}/manager/sales-targets`, {
+        const response = await fetch(`${API_BASE}/api/manager/sales-targets`, {
             method: 'POST',
             headers: {
                 'Authorization': token ? `Bearer ${token}` : '',
@@ -423,19 +423,30 @@ async function saveTarget(formData) {
 
 // Filters
 function wireFilters() {
-    // filterMR dropdown removed as requested by user - showing all team data by default
-
     const searchInput = document.getElementById('searchTarget');
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const query = searchInput.value.toLowerCase();
-            const filteredTargets = targetsData.filter(t =>
-                t.mrName.toLowerCase().includes(query) ||
-                t.productName.toLowerCase().includes(query)
-            );
-            renderTargetsTable(filteredTargets);
-        });
-    }
+    const achievementFilter = document.getElementById('filterAchievement');
+
+    const applyFilters = () => {
+        const query = searchInput ? searchInput.value.toLowerCase() : "";
+        const achievement = achievementFilter ? achievementFilter.value.toLowerCase() : "";
+
+        let filtered = targetsData.filter(t =>
+            t.mrName.toLowerCase().includes(query) ||
+            t.productName.toLowerCase().includes(query)
+        );
+
+        if (achievement) {
+            filtered = filtered.filter(t => {
+                const status = (t.progressStatus || "").toLowerCase();
+                return status === achievement;
+            });
+        }
+
+        renderTargetsTable(filtered);
+    };
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+    if (achievementFilter) achievementFilter.addEventListener('change', applyFilters);
 }
 
 // Utility functions

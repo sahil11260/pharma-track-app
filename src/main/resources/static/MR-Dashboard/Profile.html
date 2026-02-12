@@ -76,20 +76,20 @@
       <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
       <!-- <img src="assets/images/logo-dark.png" class="logo dark-logo" alt="dark logo" /> -->
     </div>
-     <ul class="sidebar-menu mb-5">
+    <ul class="sidebar-menu mb-5">
       <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
-      <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li>
-      <li><a href="doctorvisit.html"><i class="bi bi-clipboard-plus"></i> Doctor Visits (DCR)</a></li>
-      <li><a href="samples.html"><i class="bi bi-box-seam"></i> Sample & Stock</a></li>
+      <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
+      <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
+      <li><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
+      <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
       <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
-      <!-- <li><a href="sales.html">Sales & Target</a></li> -->
-      <!-- <li><a href="reports.html"><i class="bi bi-file-bar-graph"></i> Reports</a></li> -->
+      <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
     </ul>
   </div>
 
- <div class="main-content" id="mainContent" style="margin-top:64px;">
-      <div class="container-fluid mt-3 pt-2">
-        <h1 class="mb-4"><i class="bi bi-person-circle"></i> Profile Settings</h1>
+ <div class="main-content" id="mainContent">
+      <div class="container-fluid mt-5 pt-4">
+        <h3 class="fw-bold mb-4"><i class="bi bi-person-circle"></i> Profile Settings</h3>
         <hr />
 
         <div class="row">
@@ -107,7 +107,7 @@
                         type="text"
                         class="form-control"
                         id="fullName"
-                        placeholder="Enter your profile name"
+                        required
                       />
                     </div>
                     <div class="col-md-6">
@@ -116,7 +116,8 @@
                         type="email"
                         class="form-control"
                         id="email"
-                        placeholder="Enter your email"
+                        readonly
+                        style="background-color: #e9ecef;"
                         required
                       />
                       <div class="invalid-feedback" id="emailError">
@@ -133,7 +134,6 @@
                           type="password"
                           class="form-control"
                           id="password"
-                          placeholder="Enter your password"
                           required
                         />
                         <button class="btn btn-outline-secondary eye-btn" type="button" id="togglePassword">
@@ -157,7 +157,6 @@
                           type="password"
                           class="form-control"
                           id="confirmPassword"
-                          placeholder="Confirm your password"
                           required
                         />
                         <button class="btn btn-outline-secondary eye-btn" type="button" id="toggleConfirmPassword">
@@ -172,13 +171,17 @@
 
                   <div class="row mb-3">
                     <div class="col-md-6">
-                      <label for="profile" class="form-label">Profile</label>
+                      <label for="profile" class="form-label">Profile Picture</label>
                       <input
                         type="file"
                         class="form-control"
                         id="profile"
-                        accept="image/*"
+                        accept="image/jpeg, image/png, image/webp"
                       />
+                      <div class="form-text">Allowed: JPG, PNG, WEBP. Max size: 2MB.</div>
+                      <div class="mt-3">
+                        <img id="profilePreview" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Preview" class="rounded-circle shadow border" width="100" height="100" style="object-fit: cover; display: none;">
+                      </div>
                     </div>
                   </div>
 

@@ -62,14 +62,10 @@
             <i class="bi bi-person-circle"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">
-                Profile
-              </a></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a></li>
             <li><a class="dropdown-item" href="Profile.html">Settings</a></li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li><a class="dropdown-item" href="#">Logout</a></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item text-danger" href="../index.html">Logout</a></li>
           </ul>
         </div>
       </div>
@@ -83,14 +79,14 @@
       <!-- <img src="assets/images/logo-dark.png" class="logo dark-logo" /> -->
     </div>
     <ul class="sidebar-menu mb-5">
-            <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
-            <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
-            <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
-            <li class="active"><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
-            <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
-            <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
-            <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
-            
+      <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
+      <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li>
+      <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
+      <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
+      <li class="active"><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
+      <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
+      <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
+      <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
     </ul>
   </div>
 
@@ -159,7 +155,7 @@
                     <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="visitTitle" class="form-label fw-bold">Visit Title (Task Reference) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="visitTitle" placeholder="e.g., Detailing Product X / Follow-up" required>
+                            <input type="text" class="form-control" id="visitTitle" required />
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="visitType" class="form-label fw-bold">Visit Type <span class="text-danger">*</span></label>
@@ -183,7 +179,7 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="clinicLocation" class="form-label fw-bold">Clinic / Location <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="clinicLocation" placeholder="e.g., Care Clinic, Sector 12" required>
+                            <input type="text" class="form-control" id="clinicLocation" required />
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span class="text-danger">*</span></label>
@@ -205,7 +201,7 @@
                         </div>
                         <div class="col-md-8 mb-3">
                             <label for="mrRemarks" class="form-label fw-bold">Remarks / Discussion Points</label>
-                            <textarea class="form-control" id="mrRemarks" rows="3" placeholder="Briefly describe the discussion, doctor's feedback, or any follow-up required."></textarea>
+                            <textarea class="form-control" id="mrRemarks" rows="3"></textarea>
                         </div>
                     </div>
 
@@ -220,7 +216,7 @@
                                 </select>
                             </div>
                             <div class="col-4">
-                                <input type="number" class="form-control" id="sampleQuantityInput" placeholder="Quantity" min="1">
+                                <input type="number" class="form-control" id="sampleQuantityInput" />
                             </div>
                             <div class="col-2">
                                 <button type="button" class="btn btn-primary w-100" id="addSampleBtn">

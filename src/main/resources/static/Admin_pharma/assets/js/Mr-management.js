@@ -206,11 +206,19 @@ document.addEventListener("DOMContentLoaded", function () {
   mrForm.addEventListener("submit", async function (e) {
     e.preventDefault();
 
+    const phone = document.getElementById("mrPhone").value;
+
+    // Phone validation: Must be exactly 10 digits
+    if (phone && phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById("mrName").value,
       email: document.getElementById("mrEmail").value,
       role: "MR",
-      phone: document.getElementById("mrPhone").value,
+      phone: phone,
       territory: document.getElementById("mrTerritory").value,
       assignedManager: document.getElementById("mrManager").value,
       status: "ACTIVE"
@@ -265,5 +273,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   fetchMrs();
+
+  // Fix for Phone Number: only accept digits and max 10
+  const phoneInput = document.getElementById("mrPhone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
 });
 

@@ -504,6 +504,11 @@ function editDoctor(doctorId) {
   const handleUpdate = (e) => {
     e.preventDefault();
     if (form.checkValidity()) {
+      const phone = document.getElementById("doctorPhone").value;
+      if (phone && phone.length !== 10) {
+        alert("Phone number must be exactly 10 digits.");
+        return;
+      }
       doctor.name = document.getElementById("doctorName").value;
       const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
       doctor.type = typeValue;
@@ -602,6 +607,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
     }
   }
+  const phoneInput = document.getElementById("doctorPhone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
   populateMRDropdowns();
 
   // Search
@@ -624,6 +635,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (saveDoctorBtn.textContent.toLowerCase().includes("add")) {
       const form = document.getElementById("addDoctorForm");
       if (form.checkValidity()) {
+        const phone = document.getElementById("doctorPhone").value;
+        if (phone && phone.length !== 10) {
+          alert("Phone number must be exactly 10 digits.");
+          return;
+        }
         const nextId = doctorsData.length > 0 ? Math.max(...doctorsData.map((d) => d.id)) + 1 : 1;
         const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
         const newDoctor = {
@@ -714,14 +730,6 @@ document.addEventListener("DOMContentLoaded", () => {
     saveDoctorBtn.removeEventListener("click", saveDoctorBtn.currentAddHandler);
     saveDoctorBtn.addEventListener("click", saveDoctorBtn.currentAddHandler);
   });
-
-  // Profile modal data
-  const profileName = document.getElementById("profileName");
-  const profileEmail = document.getElementById("profileEmail");
-  const savedName = localStorage.getItem("signup_name") || "Admin User";
-  const savedEmail = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
-  if (profileName) profileName.textContent = savedName;
-  if (profileEmail) profileEmail.textContent = savedEmail;
 
   (async function () {
     await refreshMrsFromApiOrFallback();

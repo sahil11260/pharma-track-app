@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">Select a Manager</option>' +
-      allManagers.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
+      allManagers.map(m => `<option value="${m.name}">${m.name} (ID: ${m.id})</option>`).join("");
     if (currentVal) sel.value = currentVal;
   }
 
@@ -201,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">Select a Product</option>' +
-      allProducts.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+      allProducts.map(p => `<option value="${p.name}">${p.name} (Code: ${p.productId || p.id})</option>`).join("");
     if (currentVal) sel.value = currentVal;
   }
 

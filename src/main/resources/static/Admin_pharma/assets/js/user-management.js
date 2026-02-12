@@ -114,6 +114,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const term = searchInput.value.toLowerCase().trim();
 
     filteredUsers = allUsers.filter(u => {
+      // Security: Hide Admin and Super Admin accounts from Regional Admin view
+      const role = String(u.role || "").toUpperCase();
+      if (role === "ADMIN" || role === "SUPERADMIN") return false;
+
       // Role Filter
       let roleMatches = true;
       if (activeFilterRole !== "All") {
@@ -228,11 +232,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Simulate clicking the correct role button to show form
     let btnId = "";
-    if (uiRole === "Super Admin") btnId = "superAdminBtn";
-    else if (uiRole === "Area Manager") btnId = "managerBtn";
+    if (uiRole === "Area Manager") btnId = "managerBtn";
     else btnId = "mrBtn";
 
-    document.getElementById(btnId).click();
+    const targetBtn = document.getElementById(btnId);
+    if (targetBtn) targetBtn.click();
+
+    // Hide role selection during edit as role shouldn't be changed
+    const roleContainer = document.getElementById("roleSelectionContainer");
+    if (roleContainer) roleContainer.style.display = "none";
+
     document.getElementById("addUserModalLabel").textContent = "Edit User";
     saveUserBtn.textContent = "Update User";
 
@@ -279,10 +288,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = activeForm.querySelector("form");
     const prefix = activeForm.id.replace("Form", "");
 
+    const phone = document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "";
+
+    // Phone validation: Must be exactly 10 digits
+    if (phone && phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById(`${prefix}Name`).value,
       email: document.getElementById(`${prefix}Email`).value,
-      phone: document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "",
+      phone: phone,
       status: "ACTIVE"
     };
 
@@ -328,8 +345,12 @@ document.addEventListener("DOMContentLoaded", function () {
   if (roleFilterButtons) {
     roleFilterButtons.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", function () {
-        roleFilterButtons.querySelectorAll("button").forEach(b => b.classList.replace("btn-dark", "btn-outline-dark"));
+        roleFilterButtons.querySelectorAll("button").forEach(b => {
+          b.classList.replace("btn-dark", "btn-outline-dark");
+          b.classList.remove("active");
+        });
         this.classList.replace("btn-outline-dark", "btn-dark");
+        this.classList.add("active");
         activeFilterRole = this.dataset.roleFilter;
         applyFilters();
       });
@@ -354,5 +375,38 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initial Load
   fetchUsers();
   fetchManagers();
+
+  // Reset modal for "Add New User"
+  addUserModalEl.addEventListener("show.bs.modal", function (event) {
+    // If we are NOT editing (triggered by the "Add New User" button)
+    if (!event.relatedTarget || !event.relatedTarget.classList.contains('edit-btn')) {
+      editingUserId = null;
+      const roleContainer = document.getElementById("roleSelectionContainer");
+      if (roleContainer) roleContainer.style.display = "flex"; // Using flex as it's a d-flex
+
+      document.getElementById("addUserModalLabel").textContent = "Create New User";
+      saveUserBtn.textContent = "Save User";
+
+      // Reset forms
+      const forms = document.querySelectorAll(".user-form form");
+      forms.forEach(f => f.reset());
+
+      // Enable email field
+      const emailInputs = document.querySelectorAll(".user-form input[type='email']");
+      emailInputs.forEach(input => input.disabled = false);
+
+      // Default to first available form (Manager)
+      const managerBtn = document.getElementById("managerBtn");
+      if (managerBtn) managerBtn.click();
+    }
+  });
+
+  // Fix for Phone Number: only accept digits and max 10
+  const phoneInputs = document.querySelectorAll('input[type="tel"]');
+  phoneInputs.forEach(input => {
+    input.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  });
 });
 

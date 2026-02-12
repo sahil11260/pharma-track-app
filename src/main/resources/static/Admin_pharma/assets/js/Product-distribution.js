@@ -211,11 +211,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // \u2705 Add Product form submission
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
+    const price = parseFloat(newPrice.value || "0");
+    const stock = parseInt(newStock.value || "0", 10);
+
+    if (price < 0) {
+      alert("Product price cannot be negative.");
+      return;
+    }
+    if (stock < 0) {
+      alert("Stock quantity cannot be negative.");
+      return;
+    }
+
     const payload = {
       name: (newProductName.value || "").trim(),
       category: (newCategory.value || "General").trim(),
-      price: String(newPrice.value || "0").trim(),
-      stock: parseInt(newStock.value || "0", 10),
+      price: String(price).trim(),
+      stock: stock,
       description: (newDescription.value || "").trim()
     };
 

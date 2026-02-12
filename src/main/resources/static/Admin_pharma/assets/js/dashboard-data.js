@@ -37,6 +37,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let allDcrs = [];
   let allExpenses = [];
 
+  // Load from localStorage if present for faster initial render
+  const savedAdminDash = localStorage.getItem("admin_dashboard_cache");
+  if (savedAdminDash) {
+    try {
+      const cache = JSON.parse(savedAdminDash);
+      allUsers = cache.users || [];
+      allDoctors = cache.doctors || [];
+      allTargets = cache.targets || [];
+      allDcrs = cache.dcrs || [];
+      allExpenses = cache.expenses || [];
+    } catch (e) { }
+  }
+
   // ===== Fetch All Data =====
   async function fetchAllData() {
     try {
@@ -58,6 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
       updateCharts();
       updateTopPerformingMRs();
       updateInsightCards();
+
+      // Persist to localStorage
+      localStorage.setItem("admin_dashboard_cache", JSON.stringify({
+        users: allUsers,
+        doctors: allDoctors,
+        targets: allTargets,
+        dcrs: allDcrs,
+        expenses: allExpenses
+      }));
     } catch (e) {
       console.error("Failed to fetch dashboard data:", e);
     }
@@ -316,6 +338,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Initialize =====
+  // Render local data first
+  updateSummaryCards();
+  updateCharts();
+  updateTopPerformingMRs();
+  updateInsightCards();
+
   fetchAllData();
 });
 

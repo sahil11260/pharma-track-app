@@ -178,16 +178,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputName = document.getElementById("mrName");
   const inputEmail = document.getElementById("mrEmail");
   const inputPhone = document.getElementById("mrPhone");
+  if (inputPhone) {
+    inputPhone.addEventListener("input", function (e) {
+      this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10);
+    });
+  }
   // Assigned Manager removed - no input element
   const inputTerritory = document.getElementById("mrTerritory");
   const inputPassword = document.getElementById("mrPassword");
-
-  // profile modal fields (present in your HTML)
-  const profileNameEl = document.getElementById("profileName");
-  const profileEmailEl = document.getElementById("profileEmail");
-
-  // prefer API-first; localStorage is only a fallback
-  let defaultMrs = [];
 
   // mrs will be the working array (loaded from localStorage or default)
   let mrs = [];
@@ -291,32 +289,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const emailExists = mrs.some(m => m.email.toLowerCase() === email.toLowerCase() && m.id !== editId);
     if (emailExists) {
-      showAlert("âš ï¸ An MR with this email address already exists in your list.");
+      showAlert("⚠️ An MR with this email address already exists in your list.");
       return false;
     }
 
     if (!name || !email || !phone || !territory || (editId === null && !password)) {
-      showAlert("âš ï¸ Please fill all fields before saving.");
+      showAlert("⚠️ Please fill all fields before saving.");
       return false;
     }
     if (!nameRegex.test(name)) {
-      showAlert("âš ï¸ Name should contain only letters and spaces.");
+      showAlert("⚠️ Name should contain only letters and spaces.");
       return false;
     }
     if (!emailRegex.test(email)) {
-      showAlert("âš ï¸ Enter a valid email.");
+      showAlert("⚠️ Enter a valid email.");
       return false;
     }
     if (!phoneRegex.test(phone)) {
-      showAlert("âš ï¸ Phone number must be 10 digits.");
+      showAlert("⚠️ Phone number must be 10 digits.");
       return false;
     }
     if (!nameRegex.test(territory)) {
-      showAlert("âš ï¸ Territory should contain only letters and spaces.");
+      showAlert("⚠️ Territory should contain only letters and spaces.");
       return false;
     }
     if (password && password.length < 5) {
-      showAlert("âš ï¸ Password must be at least 5 characters.");
+      showAlert("⚠️ Password must be at least 5 characters.");
       return false;
     }
 
@@ -339,17 +337,16 @@ document.addEventListener("DOMContentLoaded", () => {
     mrTable.innerHTML = pageData
       .map((m, i) => {
         const realIndex = i + start;
-        // we intentionally DO NOT render manager column here
         return `
           <tr>
-            <td>${escapeHtml(m.name)}</td>
-            <td>${escapeHtml(m.email)}</td>
-            <td>${escapeHtml(m.phone || '')}</td>
-            <td>${escapeHtml(m.territory || '')}</td>
+            <td>\${escapeHtml(m.name)}</td>
+            <td>\${escapeHtml(m.email)}</td>
+            <td>\${escapeHtml(m.phone || '')}</td>
+            <td>\${escapeHtml(m.territory || '')}</td>
             <td>
-              <button class="btn btn-sm btn-outline-success me-2" onclick="callMR(${m.id})" title="Call"><i class="bi bi-telephone"></i></button>
-              <button class="btn btn-sm btn-outline-primary me-2" onclick="editMR(${m.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteMR(${m.id})" title="Delete"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-success me-2" onclick="callMR(\${m.id})" title="Call"><i class="bi bi-telephone"></i></button>
+              <button class="btn btn-sm btn-outline-primary me-2" onclick="editMR(\${m.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteMR(\${m.id})" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
         `;
@@ -375,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 1; i <= totalPages; i++) {
       const li = document.createElement("li");
       li.className = "page-item " + (i === currentPage ? "active" : "");
-      li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+      li.innerHTML = `<a class="page-link" href="#" data-page="\${i}">\${i}</a>`;
       pagination.appendChild(li);
     }
 
@@ -404,14 +401,10 @@ document.addEventListener("DOMContentLoaded", () => {
      ========================= */
   const defaultSubmit = (e) => {
     e.preventDefault();
-    if (isSubmitting) {
-      console.log("Submit blocked: already in progress.");
-      return;
-    }
+    if (isSubmitting) return;
 
     if (!validateMRForm()) return;
 
-    // Immediately lock
     isSubmitting = true;
 
     const saveBtn = mrForm.querySelector('button[type="submit"]');
@@ -437,27 +430,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     (async function () {
       try {
-        console.log("[MR] Attempting to save MR. API Mode:", mrsApiMode);
         if (mrsApiMode) {
           if (editId === null) {
             newMR.manager = localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
-            console.log("[MR] Creating new MR:", newMR);
-            const result = await createMrApi(newMR);
-            console.log("[MR] Create API response:", result);
+            await createMrApi(newMR);
           } else {
             const existing = mrs.find(m => m.id === editId);
             if (!existing) throw new Error("MR not found");
             newMR.id = existing.id;
             newMR.manager = existing.manager || localStorage.getItem("signup_name") || "";
-            console.log("[MR] Updating MR:", newMR);
-            const result = await updateMrApi(existing.id, newMR);
-            console.log("[MR] Update API response:", result);
+            await updateMrApi(existing.id, newMR);
           }
-          console.log("[MR] Refreshing MR list from API");
           await refreshMrsFromApiOrFallback();
         } else {
-          console.warn("[MR] API mode is OFF - saving to localStorage only!");
-          // Local fallback mode
           if (editId === null) {
             newMR.id = Date.now();
             newMR.manager = localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "";
@@ -486,24 +471,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       } catch (err) {
         console.error("[MR] Save error:", err);
-        let errorMsg = err.message || "An unknown error occurred.";
-
-        // Try to distinguish network error from validation/server error
-        if (err instanceof TypeError || errorMsg.includes("Failed to fetch")) {
-          showAlert("Network error: Could not reach the server. Please check if the backend is running at ");
-          console.error("[MR] Network error detected - NOT switching to offline mode to allow retry");
-          // Don't set mrsApiMode = false here - let user retry
-        } else {
-          // This is likely a 400 or 409 from our backend
-          showAlert("Error: " + errorMsg);
-        }
+        showAlert("Error: " + err.message);
       } finally {
         setSubmittingState(false);
       }
     })();
   };
 
-  // attach submit listener safely
   if (mrForm) {
     mrForm.addEventListener("submit", defaultSubmit);
   }
@@ -519,7 +493,6 @@ document.addEventListener("DOMContentLoaded", () => {
     inputName.value = m.name;
     inputEmail.value = m.email;
     inputPhone.value = m.phone;
-    // Assigned Manager removed - not set into modal
     inputTerritory.value = m.territory;
     inputPassword.value = "";
 
@@ -568,19 +541,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const m = mrs.find(x => x.id === id);
     if (!m) return showAlert("MR not found.");
     const phone = (m.phone || "").trim();
-    if (!phone) {
-      return showAlert("Phone number not available for this MR.");
-    }
+    if (!phone) return showAlert("Phone number not available for this MR.");
     const phoneNormalized = phone.replace(/[\s()-]/g, "");
-    if (confirm(`Call ${m.name} at ${phoneNormalized}?`)) {
-      window.location.href = `tel:${phoneNormalized}`;
+    if (confirm(`Call \${m.name} at \${phoneNormalized}?`)) {
+      window.location.href = `tel:\${phoneNormalized}`;
     }
   };
 
-  /* =========================
-     Search & Reset form
-     (search no longer checks manager)
-     ========================= */
   if (searchInput) {
     searchInput.addEventListener("input", (e) => {
       const keyword = e.target.value.toLowerCase().trim();
@@ -590,7 +557,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderMRs();
         return;
       }
-
       const filtered = mrs.filter(
         (m) =>
           (m.name && m.name.toLowerCase().includes(keyword)) ||
@@ -598,7 +564,6 @@ document.addEventListener("DOMContentLoaded", () => {
           (m.phone && m.phone.toLowerCase().includes(keyword)) ||
           (m.territory && m.territory.toLowerCase().includes(keyword))
       );
-
       currentPage = 1;
       renderMRs(filtered);
     });
@@ -610,56 +575,16 @@ document.addEventListener("DOMContentLoaded", () => {
       editId = null;
       const modalTitle = document.querySelector("#mrModal .modal-title");
       if (modalTitle) modalTitle.textContent = "Add MR";
-
       if (inputEmail) inputEmail.disabled = false;
     });
   }
 
-  /* =========================
-     Password show/hide
-     ========================= */
   togglePassword?.addEventListener("click", () => {
     const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
     passwordInput.setAttribute("type", type);
     togglePassword.classList.toggle("bi-eye");
     togglePassword.classList.toggle("bi-eye-slash");
   });
-
-  /* =========================
-     Notifications populator (from your previous file)
-     ========================= */
-  const notificationsList = document.getElementById("notificationsList");
-  if (notificationsList) {
-    const recentActivities = [];
-    const alertsData = [];
-    const allNotifications = [
-      ...alertsData.map(a => ({ ...a, kind: 'alert' })),
-      ...recentActivities.map(a => ({ ...a, kind: 'activity' }))
-    ];
-
-    notificationsList.innerHTML = allNotifications.slice(0, 10).map(notification => `
-      <div class="notification-item p-3 border-bottom">
-        <div class="d-flex align-items-start">
-          <div class="notification-icon ${notification.iconClass || 'bg-primary'} text-white me-3" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:6px;">
-            <i class="bi ${notification.icon}"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h6 class="mb-1">${escapeHtml(notification.title)}</h6>
-            <p class="mb-1 text-muted small">${escapeHtml(notification.description)}</p>
-            <small class="text-muted">${escapeHtml(notification.time || 'Just now')}</small>
-          </div>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  /* =========================
-     Profile name/email load
-     ========================= */
-  if (profileNameEl && profileEmailEl) {
-    profileNameEl.textContent = localStorage.getItem("signup_name") || "Admin User";
-    profileEmailEl.textContent = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
-  }
 
   /* =========================
      INITIAL LOAD + RENDER
@@ -670,4 +595,3 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMRs();
   })();
 });
-

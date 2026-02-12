@@ -99,6 +99,14 @@ document.addEventListener("DOMContentLoaded", () => {
     period: "month",
   };
 
+  // Load from localStorage if present
+  const savedDash = localStorage.getItem("mgr_dashboard_stats");
+  if (savedDash) {
+    try {
+      dashboardData = Object.assign(dashboardData, JSON.parse(savedDash));
+    } catch (e) { }
+  }
+
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token");
     if (!token) return {};
@@ -116,6 +124,9 @@ document.addEventListener("DOMContentLoaded", () => {
       dashboardData.totalVisits = stats.totalDoctors; // Using doctors count as visits proxy for now
       dashboardData.totalSales = 0; // No sales endpoint yet
       dashboardData.pendingTasks = 0; // No tasks endpoint yet
+
+      // Persist to localStorage
+      localStorage.setItem("mgr_dashboard_stats", JSON.stringify(dashboardData));
     } catch (e) {
       console.warn("Failed to fetch dashboard stats, using defaults.", e);
       // Keep defaults (0) if API fails
@@ -702,6 +713,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Init dashboard
   // -----------------------
   async function initDashboard() {
+    // Show local data immediately
+    updateStats();
+
     await fetchDashboardStats();
     await fetchDashboardCharts();
     updateStats();
@@ -729,10 +743,49 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("DOMContentLoaded", () => {
   const profileName = document.getElementById("profileName");
   const profileEmail = document.getElementById("profileEmail");
-  const savedName = localStorage.getItem("signup_name") || "Admin User";
-  const savedEmail = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
-  if (profileName) profileName.textContent = savedName;
+
+  const userStr = localStorage.getItem("kavya_user");
+  let currentUser = null;
+  try { if (userStr) currentUser = JSON.parse(userStr); } catch (e) { }
+
+  const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
+  const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
+  const userId = (currentUser && currentUser.id) ? ` (ID: ${currentUser.id})` : "";
+
+  if (profileName) profileName.textContent = savedName + userId;
   if (profileEmail) profileEmail.textContent = savedEmail;
+
+  // Update Navbar name
+  const userDropdownBtn = document.getElementById("userDropdown");
+  if (userDropdownBtn) {
+    const icon = userDropdownBtn.querySelector('i, img');
+    userDropdownBtn.innerHTML = '';
+    if (icon) userDropdownBtn.appendChild(icon);
+    userDropdownBtn.appendChild(document.createTextNode(' ' + savedName));
+  }
+
+  // Load saved profile picture
+  const savedPic = localStorage.getItem('kavya_profile_pic');
+  if (savedPic) {
+    // 1. Update Profile Modals (any img in profileModal or with flaticon/avatar source)
+    document.querySelectorAll('img').forEach(img => {
+      if (img.src.includes('flaticon') || img.src.includes('avatar') || img.src.includes('Profile-img.png') || img.src.includes('Profile-img') || img.closest('#profileModal')) {
+        img.src = savedPic;
+      }
+    });
+
+    // 2. Update Navbar Icon
+    const navbarIcon = document.querySelector('#userDropdown i.bi-person-circle');
+    if (navbarIcon) {
+      const img = document.createElement('img');
+      img.src = savedPic;
+      img.className = 'rounded-circle';
+      img.width = 30;
+      img.height = 30;
+      img.style.objectFit = 'cover';
+      navbarIcon.parentNode.replaceChild(img, navbarIcon);
+    }
+  }
 
   /* ============================
      🚪 Logout Handler

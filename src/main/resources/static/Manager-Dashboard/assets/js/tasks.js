@@ -1297,14 +1297,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   ensureEditTaskModalExists();
   ensureStatusModalExists();
 
-  // profile & notifications (kept from your original)
-  const profileName = document.getElementById("profileName");
-  const profileEmail = document.getElementById("profileEmail");
-  if (profileName && profileEmail) {
-    profileName.textContent = localStorage.getItem("signup_name") || "Admin User";
-    profileEmail.textContent = localStorage.getItem("signup_email") || "admin@kavyapharm.com";
-  }
-
   // notifications sample (unchanged)
   const notificationsList = document.getElementById("notificationsList");
   if (notificationsList) {

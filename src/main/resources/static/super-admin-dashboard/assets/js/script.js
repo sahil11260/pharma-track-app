@@ -8,7 +8,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Sidebar Toggle
+  // Load saved profile picture
+  const savedPic = localStorage.getItem('kavya_profile_pic');
+  if (savedPic) {
+    // 1. Update Profile Modals (any img in profileModal or with flaticon/avatar source)
+    document.querySelectorAll('img').forEach(img => {
+      if (img.src.includes('flaticon') || img.src.includes('avatar') || img.src.includes('Profile-img.png') || img.src.includes('Profile-img') || img.closest('#profileModal')) {
+        img.src = savedPic;
+      }
+    });
+
+    // 2. Update Navbar Icon
+    const navbarIcon = document.querySelector('#userDropdown i.bi-person-circle');
+    if (navbarIcon) {
+      const img = document.createElement('img');
+      img.src = savedPic;
+      img.className = 'rounded-circle';
+      img.width = 30;
+      img.height = 30;
+      img.style.objectFit = 'cover';
+      navbarIcon.parentNode.replaceChild(img, navbarIcon);
+    }
+  }
+
+  // Load saved profile data
+  const profileName = document.getElementById("profileName");
+  const profileEmail = document.getElementById("profileEmail");
+
+  const userStr = localStorage.getItem("kavya_user");
+  let currentUser = null;
+  try { if (userStr) currentUser = JSON.parse(userStr); } catch (e) { }
+
+  const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
+  const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
+  const userId = (currentUser && currentUser.id) ? ` (ID: ${currentUser.id})` : "";
+
+  if (profileName) profileName.textContent = savedName + userId;
+  if (profileEmail) profileEmail.textContent = savedEmail;
+
+  // Update Navbar name
+  const userDropdownBtn = document.getElementById("userDropdown");
+  if (userDropdownBtn) {
+    const icon = userDropdownBtn.querySelector('i, img');
+    userDropdownBtn.innerHTML = '';
+    if (icon) userDropdownBtn.appendChild(icon);
+    userDropdownBtn.appendChild(document.createTextNode(' ' + savedName));
+  }
+
+  // Load saved profile picture
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebar = document.getElementById("sidebar");
   const mainContent = document.getElementById("mainContent");
@@ -143,6 +190,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       targetsRes.status === "fulfilled" && Array.isArray(targetsRes.value)
         ? targetsRes.value
         : null;
+
+    // Cache to localStorage
+    if (usersApi || regionsApi || dcrsApi || expensesApi || targetsApi) {
+      localStorage.setItem("super_admin_dash_cache", JSON.stringify({
+        users: usersApi,
+        regions: regionsApi,
+        dcrs: dcrsApi,
+        expenses: expensesApi,
+        targets: targetsApi
+      }));
+    }
   } catch (_) {
   }
 
@@ -156,6 +214,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   const activeMRsEl = document.getElementById("activeMRs");
   const topMREl = document.getElementById("topMR");
   const topMRVisitsEl = document.getElementById("topMRVisits");
+
+  // Load from cache first
+  const cache = localStorage.getItem("super_admin_dash_cache");
+  if (cache) {
+    try {
+      const data = JSON.parse(cache);
+      usersApi = usersApi || data.users;
+      regionsApi = regionsApi || data.regions;
+      dcrsApi = dcrsApi || data.dcrs;
+      expensesApi = expensesApi || data.expenses;
+      targetsApi = targetsApi || data.targets;
+    } catch (e) { }
+  }
 
   const monthLabels = [
     "Jan",
@@ -394,6 +465,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       monthlyTargets
     );
   }
+
+  // Define a refresh function to run periodically or after cache load
+  function refreshSummary() {
+    if (usersApi) {
+      const totalMRs = usersApi.filter((u) => String(u.role) === "MR").length;
+      const totalManagers = usersApi.filter((u) => String(u.role) === "MANAGER").length;
+      const activeMRs = usersApi.filter((u) => String(u.role) === "MR" && String(u.status) === "ACTIVE").length;
+      if (totalMRsEl) totalMRsEl.textContent = String(totalMRs);
+      if (totalManagersEl) totalManagersEl.textContent = String(totalManagers);
+      if (activeMRsEl) activeMRsEl.textContent = String(activeMRs);
+    }
+    if (regionsApi && totalRegionsEl) totalRegionsEl.textContent = String(regionsApi.length);
+    if (dcrsApi) {
+      if (totalVisitsEl) totalVisitsEl.textContent = String(dcrsApi.length);
+    }
+    if (expensesApi) {
+      const total = expensesApi.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      if (totalExpensesEl) totalExpensesEl.textContent = `\u20B9${Math.round(total)}`;
+    }
+    if (targetsApi) {
+      const sales = targetsApi.reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
+      if (totalSalesEl) totalSalesEl.textContent = `\u20B9${Math.round(sales)}`;
+      const sumTarget = targetsApi.reduce((sum, t) => sum + (Number(t.salesTarget) || 0), 0);
+      const sumAch = targetsApi.reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
+      const percent = sumTarget > 0 ? Math.round((sumAch / sumTarget) * 100) : 0;
+      if (targetAchieveEl) targetAchieveEl.textContent = `${percent}%`;
+    }
+  }
+
+  // Initial refresh from cache
+  refreshSummary();
 });
 
 // -------------------------

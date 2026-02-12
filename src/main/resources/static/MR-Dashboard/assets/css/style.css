@@ -237,19 +237,16 @@ body.dark-mode .dark-logo {
   }
 }
 
-/* REMOVE EXTRA GAP BELOW NAVBAR (all pages) */
+/* REMOVE EXTRA GAP BELOW NAVBAR (all pages) - Adjusted to respect 60px navbar */
 .main-content {
-  padding-top: 10px !important;
-  /* reduce gap */
-  margin-top: 10px !important;
-  /* aligns exactly below navbar */
+  padding-top: 20px !important;
+  margin-top: 60px !important;
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding-top: 0 !important;
-    /* mobile gap remove */
-    margin-top: 10px !important;
+    padding-top: 10px !important;
+    margin-top: 60px !important;
   }
 }
 

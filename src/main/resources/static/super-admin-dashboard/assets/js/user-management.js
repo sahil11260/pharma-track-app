@@ -262,10 +262,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = activeForm.querySelector("form");
     const prefix = activeForm.id.replace("Form", "");
 
+    const phone = document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "";
+
+    // Phone validation: Must be exactly 10 digits
+    if (phone && phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById(`${prefix}Name`).value,
       email: document.getElementById(`${prefix}Email`).value,
-      phone: document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "",
+      phone: phone,
       status: "ACTIVE"
     };
 
@@ -331,6 +339,14 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById(btn.id.replace("Btn", "Form")).style.display = "block";
       buttons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+    });
+  });
+
+  // Fix for Phone Number: only accept digits and max 10
+  const phoneInputs = document.querySelectorAll('input[type="tel"]');
+  phoneInputs.forEach(input => {
+    input.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
     });
   });
 

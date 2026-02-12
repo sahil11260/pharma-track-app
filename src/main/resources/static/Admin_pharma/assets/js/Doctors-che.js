@@ -185,11 +185,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   doctorForm.addEventListener("submit", async function (e) {
     e.preventDefault();
+    const phone = document.getElementById("doctorPhone").value;
+
+    // Phone validation: Must be exactly 10 digits
+    if (phone && phone.length !== 10) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById("doctorName").value,
       specialty: document.getElementById("doctorSpecialty").value,
       city: document.getElementById("doctorCity").value,
-      phone: document.getElementById("doctorPhone").value,
+      phone: phone,
       email: document.getElementById("doctorContact").value,
       assignedMR: assignMR.value,
       type: "Doctor",
@@ -220,5 +228,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initial load
   fetchMrs();
   fetchDoctors();
+
+  // Fix for Phone Number: only accept digits and max 10
+  const phoneInput = document.getElementById("doctorPhone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
 });
 
