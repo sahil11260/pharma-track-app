@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== API Configuration =====
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = window.API_BASE || "/api";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const USERS_API = `${API_BASE}/api/users`;
   const DOCTORS_API = `${API_BASE}/api/doctors`;
@@ -318,3 +318,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===== Initialize =====
   fetchAllData();
 });
+

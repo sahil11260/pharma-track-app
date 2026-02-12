@@ -84,6 +84,16 @@ public class UserService {
             }
         }
 
+        // Also include the manager themselves so they can see their own profile in the
+        // list
+        // and populate dropdowns correctly
+        if (managerName == null || managerName.isBlank()) {
+            String currentEmail = auth.getName();
+            if (currentEmail != null) {
+                userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(allUserSet::add);
+            }
+        }
+
         return allUserSet.stream()
                 .map(UserService::toResponse)
                 .toList();
@@ -106,25 +116,44 @@ public class UserService {
                     .map(UserService::toResponse).toList();
         }
 
-        // REMOVED FOR SECURITY: No longer returning all MRs for anonymous users
+        // Manager Logic
+        boolean isManager = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
+
         if (auth == null || "anonymousUser".equals(auth.getName())) {
             if (managerName != null && !managerName.isBlank()) {
                 return userRepository.findByRoleAndAssignedManagerIgnoreCase(role, managerName.trim())
                         .stream().map(UserService::toResponse).toList();
             }
-            return List.of(); // Anonymous and no manager filter -> nothing
+            return List.of();
         }
 
+        // Identifiers needed for fetching subordinates
         List<String> identifiers = getManagerIdentifiers(managerName);
 
-        if (identifiers.isEmpty()) {
+        if (identifiers.isEmpty() && !isManager) {
             return List.of();
         }
 
         java.util.Set<User> allMrSet = new java.util.HashSet<>();
-        for (String id : identifiers) {
-            if (id != null && !id.isBlank()) {
-                allMrSet.addAll(userRepository.findByRoleAndAssignedManagerIgnoreCase(role, id.trim()));
+        if (!identifiers.isEmpty()) {
+            for (String id : identifiers) {
+                if (id != null && !id.isBlank()) {
+                    allMrSet.addAll(userRepository.findByRoleAndAssignedManagerIgnoreCase(role, id.trim()));
+                }
+            }
+        }
+
+        // If I am a Manager, I should also see myself if the requested role matches my
+        // role
+        if (isManager && (managerName == null || managerName.isBlank())) {
+            String currentEmail = auth.getName();
+            if (currentEmail != null) {
+                userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
+                    if (u.getRole() == role) {
+                        allMrSet.add(u);
+                    }
+                });
             }
         }
 

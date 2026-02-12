@@ -6,7 +6,7 @@
 // const API_BASE = window.location.hostname === 'localhost'
 //     ? 'http://localhost:8080/api'
 //     : 'https://pharma-track-app.onrender.com/api';
-const API_BASE = window.API_BASE || "/api";
+const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
 
 let salesTargets = [];
@@ -261,3 +261,4 @@ window.SalesAPI = {
     loadSalesTargets,
     getSalesTargets: () => salesTargets
 };
+

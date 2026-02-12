@@ -3,9 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- CONFIGURATION ---
     const PAGE_SIZE = 3;
 
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
     const API = {
-        DCRS: '/api/dcrs',
-        MR_STOCK: '/api/mr-stock'
+        DCRS: `${API_BASE}/api/dcrs`,
+        MR_STOCK: `${API_BASE}/api/mr-stock`
     };
 
     let apiMode = true;
@@ -117,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 3. Fetch Doctors
         let doctorsLoaded = false;
         try {
-            const doctors = await apiJson(`/api/doctors`);
+            const doctors = await apiJson(`${API_BASE}/api/doctors`);
             if (Array.isArray(doctors)) {
                 assignedDoctors = doctors.map(d => ({
                     id: d.id || d.doctorId || d.id,
@@ -144,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 4. Fetch Global Products
         try {
-            const products = await apiJson('/api/products');
+            const products = await apiJson(`${API_BASE}/api/products`);
             if (Array.isArray(products)) {
                 systemProducts = products.map(p => ({
                     id: String(p.id),

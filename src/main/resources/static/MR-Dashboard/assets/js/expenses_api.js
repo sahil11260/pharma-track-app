@@ -3,9 +3,8 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
     // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-    const API_BASE = window.API_BASE || "/api";
-
-    const EXPENSES_API = `${API_BASE}/api/expenses`;
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+    const EXPENSES_API = `${API_BASE}/api/mr-expenses`;
 
     const PAGE_SIZE = 5;
     let currentPage = 1;
@@ -387,3 +386,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     render();
     console.log("[MR Expenses] Loaded", expenseList.length, "expenses");
 });
+

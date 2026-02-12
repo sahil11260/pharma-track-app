@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
 
   const form = document.getElementById("loginForm");
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
   const email = document.getElementById("email");
   const password = document.getElementById("password");
 
@@ -90,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.textContent;
-    const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
     (async function () {
       try {

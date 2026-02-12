@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = window.API_BASE || "/api";
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
 
@@ -154,3 +154,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   fetchNotifications();
 });
+

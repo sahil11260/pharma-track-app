@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("[PRODUCT-SAMPLE] Initializing Dynamic Module...");
 
     // const API_BASE = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
-    const API_BASE = window.API_BASE || "/api";
+    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
 
     function getAuthHeader() {
@@ -126,9 +126,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             // Load everything in parallel
             const [stock, received, dcrs] = await Promise.all([
-                apiJson(`${API_BASE}/mr-stock?userName=${encodedName}`),
-                apiJson(`${API_BASE}/stock-received?userName=${encodedName}`),
-                apiJson(`${API_BASE}/dcrs?mrName=${encodedName}`)
+                apiJson(`${API_BASE}/api/mr-stock?userName=${encodedName}`),
+                apiJson(`${API_BASE}/api/stock-received?userName=${encodedName}`),
+                apiJson(`${API_BASE}/api/dcrs?mrName=${encodedName}`)
             ]);
 
             productsList = stock || [];
@@ -172,3 +172,4 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     init();
 });
+
