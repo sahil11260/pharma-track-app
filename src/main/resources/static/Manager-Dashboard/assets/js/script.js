@@ -750,9 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
   const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
-  const userId = (currentUser && currentUser.id) ? ` (ID: ${currentUser.id})` : "";
-
-  if (profileName) profileName.textContent = savedName + userId;
+  if (profileName) profileName.textContent = savedName;
   if (profileEmail) profileEmail.textContent = savedEmail;
 
   // Update Navbar name

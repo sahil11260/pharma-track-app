@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+    : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
   const USERS_API_BASE = `${API_BASE}/api/users`;
@@ -52,13 +54,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function normalizeTargetFromApi(t) {
     return {
       id: Number(t.id),
-      person: t.mrName,
-      product: t.period,
-      qty: Number(t.salesTarget) || 0,
-      achieved: Number(t.salesAchievement) || 0,
+      mrName: t.mrName,
+      period: t.period,
+      salesTarget: Number(t.salesTarget) || 0,
+      salesAchievement: Number(t.salesAchievement) || 0,
       achievementPercentage: Math.round(Number(t.achievementPercentage) || 0),
-      givenDate: t.startDate || "",
-      deadline: t.endDate || "",
+      startDate: t.startDate || "",
+      endDate: t.endDate || "",
       status: mapApiStatusToUi(t)
     };
   }
@@ -70,14 +72,28 @@ document.addEventListener("DOMContentLoaded", () => {
         targets = data.map(normalizeTargetFromApi);
         targetsApiMode = true;
         hideApiRetryBanner();
+        // Update cache
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
       } else {
-        targets = [];
+        loadFromStorage();
         showApiRetryBanner();
       }
     } catch (e) {
       console.warn("Targets API unavailable.", e);
       targetsApiMode = false;
+      loadFromStorage();
       showApiRetryBanner();
+    }
+  }
+
+  function loadFromStorage() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        targets = JSON.parse(saved);
+      } catch (e) {
+        targets = [];
+      }
     }
   }
 
@@ -112,12 +128,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return await apiJson(TARGETS_API_BASE, {
       method: "POST",
       body: JSON.stringify({
-        mrName: t.person,
-        period: t.product,
-        salesTarget: Number(t.qty) || 0,
+        mrName: t.mrName,
+        period: t.period,
+        salesTarget: Number(t.salesTarget) || 0,
         visitsTarget: 0,
-        startDate: t.givenDate || null,
-        endDate: t.deadline || null
+        startDate: t.startDate || null,
+        endDate: t.endDate || null,
+        status: uiStatusToApiStatus(t.status)
       })
     });
   }
@@ -127,14 +144,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return await apiJson(`${TARGETS_API_BASE}/${id}`, {
       method: "PUT",
       body: JSON.stringify({
-        mrName: t.person,
-        period: t.product,
-        salesTarget: Number(t.qty) || 0,
-        salesAchievement: isAchieved ? (Number(t.qty) || 0) : 0,
+        mrName: t.mrName,
+        period: t.period,
+        salesTarget: Number(t.salesTarget) || 0,
+        salesAchievement: isAchieved ? (Number(t.salesTarget) || 0) : 0,
         visitsTarget: 0,
         visitsAchievement: 0,
-        startDate: t.givenDate || null,
-        endDate: t.deadline || null,
+        startDate: t.startDate || null,
+        endDate: t.endDate || null,
         status: uiStatusToApiStatus(t.status)
       })
     });
@@ -192,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">Select a Manager</option>' +
-      allManagers.map(m => `<option value="${m.name}">${m.name} (ID: ${m.id})</option>`).join("");
+      allManagers.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
     if (currentVal) sel.value = currentVal;
   }
 
@@ -222,17 +239,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // ðŸ”¥ MAIN RENDER FUNCTION (Table)
   // ---------------------------------------------------------
   function renderTable() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = (searchInput.value || "").toLowerCase();
     const from = fromDate.value ? new Date(fromDate.value) : null;
     const to = toDate.value ? new Date(toDate.value) : null;
 
     let filtered = targets.filter((t) => {
       const matchSearch =
-        t.person.toLowerCase().includes(searchTerm) ||
-        t.product.toLowerCase().includes(searchTerm);
+        (t.mrName || "").toLowerCase().includes(searchTerm) ||
+        (t.period || "").toLowerCase().includes(searchTerm);
 
-      const given = new Date(t.givenDate);
-      const matchDate = (!from || given >= from) && (!to || given <= to);
+      const startDateObj = t.startDate ? new Date(t.startDate) : null;
+      const matchDate = (!from || (startDateObj && startDateObj >= from)) &&
+        (!to || (startDateObj && startDateObj <= to));
 
       return matchSearch && matchDate;
     });
@@ -249,12 +267,12 @@ document.addEventListener("DOMContentLoaded", () => {
           (t, i) => `
         <tr>
           <td>${start + i + 1}</td>
-          <td>${formatDate(t.givenDate)}</td>
-          <td>${t.person}</td>
-          <td class="fw-bold text-primary">${t.product}</td>
-          <td>${t.qty.toLocaleString()}</td>
-          <td>${t.achieved.toLocaleString()}</td>
-          <td class="${t.achievementPercentage >= 100 ? 'text-success fw-bold' : ''}">${t.achievementPercentage}%</td>
+          <td>${formatDate(t.startDate)}</td>
+          <td>${t.mrName}</td>
+          <td class="fw-bold text-primary">${t.period}</td>
+          <td>${(t.salesTarget || 0).toLocaleString()}</td>
+          <td>${(t.salesAchievement || 0).toLocaleString()}</td>
+          <td class="${(t.achievementPercentage || 0) >= 100 ? 'text-success fw-bold' : ''}">${t.achievementPercentage || 0}%</td>
           <td>
             <span class="badge ${t.status === 'Achieved' ? 'bg-success' : 'bg-warning text-dark'}">
               ${t.status}
@@ -369,6 +387,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const idx = targets.findIndex((x) => Number(x.id) === Number(id));
     if (idx === -1) return;
     targets[idx].status = "Achieved";
+    targets[idx].salesAchievement = targets[idx].salesTarget; // Update achievement locally
+    targets[idx].achievementPercentage = 100;
 
     (async function () {
       if (targetsApiMode) {
@@ -390,6 +410,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const idx = targets.findIndex((x) => Number(x.id) === Number(id));
     if (idx === -1) return;
     targets[idx].status = "Pending";
+    targets[idx].salesAchievement = 0; // Reset achievement locally
+    targets[idx].achievementPercentage = 0;
 
     (async function () {
       if (targetsApiMode) {
@@ -436,11 +458,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!t) return;
     editIndex = Number(id);
 
-    form.targetPerson.value = t.person;
-    form.targetProduct.value = t.product;
-    form.targetQty.value = t.qty;
-    form.targetGivenDate.value = t.givenDate;
-    form.targetDeadline.value = t.deadline;
+    form.targetPerson.value = t.mrName;
+    form.targetProduct.value = t.period;
+    form.targetQty.value = t.salesTarget;
+    form.targetGivenDate.value = t.startDate;
+    form.targetDeadline.value = t.endDate;
 
     updateAvailableInfo();
     new bootstrap.Modal(document.getElementById("targetModal")).show();
@@ -452,11 +474,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const data = {
       id: editIndex !== null ? Number(editIndex) : ((targets.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) || 0) + 1),
-      person: form.targetPerson.value.trim(),
-      product: form.targetProduct.value.trim(),
-      qty: Number(form.targetQty.value),
-      givenDate: form.targetGivenDate.value,
-      deadline: form.targetDeadline.value,
+      mrName: form.targetPerson.value.trim(),
+      period: form.targetProduct.value.trim(),
+      salesTarget: Number(form.targetQty.value),
+      salesAchievement: 0,
+      achievementPercentage: 0,
+      startDate: form.targetGivenDate.value,
+      endDate: form.targetDeadline.value,
       status: editIndex !== null ? (targets.find(x => x.id === editIndex)?.status || "Pending") : "Pending",
     };
 

@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+    : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
   const USERS_API = `${API_BASE}/api/users`;
 
   const tableBody = document.getElementById("mrTableBody");

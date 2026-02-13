@@ -631,19 +631,13 @@ document.addEventListener("DOMContentLoaded", function () {
     let detailsHtml = `
       <div class="container-fluid px-0">
         <div class="row g-0 align-items-center py-3 border-bottom border-light-subtle bg-light">
-          <div class="col-md-4 col-sm-6 mb-2 mb-md-0">
-            <span class="fw-bold text-dark me-2">ID:</span>
-            <span>${notification.id}</span>
-          </div>
-          <div class="col-md-4 col-sm-6 mb-2 mb-md-0">
+          <div class="col-md-6 col-sm-6 mb-2 mb-md-0">
             <span class="fw-bold text-dark me-2">Type:</span>
-            <span class="badge bg-${typeColor} text-uppercase">${notification.type
-      }</span>
+            <span class="badge bg-${typeColor} text-uppercase">${notification.type}</span>
           </div>
-          <div class="col-md-4 col-sm-12">
+          <div class="col-md-6 col-sm-6">
             <span class="fw-bold text-dark me-2">Priority:</span>
-            <span class="badge bg-${priorityColor} text-uppercase">${notification.priority || "Normal"
-      }</span>
+            <span class="badge bg-${priorityColor} text-uppercase">${notification.priority || "Normal"}</span>
           </div>
         </div>
 
@@ -718,7 +712,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (document.getElementById("addNotificationModalLabel"))
       document.getElementById(
         "addNotificationModalLabel"
-      ).textContent = `Edit Notification (ID: ${notification.id})`;
+      ).textContent = `Edit Notification`;
     if (saveNotificationBtn)
       saveNotificationBtn.textContent = "Update Notification";
   }

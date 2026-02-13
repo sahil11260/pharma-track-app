@@ -437,7 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!dcr) return;
 
         // 1. Set Modal Title and Hidden ID
-        dcrModalLabel.textContent = `Edit Visit Report (ID: ${reportId})`;
+        dcrModalLabel.textContent = `Edit Visit Report`;
         reportIdField.value = reportId;
 
         // 2. Populate Form Fields

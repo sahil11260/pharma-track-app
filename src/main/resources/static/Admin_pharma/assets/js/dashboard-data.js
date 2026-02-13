@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== API Configuration =====
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+    : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const USERS_API = `${API_BASE}/api/users`;
   const DOCTORS_API = `${API_BASE}/api/doctors`;
@@ -102,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Total Sales
     const totalSales = allTargets.reduce((sum, t) =>
-      sum + (Number(t.salesAchievement) || 0), 0
+      sum + (Number(t.salesAchievement || t.achieved) || 0), 0
     );
     document.getElementById("totalSalesDisplay").textContent =
       `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
@@ -117,29 +119,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getMonthsTillToday() {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const currentMonth = new Date().getMonth();
-    return months.slice(0, currentMonth + 1);
+    return months; // Show full year
   }
 
   const dynamicMonths = getMonthsTillToday();
 
   // Sales vs Target Chart
+  let salesChartInstance = null;
   function updateSalesVsTargetChart() {
     const salesByMonth = new Array(dynamicMonths.length).fill(0);
     const targetsByMonth = new Array(dynamicMonths.length).fill(0);
 
     allTargets.forEach(t => {
-      if (t.startDate) {
-        const month = new Date(t.startDate).getMonth();
+      // Handle both API fields (startDate) and local fields (givenDate) if any remain
+      const dateVal = t.startDate || t.givenDate;
+      if (dateVal) {
+        const month = new Date(dateVal).getMonth();
         if (month < dynamicMonths.length) {
-          salesByMonth[month] += Number(t.salesAchievement) || 0;
-          targetsByMonth[month] += Number(t.salesTarget) || 0;
+          salesByMonth[month] += Number(t.salesAchievement || t.achieved) || 0;
+          targetsByMonth[month] += Number(t.salesTarget || t.qty) || 0;
         }
       }
     });
 
-    const salesCtx = document.getElementById("salesChart").getContext("2d");
-    new Chart(salesCtx, {
+    const salesCtx = document.getElementById("salesChart");
+    if (!salesCtx) return;
+
+    if (salesChartInstance) {
+      salesChartInstance.destroy();
+    }
+
+    salesChartInstance = new Chart(salesCtx.getContext("2d"), {
       type: "line",
       data: {
         labels: dynamicMonths,
@@ -162,11 +172,27 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         ],
       },
-      options: { responsive: true, maintainAspectRatio: false },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function (value) {
+                if (value >= 100000) return (value / 100000).toFixed(1) + 'L';
+                if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                return value;
+              }
+            }
+          }
+        }
+      },
     });
   }
 
   // Doctor Visits Trend Chart
+  let visitsChartInstance = null;
   function updateDoctorVisitsChart() {
     const visitsByMonth = new Array(dynamicMonths.length).fill(0);
 
@@ -180,8 +206,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    const visitsCtx = document.getElementById("visitsChart").getContext("2d");
-    new Chart(visitsCtx, {
+    const visitsCtx = document.getElementById("visitsChart");
+    if (!visitsCtx) return;
+
+    if (visitsChartInstance) {
+      visitsChartInstance.destroy();
+    }
+
+    visitsChartInstance = new Chart(visitsCtx.getContext("2d"), {
       type: "bar",
       data: {
         labels: dynamicMonths,
@@ -198,6 +230,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Expense Breakdown Chart
+  let expenseChartInstance = null;
   function updateExpenseChart() {
     const expenseByCategory = {};
 
@@ -212,8 +245,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const labels = Object.keys(expenseByCategory);
     const data = Object.values(expenseByCategory);
 
-    const expenseCtx = document.getElementById("expenseChart").getContext("2d");
-    new Chart(expenseCtx, {
+    const expenseCtx = document.getElementById("expenseChart");
+    if (!expenseCtx) return;
+
+    if (expenseChartInstance) {
+      expenseChartInstance.destroy();
+    }
+
+    expenseChartInstance = new Chart(expenseCtx.getContext("2d"), {
       type: "pie",
       data: {
         labels: labels.length > 0 ? labels : ["No Data"],
@@ -247,8 +286,8 @@ document.addEventListener("DOMContentLoaded", () => {
         };
       }
 
-      mrPerformance[mrName].totalTarget += Number(t.salesTarget) || 0;
-      mrPerformance[mrName].totalAchievement += Number(t.salesAchievement) || 0;
+      mrPerformance[mrName].totalTarget += Number(t.salesTarget || t.qty) || 0;
+      mrPerformance[mrName].totalAchievement += Number(t.salesAchievement || t.achieved) || 0;
       mrPerformance[mrName].count++;
     });
 
@@ -258,7 +297,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const percentage = perf.totalTarget > 0
         ? Math.round((perf.totalAchievement / perf.totalTarget) * 100)
         : 0;
-      return { name, percentage, achievement: perf.totalAchievement };
+      return {
+        name,
+        percentage,
+        achievement: perf.totalAchievement,
+        target: perf.totalTarget
+      };
     }).sort((a, b) => b.percentage - a.percentage);
 
     // Display top 5

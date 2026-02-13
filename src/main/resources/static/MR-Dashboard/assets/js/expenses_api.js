@@ -2,9 +2,10 @@
 // This file replaces static data with dynamic API calls
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-    const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
-    const EXPENSES_API = `${API_BASE}/api/mr-expenses`;
+    const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+        : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+    const EXPENSES_API = `${API_BASE}/api/expenses`;
 
     const PAGE_SIZE = 5;
     let currentPage = 1;
@@ -73,10 +74,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         return container;
     }
 
+    // Get MR Name helper
+    function getMrName() {
+        const userStr = localStorage.getItem("kavya_user");
+        let user = null;
+        try { if (userStr) user = JSON.parse(userStr); } catch (e) { }
+        return (user && user.name) ? user.name : (localStorage.getItem("signup_name") || "");
+    }
+
     // Load expenses from API
     async function loadExpenses() {
         try {
-            const mrName = localStorage.getItem("signup_name") || "";
+            const mrName = getMrName();
             if (!mrName) {
                 console.warn("[MR Expenses] No MR name in localStorage");
                 return [];
@@ -181,14 +190,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             const globalIndex = start + index;
             const isPending = expense.status === "Pending";
 
+            // headers: Sr. No, Date, Category, Amount, File, Description, Status, Actions
             return `
         <tr>
           <td>${globalIndex + 1}</td>
+          <td>${new Date(expense.date).toLocaleDateString()}</td>
           <td>${expense.category}</td>
           <td>₹${Number(expense.amount).toFixed(2)}</td>
-          <td>${new Date(expense.date).toLocaleDateString()}</td>
-          <td>${expense.desc || "-"}</td>
           <td>${getAttachmentLink(expense.attachment)}</td>
+          <td>${expense.desc || "-"}</td>
           <td>${getStatusBadge(expense.status)}</td>
           <td>
             <button class="btn btn-sm btn-outline-primary me-1" data-index="${globalIndex}" data-bs-toggle="modal" data-bs-target="#editExpenseModal" ${!isPending ? 'disabled' : ''}>
@@ -229,7 +239,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!validateAddInputs()) return;
 
         try {
-            const mrName = localStorage.getItem("signup_name") || "";
+            const mrName = getMrName();
             const fileInput = document.getElementById("expAttachmentFile");
 
             const formData = new FormData();

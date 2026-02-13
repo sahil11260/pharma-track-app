@@ -40,9 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const name = (user && user.name) ? user.name : (localStorage.getItem("signup_name") || "");
     const email = (user && user.email) ? user.email : (localStorage.getItem("signup_email") || localStorage.getItem("kavya_user_email") || "");
-    const userId = (user && user.id) ? ` (ID: ${user.id})` : "";
-
-    if (profileName) profileName.textContent = name + userId;
+    if (profileName) profileName.textContent = name;
     if (profileEmail) profileEmail.textContent = email;
     if (fullNameField) fullNameField.value = name;
     if (emailField) emailField.value = email;
