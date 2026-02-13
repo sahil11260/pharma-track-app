@@ -339,14 +339,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const realIndex = i + start;
         return `
           <tr>
-            <td>\${escapeHtml(m.name)}</td>
-            <td>\${escapeHtml(m.email)}</td>
-            <td>\${escapeHtml(m.phone || '')}</td>
-            <td>\${escapeHtml(m.territory || '')}</td>
+            <td>${escapeHtml(m.name)}</td>
+            <td>${escapeHtml(m.email)}</td>
+            <td>${escapeHtml(m.phone || '')}</td>
+            <td>${escapeHtml(m.territory || '')}</td>
             <td>
-              <button class="btn btn-sm btn-outline-success me-2" onclick="callMR(\${m.id})" title="Call"><i class="bi bi-telephone"></i></button>
-              <button class="btn btn-sm btn-outline-primary me-2" onclick="editMR(\${m.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteMR(\${m.id})" title="Delete"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-success me-2" onclick="callMR(${m.id})" title="Call"><i class="bi bi-telephone"></i></button>
+              <button class="btn btn-sm btn-outline-primary me-2" onclick="editMR(${m.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteMR(${m.id})" title="Delete"><i class="bi bi-trash"></i></button>
             </td>
           </tr>
         `;
@@ -372,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 1; i <= totalPages; i++) {
       const li = document.createElement("li");
       li.className = "page-item " + (i === currentPage ? "active" : "");
-      li.innerHTML = `<a class="page-link" href="#" data-page="\${i}">\${i}</a>`;
+      li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
       pagination.appendChild(li);
     }
 
@@ -543,8 +543,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const phone = (m.phone || "").trim();
     if (!phone) return showAlert("Phone number not available for this MR.");
     const phoneNormalized = phone.replace(/[\s()-]/g, "");
-    if (confirm(`Call \${m.name} at \${phoneNormalized}?`)) {
-      window.location.href = `tel:\${phoneNormalized}`;
+    if (confirm(`Call ${m.name} at ${phoneNormalized}?`)) {
+      window.location.href = `tel:${phoneNormalized}`;
     }
   };
 
