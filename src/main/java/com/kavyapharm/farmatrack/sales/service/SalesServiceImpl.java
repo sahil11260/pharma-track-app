@@ -193,26 +193,30 @@ public class SalesServiceImpl implements SalesService {
                 .getContext().getAuthentication();
         String managerIden = auth != null ? auth.getName() : null;
 
-        List<Long> assignedMrIds = new ArrayList<>();
-        if (managerIden != null) {
-            List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
-                    .findByAssignedManagerIgnoreCase(managerIden);
-            userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
-                mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
-            });
-            assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).toList();
-        }
-
-        List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
         boolean isAdmin = auth != null && auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
-        final List<Long> finalAssignedMrIds = assignedMrIds;
-        List<SalesTarget> targets = isAdmin ? allTargets
-                : allTargets.stream().filter(t -> finalAssignedMrIds.contains(t.getMrId()))
-                        .collect(Collectors.toList());
+        List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
 
-        return targets.stream()
+        // If Admin, return all. If anonymous and we're in a global request context,
+        // return all for the dashboard.
+        if (isAdmin || auth == null || "anonymousUser".equals(auth.getName())) {
+            return allTargets.stream()
+                    .map(target -> calculateTargetAchievement(target, month, year))
+                    .collect(Collectors.toList());
+        }
+
+        // Otherwise filter by manager
+        List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
+                .findByAssignedManagerIgnoreCase(managerIden);
+        userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
+            mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+        });
+        List<Long> assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct()
+                .toList();
+
+        return allTargets.stream()
+                .filter(t -> assignedMrIds.contains(t.getMrId()))
                 .map(target -> calculateTargetAchievement(target, month, year))
                 .collect(Collectors.toList());
     }
