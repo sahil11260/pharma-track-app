@@ -1,5 +1,7 @@
 # Pharma Track App - Deployment Guide
+## 🚀 Live Demo
 
+🔗 https://pharma-track-app.onrender.com
 This project has been restructured for seamless deployment and local development. The project is now "flat," meaning all source code is in the root directory.
 
 ## 🚀 Recent Fixes
