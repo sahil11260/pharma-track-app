@@ -157,7 +157,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const data = await apiRequest(USERS_API);
-      const managers = data.filter(u => u.role === "MANAGER");
+
+      // Filter only for MANAGER role and deduplicate by name
+      const managerNames = new Set();
+      const managers = data.filter(u => {
+        const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+        if (role === "MANAGER" && !managerNames.has(u.name)) {
+          managerNames.add(u.name);
+          return true;
+        }
+        return false;
+      });
 
       managers.forEach(m => {
         const option = document.createElement("option");

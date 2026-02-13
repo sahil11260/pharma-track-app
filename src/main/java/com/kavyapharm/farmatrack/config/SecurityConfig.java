@@ -38,7 +38,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/system/reset-users", "/api/users").permitAll()
                         .requestMatchers("/api/manager/sales-targets/**", "/api/mr/*/sales-targets",
-                                "/api/mr/sales-achievements", "/api/sales-targets/**")
+                                "/api/mr/sales-achievements", "/api/sales-targets/**", "/api/targets",
+                                "/api/targets/**",
+                                "/api/doctors/**", "/api/dcrs/**", "/api/expenses/**", "/api/products/**")
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(

@@ -76,8 +76,28 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const users = await apiJson(USERS_API_BASE);
       if (Array.isArray(users)) {
-        allManagers = users.filter(u => u.role === "MANAGER" || u.role === "ADMIN" || u.role === "SUPERADMIN");
-        allMRs = users.filter(u => u.role === "MR");
+        // Filter only for MANAGER role and deduplicate by name
+        const managerNames = new Set();
+        allManagers = users.filter(u => {
+          const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+          if (role === "MANAGER" && !managerNames.has(u.name)) {
+            managerNames.add(u.name);
+            return true;
+          }
+          return false;
+        });
+
+        // Filter for MR role and deduplicate by name
+        const mrNames = new Set();
+        allMRs = users.filter(u => {
+          const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+          if (role === "MR" && !mrNames.has(u.name)) {
+            mrNames.add(u.name);
+            return true;
+          }
+          return false;
+        });
+
         populateManagerSelect();
         populateMrSelect();
       }

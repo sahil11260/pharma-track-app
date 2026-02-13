@@ -172,7 +172,16 @@ document.addEventListener("DOMContentLoaded", () => {
         apiJson(PRODUCTS_API_BASE)
       ]);
       if (Array.isArray(users)) {
-        allManagers = users.filter(u => u.role === "MANAGER" || u.role === "ADMIN" || u.role === "SUPERADMIN");
+        // Filter only for MANAGER role and deduplicate by name
+        const managerNames = new Set();
+        allManagers = users.filter(u => {
+          const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+          if (role === "MANAGER" && !managerNames.has(u.name)) {
+            managerNames.add(u.name);
+            return true;
+          }
+          return false;
+        });
         populateManagerSelect();
       }
       if (Array.isArray(products)) {

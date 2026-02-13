@@ -131,16 +131,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const targetsByMonth = new Array(dynamicMonths.length).fill(0);
 
     allTargets.forEach(t => {
-      // Handle both API fields (startDate) and local fields (givenDate) if any remain
       const dateVal = t.startDate || t.givenDate;
       if (dateVal) {
-        const month = new Date(dateVal).getMonth();
-        if (month < dynamicMonths.length) {
-          salesByMonth[month] += Number(t.salesAchievement || t.achieved) || 0;
-          targetsByMonth[month] += Number(t.salesTarget || t.qty) || 0;
+        const date = new Date(dateVal);
+        const month = date.getMonth();
+        const year = date.getFullYear();
+        const currentYear = new Date().getFullYear();
+
+        // Only include data from the current year for the monthly chart
+        if (year === currentYear && month < dynamicMonths.length) {
+          salesByMonth[month] += Number(t.salesAchievement || t.achieved || 0);
+          targetsByMonth[month] += Number(t.salesTarget || t.qty || 0);
         }
       }
     });
+
+    console.log('[DASHBOARD] Sales group data:', salesByMonth);
+    console.log('[DASHBOARD] Target group data:', targetsByMonth);
 
     const salesCtx = document.getElementById("salesChart");
     if (!salesCtx) return;
