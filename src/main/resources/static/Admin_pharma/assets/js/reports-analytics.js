@@ -126,9 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const salesLabels = Object.keys(salesByPerson).slice(0, 5);
     const salesData = salesLabels.map(label => (salesByPerson[label] / 100000).toFixed(2));
 
-    // Expense Breakdown by category
+    // Expense Breakdown by category (Only include APPROVED)
     const expenseByCategory = {};
-    allExpenses.forEach(e => {
+    allExpenses.filter(e => e.status === "APPROVED").forEach(e => {
       const category = e.category || 'Miscellaneous';
       if (!expenseByCategory[category]) {
         expenseByCategory[category] = 0;
@@ -180,6 +180,35 @@ document.addEventListener("DOMContentLoaded", () => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { position: "bottom" } }
+      }
+    });
+  }
+
+  // ===== Dynamic Report Filtering =====
+  const reportTypeDropdown = document.getElementById("reportType");
+  const sectionSales = document.getElementById("sectionSalesChart");
+  const sectionExpense = document.getElementById("sectionExpenseChart");
+  const sectionVisit = document.getElementById("sectionVisitTable");
+
+  if (reportTypeDropdown) {
+    reportTypeDropdown.addEventListener("change", function () {
+      const selected = this.value;
+
+      // Reset visibility
+      sectionSales.style.display = "block";
+      sectionExpense.style.display = "block";
+      sectionVisit.style.display = "block";
+
+      if (selected === "Doctor Visits") {
+        sectionSales.style.display = "none";
+        sectionExpense.style.display = "none";
+      } else if (selected === "Sales Summary") {
+        sectionExpense.style.display = "none";
+        sectionVisit.style.display = "none";
+        // Also adjust Sales chart to take full width if needed, but here they are cols in a row
+      } else if (selected === "Expense Report") {
+        sectionSales.style.display = "none";
+        sectionVisit.style.display = "none";
       }
     });
   }
