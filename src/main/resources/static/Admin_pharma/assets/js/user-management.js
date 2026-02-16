@@ -232,42 +232,92 @@ document.addEventListener("DOMContentLoaded", function () {
     editingUserId = id;
     const uiRole = apiRoleToUiRole(user.role);
 
-    // Simulate clicking the correct role button to show form
-    let btnId = "";
-    if (uiRole === "Area Manager") btnId = "managerBtn";
-    else btnId = "mrBtn";
-
-    const targetBtn = document.getElementById(btnId);
-    if (targetBtn) targetBtn.click();
-
-    // Hide role selection during edit as role shouldn't be changed
-    const roleContainer = document.getElementById("roleSelectionContainer");
-    if (roleContainer) roleContainer.style.display = "none";
-
+    // Set title and button text
     document.getElementById("addUserModalLabel").textContent = "Edit User";
     saveUserBtn.textContent = "Update User";
 
-    const activeForm = document.querySelector(".user-form[style*='display: block']");
-    if (!activeForm) return;
+    // Show role selection
+    const roleContainer = document.getElementById("roleSelectionContainer");
+    if (roleContainer) roleContainer.style.display = "flex";
 
-    const prefix = activeForm.id.replace("Form", "");
-    document.getElementById(`${prefix}Name`).value = user.name;
-    document.getElementById(`${prefix}Email`).value = user.email;
-    document.getElementById(`${prefix}Email`).disabled = true;
-    if (document.getElementById(`${prefix}Phone`)) document.getElementById(`${prefix}Phone`).value = user.phone || "";
-    if (document.getElementById(`${prefix}Territory`)) document.getElementById(`${prefix}Territory`).value = user.territory || "";
+    // 1. Find the correct button and CLICK IT FIRST (to trigger form switching logic)
+    let btnId = "";
+    if (uiRole === "Area Manager") btnId = "managerBtn";
+    else if (uiRole === "Medical Rep") btnId = "mrBtn";
+    else if (uiRole === "Doctor") btnId = "doctorBtn";
+    else if (uiRole === "HR") btnId = "hrBtn";
 
-    if (uiRole === "Medical Rep") {
-      const mgrSelect = document.getElementById("mrAssignedManager");
-      if (mgrSelect) mgrSelect.value = user.assignedManager || "";
+    const targetBtn = document.getElementById(btnId);
+    if (targetBtn) {
+      targetBtn.click(); // This sets display = 'block' on the form
     }
 
-    if (uiRole === "Doctor") {
-      const parts = (user.territory || "").split("|");
-      document.getElementById("doctorSpeciality").value = parts[0] || "";
-      document.getElementById("doctorCity").value = parts[1] || "";
-      document.getElementById("doctorAssignedMr").value = parts[2] || "";
-      document.getElementById("doctorType").value = parts[3] || "";
+    // 2. DISABLE buttons after clicking so they can't be changed, but one remains active
+    if (roleContainer) {
+      roleContainer.querySelectorAll("button").forEach(btn => btn.disabled = true);
+    }
+
+    // 3. Fallback: Force form display just in case click() didn't propagate or was blocked
+    const formId = btnId ? btnId.replace("Btn", "Form") : null;
+    if (formId) {
+      const directForm = document.getElementById(formId);
+      if (directForm) {
+        // Hide all first
+        document.querySelectorAll(".user-form").forEach(f => f.style.display = "none");
+        // Show target
+        directForm.style.display = "block";
+      }
+    }
+
+    // Now populate the active form
+    const activeForm = Array.from(document.querySelectorAll(".user-form")).find(f => f.style.display === "block");
+    if (activeForm) {
+      const prefix = activeForm.id.replace("Form", "");
+      if (document.getElementById(`${prefix}Name`)) document.getElementById(`${prefix}Name`).value = user.name || "";
+      if (document.getElementById(`${prefix}Email`)) {
+        document.getElementById(`${prefix}Email`).value = user.email || "";
+        document.getElementById(`${prefix}Email`).disabled = true; // Email usually non-editable
+      }
+      if (document.getElementById(`${prefix}Phone`)) document.getElementById(`${prefix}Phone`).value = user.phone || "";
+      if (document.getElementById(`${prefix}Territory`)) document.getElementById(`${prefix}Territory`).value = user.territory || "";
+
+      // Clear password for security (don't pre-fill)
+      if (document.getElementById(`${prefix}Password`)) document.getElementById(`${prefix}Password`).value = "";
+
+      if (uiRole === "Medical Rep" || uiRole === "MR") {
+        const mgrSelect = document.getElementById("mrAssignedManager");
+        if (mgrSelect) {
+          const val = (user.assignedManager || "").trim();
+          // First, check if the exact value already exists in the dropdown (it's usually the Name)
+          let exists = Array.from(mgrSelect.options).some(opt => opt.value === val);
+
+          if (exists) {
+            mgrSelect.value = val;
+          } else {
+            // If not found, look up the manager in our list by Name, Email, or ID
+            const target = val.toLowerCase();
+            const managerObj = allManagers.find(m =>
+              (m.name && m.name.toLowerCase() === target) ||
+              (m.email && m.email.toLowerCase() === target) ||
+              (m.id && String(m.id) === target)
+            );
+
+            if (managerObj) {
+              mgrSelect.value = managerObj.name; // Use Name because populateManagerDropdowns uses Name as the value
+            } else {
+              mgrSelect.value = "";
+            }
+          }
+        }
+      }
+
+      if (uiRole === "Doctor") {
+        const parts = (user.territory || "").split("|");
+        if (document.getElementById("doctorSpeciality")) document.getElementById("doctorSpeciality").value = parts[0] || "";
+        if (document.getElementById("doctorCity")) document.getElementById("doctorCity").value = parts[1] || "";
+        if (document.getElementById("doctorAssignedMr")) document.getElementById("doctorAssignedMr").value = parts[2] || "";
+        if (document.getElementById("doctorType")) document.getElementById("doctorType").value = parts[3] || "";
+      }
     }
 
     addUserModal.show();
@@ -339,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Save failed: " + e.message);
     } finally {
       saveUserBtn.disabled = false;
-      saveUserBtn.textContent = "Save User";
+      saveUserBtn.textContent = editingUserId ? "Update User" : "Save User";
     }
   });
 
@@ -380,11 +430,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Reset modal for "Add New User"
   addUserModalEl.addEventListener("show.bs.modal", function (event) {
-    // If we are NOT editing (triggered by the "Add New User" button)
-    if (!event.relatedTarget || !event.relatedTarget.classList.contains('edit-btn')) {
+    const isEdit = event.relatedTarget && event.relatedTarget.classList.contains('edit-btn');
+    const isProgrammatic = !event.relatedTarget;
+
+    // If triggered by "Add New User" button or direct show() without editingUserId set
+    if (!isEdit && !editingUserId) {
       editingUserId = null;
       const roleContainer = document.getElementById("roleSelectionContainer");
-      if (roleContainer) roleContainer.style.display = "flex"; // Using flex as it's a d-flex
+      if (roleContainer) roleContainer.style.display = "flex";
 
       document.getElementById("addUserModalLabel").textContent = "Create New User";
       saveUserBtn.textContent = "Save User";
@@ -410,5 +463,17 @@ document.addEventListener("DOMContentLoaded", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
     });
   });
-});
 
+  // Reset editing state on hide
+  addUserModalEl.addEventListener("hidden.bs.modal", function () {
+    editingUserId = null;
+    // Re-enable role buttons
+    const roleContainer = document.getElementById("roleSelectionContainer");
+    if (roleContainer) {
+      roleContainer.querySelectorAll("button").forEach(btn => btn.disabled = false);
+    }
+    // Clear password fields for security
+    const passwords = document.querySelectorAll("input[type='password']");
+    passwords.forEach(p => p.value = "");
+  });
+});

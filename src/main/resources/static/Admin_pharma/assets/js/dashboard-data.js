@@ -241,7 +241,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateExpenseChart() {
     const expenseByCategory = {};
 
-    allExpenses.forEach(e => {
+    // Expense Breakdown Chart (Only include APPROVED)
+    allExpenses.filter(e => e.status === "APPROVED").forEach(e => {
       const category = e.category || "Miscellaneous";
       if (!expenseByCategory[category]) {
         expenseByCategory[category] = 0;

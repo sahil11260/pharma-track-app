@@ -76,30 +76,29 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const users = await apiJson(USERS_API_BASE);
       if (Array.isArray(users)) {
-        // Filter only for MANAGER role and deduplicate by name
-        const managerNames = new Set();
+        // Filter for MANAGER role (Case Insensitive)
         allManagers = users.filter(u => {
-          const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
-          if (role === "MANAGER" && !managerNames.has(u.name)) {
-            managerNames.add(u.name);
-            return true;
-          }
-          return false;
+          const roleRaw = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+          const role = String(roleRaw || "").toUpperCase();
+          return role === "MANAGER";
         });
 
-        // Filter for MR role and deduplicate by name
-        const mrNames = new Set();
+        // Filter for MR role (Case Insensitive)
         allMRs = users.filter(u => {
-          const role = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
-          if (role === "MR" && !mrNames.has(u.name)) {
-            mrNames.add(u.name);
-            return true;
-          }
-          return false;
+          const roleRaw = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
+          const role = String(roleRaw || "").toUpperCase();
+          return role === "MR";
         });
 
         populateManagerSelect();
-        populateMrSelect();
+
+        // Update MR dropdown if manager is already selected, else clear it
+        const mSelect = document.getElementById("managerSelect");
+        if (mSelect && mSelect.value) {
+          populateMrSelect(mSelect.value);
+        } else {
+          populateMrSelect(null);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch users", e);
@@ -110,19 +109,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const mSelect = document.getElementById("managerSelect");
     if (!mSelect) return;
     const currentVal = mSelect.value;
+    // Use Email (unique) as value if available, else Name
     mSelect.innerHTML = '<option value="">Select a Manager</option>' +
-      allManagers.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
+      allManagers.map(m => `<option value="${m.email || m.name}">${m.name}</option>`).join("");
     if (currentVal) mSelect.value = currentVal;
   }
 
-  function populateMrSelect() {
+  function populateMrSelect(targetMgr = null) {
     const mrSelect = document.getElementById("mrSelect");
     if (!mrSelect) return;
     const currentVal = mrSelect.value;
-    mrSelect.innerHTML = '<option value="">Select an MR</option>' +
-      allMRs.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
-    if (currentVal) mrSelect.value = currentVal;
+
+    let filteredMRs = [];
+    if (targetMgr && targetMgr.trim() !== "") {
+      const target = targetMgr.trim().toLowerCase();
+
+      // Secondary lookup: find the manager object to get their name/email/id for cross-matching
+      const managerObj = allManagers.find(m =>
+        (m.email && m.email.toLowerCase() === target) ||
+        (m.name && m.name.toLowerCase() === target) ||
+        (m.id && String(m.id) === target)
+      );
+
+      const mgrName = managerObj ? managerObj.name.toLowerCase() : null;
+      const mgrEmail = managerObj ? managerObj.email.toLowerCase() : null;
+      const mgrId = managerObj ? String(managerObj.id) : null;
+
+      filteredMRs = allMRs.filter(m => {
+        if (!m.assignedManager) return false;
+        const assigned = String(m.assignedManager).trim().toLowerCase();
+
+        // Match against passed value (Email/Name/ID) OR look up the manager's other properties
+        return assigned === target ||
+          (mgrName && assigned === mgrName) ||
+          (mgrEmail && assigned === mgrEmail) ||
+          (mgrId && assigned === mgrId);
+      });
+    }
+
+    const countText = filteredMRs.length > 0 ? ` (${filteredMRs.length} found)` : (targetMgr ? ' (0 found)' : '');
+    mrSelect.innerHTML = `<option value="">Select an MR${countText}</option>` +
+      filteredMRs.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
+
+    // Preserve selection if still valid in filtered list
+    if (currentVal && filteredMRs.some(m => m.name === currentVal)) {
+      mrSelect.value = currentVal;
+    } else {
+      mrSelect.value = "";
+    }
   }
+
+
+
+
 
   async function refreshStockFromApiOrFallback() {
     try {
@@ -218,6 +257,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const addProductForm = document.getElementById("addProductForm");
   const newProductName = document.getElementById("newProductName");
   const managerSelect = document.getElementById("managerSelect");
+  // Filter MRs when a Manager is selected
+  if (managerSelect) {
+    managerSelect.addEventListener("change", (e) => {
+      const selectedManager = e.target.value;
+      if (typeof allocateRole !== 'undefined' && allocateRole && allocateRole.value === "MR") {
+        populateMrSelect(selectedManager);
+      }
+    });
+  }
   const mrSelect = document.getElementById("mrSelect");
   const mrSelectContainer = document.getElementById("mrSelectContainer");
   const managerSelectLabel = document.getElementById("managerSelectLabel");
@@ -265,6 +313,42 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })();
   });
+
+  // Reset form when modal is closed/opened
+  const addProductModal = document.getElementById("addProductModal");
+  if (addProductModal) {
+    addProductModal.addEventListener('hidden.bs.modal', function () {
+      if (addProductForm) addProductForm.reset();
+
+      // Reset the dynamic label ("Stock to Add" -> "Stock Quantity")
+      const labels = addProductModal.querySelectorAll("label");
+      labels.forEach(l => {
+        if (l.textContent.includes("Stock to Add")) {
+          l.textContent = "Stock Quantity";
+          l.classList.remove("text-success", "fw-bold");
+        }
+      });
+    });
+  }
+
+  // Handle New Allocation modal lifecycle
+  const allocateModalEl = document.getElementById("allocateModal");
+  if (allocateModalEl) {
+    allocateModalEl.addEventListener('show.bs.modal', async function () {
+      // Refresh users to ensure we have latest assignments
+      await refreshUsersFromApi();
+
+      // If not in editing mode, reset the form
+      if (editingIndexInput.value === "-1") {
+        allocateForm.reset();
+        allocateModalTitle.textContent = "New Allocation";
+        mrSelectContainer.style.display = "none"; // Default role is Manager
+        populateMrSelect(null);
+        updateAvailableInfo();
+      }
+    });
+  }
+
 
 
   // Search
@@ -327,6 +411,13 @@ document.addEventListener("DOMContentLoaded", () => {
       managerSelectLabel.textContent = "Reporting Manager";
       mrSelectContainer.style.display = "block";
       if (mrSelect) mrSelect.required = true;
+
+      // Trigger filtering if manager is already selected
+      if (managerSelect && managerSelect.value) {
+        populateMrSelect(managerSelect.value);
+      } else {
+        populateMrSelect(null);
+      }
     }
   });
 
@@ -626,18 +717,29 @@ document.addEventListener("DOMContentLoaded", () => {
     editingIndexInput.value = index;
     productSelect.value = item.productId;
     allocateRole.value = item.role;
+
+    // Attempt to set manager by email/name
     managerSelect.value = item.manager || "";
+
     if (item.role === "Manager") {
       mrSelectContainer.style.display = "none";
       if (mrSelect) mrSelect.value = "";
     } else {
       mrSelectContainer.style.display = "block";
-      if (mrSelect) mrSelect.value = item.allocateTo;
+      // No need to set mrSelect.value here, populateMrSelect will do it after refresh
     }
     allocateQty.value = item.qty;
     updateAvailableInfo();
     allocateModalTitle.textContent = "Edit Allocation";
     new bootstrap.Modal(document.getElementById("allocateModal")).show();
+
+    // Refresh users and then trigger MR population if role is MR
+    refreshUsersFromApi().then(() => {
+      if (item.role === "MR" && item.manager) {
+        populateMrSelect(item.manager);
+        if (mrSelect) mrSelect.value = item.allocateTo;
+      }
+    });
   };
 
   window.pd_delete = function (index) {
