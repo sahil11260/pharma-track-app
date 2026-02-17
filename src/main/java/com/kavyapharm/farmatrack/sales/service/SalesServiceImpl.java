@@ -281,6 +281,69 @@ public class SalesServiceImpl implements SalesService {
                 .orElseGet(() -> userRepository.findByNameIgnoreCase(username).orElse(null));
     }
 
+    @Override
+    public SalesTarget updateTargetAndAchievement(Long id, UpdateAchievementRequest request) {
+        SalesTarget target = targetRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Target not found with id: " + id));
+
+        // 1. Update target units
+        if (request.targetUnits() != null) {
+            target.setTargetUnits(request.targetUnits());
+            targetRepository.save(target);
+        }
+
+        // 2. Adjust manual achievement to reach the desired total
+        if (request.achievedUnits() != null) {
+            // Find current DCR sum (which we can't change)
+            int dcrSum = 0;
+            if (!"Visit".equalsIgnoreCase(target.getCategory())) {
+                dcrSum = dcrRepository.findAll().stream()
+                        .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), target.getPeriodMonth(),
+                                target.getPeriodYear()))
+                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                        .filter(item -> isProductMatch(target, item))
+                        .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
+                        .sum();
+            } else {
+                dcrSum = (int) dcrRepository.findAll().stream()
+                        .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
+                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), target.getPeriodMonth(),
+                                target.getPeriodYear()))
+                        .count();
+            }
+
+            int desiredManualSum = request.achievedUnits() - dcrSum;
+            if (desiredManualSum < 0)
+                desiredManualSum = 0; // Can't be negative
+
+            // Update or create manual achievement record
+            List<SalesAchievement> existingList = achievementRepository
+                    .findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
+                            target.getMrId(), target.getProductId(), target.getPeriodMonth(), target.getPeriodYear());
+
+            SalesAchievement achievement;
+            if (!existingList.isEmpty()) {
+                achievement = existingList.get(0);
+                achievement.setAchievedUnits(desiredManualSum);
+            } else {
+                achievement = new SalesAchievement();
+                achievement.setMrId(target.getMrId());
+                achievement.setMrName(target.getMrName());
+                achievement.setProductId(target.getProductId());
+                achievement.setProductName(target.getProductName());
+                achievement.setAchievedUnits(desiredManualSum);
+                achievement.setPeriodMonth(target.getPeriodMonth());
+                achievement.setPeriodYear(target.getPeriodYear());
+                achievement.setAchievementDate(LocalDate.now());
+                achievement.setRemarks("Manager Override");
+            }
+            achievementRepository.save(achievement);
+        }
+
+        return target;
+    }
+
     private static class MrPerformance {
         private final Long mrId;
         private final String mrName;
