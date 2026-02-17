@@ -124,13 +124,13 @@ function renderSummaryCards(data) {
     `;
 }
 
-// Render targets table (Actions column removed)
+// Render targets table with Actions column
 function renderTargetsTable(targets) {
     const tbody = document.getElementById('targetsList');
     if (!tbody) return;
 
     if (!targets || targets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No targets assigned for this period</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No targets assigned for this period</td></tr>';
         return;
     }
 
@@ -144,6 +144,14 @@ function renderTargetsTable(targets) {
             <td>${target.targetUnits}</td>
             <td>${target.achievedUnits || 0}</td>
             <td><strong>${target.achievementPercentage?.toFixed(1) || 0}%</strong></td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1" onclick="editTarget(${target.id})" title="Edit Achievement">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteTarget(${target.id})" title="Delete Target">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
         </tr>
     `).join('');
 }
@@ -484,3 +492,118 @@ function showToast(message, type = 'success') {
     alert(message);
 }
 
+// Edit Target - Opens modal with current data
+function editTarget(targetId) {
+    const target = targetsData.find(t => t.id === targetId);
+    if (!target) {
+        showToast('Target not found', 'error');
+        return;
+    }
+
+    // Populate edit modal fields
+    document.getElementById('editTargetId').value = target.id;
+    document.getElementById('editMRName').value = target.mrName;
+    document.getElementById('editProductName').value = target.productName;
+    document.getElementById('editSalesTarget').value = target.targetUnits;
+    document.getElementById('editSalesAchievement').value = target.achievedUnits || 0;
+    document.getElementById('editStartDate').value = target.startDate || '';
+    document.getElementById('editEndDate').value = target.endDate || '';
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editTargetModal'));
+    modal.show();
+}
+
+// Delete Target
+async function deleteTarget(targetId) {
+    if (!confirm('Are you sure you want to delete this target?')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
+        const response = await fetch(`${API_BASE}/api/targets/${targetId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete target');
+        }
+
+        showToast('✅ Target deleted successfully!');
+        loadDashboard(); // Reload data
+    } catch (error) {
+        console.error('Delete target error:', error);
+        showToast('Failed to delete target. Please try again.', 'error');
+    }
+}
+
+// Update Target Achievement - Wire the update button
+document.addEventListener('DOMContentLoaded', () => {
+    const updateBtn = document.getElementById('updateTargetBtn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', async () => {
+            const targetId = document.getElementById('editTargetId').value;
+            const salesAchievement = parseInt(document.getElementById('editSalesAchievement').value);
+
+            if (isNaN(salesAchievement) || salesAchievement < 0) {
+                showToast('Please enter a valid achievement value', 'error');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
+
+                // Get the current target data
+                const target = targetsData.find(t => t.id == targetId);
+                if (!target) {
+                    showToast('Target not found', 'error');
+                    return;
+                }
+
+                // Calculate achievement percentage
+                const achievementPercentage = (salesAchievement / target.targetUnits) * 100;
+
+                // Prepare update payload
+                const updateData = {
+                    mrName: target.mrName,
+                    salesTarget: target.targetUnits,
+                    salesAchievement: salesAchievement,
+                    startDate: target.startDate,
+                    endDate: target.endDate,
+                    status: target.status || 'Pending'
+                };
+
+                const response = await fetch(`${API_BASE}/api/targets/${targetId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update target');
+                }
+
+                showToast(`✅ Achievement updated to ${salesAchievement} units (${achievementPercentage.toFixed(1)}%)!`);
+
+                // Close modal
+                const modalEl = document.getElementById('editTargetModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+
+                // Reload dashboard
+                loadDashboard();
+            } catch (error) {
+                console.error('Update target error:', error);
+                showToast('Failed to update achievement. Please try again.', 'error');
+            }
+        });
+    }
+});
