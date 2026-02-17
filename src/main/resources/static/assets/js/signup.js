@@ -57,16 +57,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // EMAIL
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,4}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(emailField.value.trim())) {
-      emailError.textContent = "Enter a valid email.";
+      emailError.textContent = "Please enter a valid email address.";
       valid = false;
     }
 
     // PASSWORD
-    const passRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{6,}$/;
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
     if (!passRegex.test(passField.value.trim())) {
-      passError.textContent = "Password must be 6+ chars, include a number & special char.";
+      passError.textContent = "Password must be at least 8 characters and include uppercase, lowercase, number and special character.";
       valid = false;
     }
 

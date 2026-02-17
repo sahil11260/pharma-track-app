@@ -54,8 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
       userDropdownBtn.appendChild(document.createTextNode(' ' + name));
     }
 
-    // Load saved profile picture
-    const savedPic = localStorage.getItem('kavya_profile_pic');
+    // Load saved profile picture (Isolated by email)
+    const userEmailForPic = email || localStorage.getItem("kavya_user_email");
+    const profilePicKey = userEmailForPic ? `kavya_profile_pic_${userEmailForPic}` : 'kavya_profile_pic';
+    const savedPic = localStorage.getItem(profilePicKey);
+
     if (savedPic) {
       // 1. Update Profile Modal (replace icon with image if needed)
       const profileIconContainer = document.querySelector('#profileModal .bg-light.rounded-circle');

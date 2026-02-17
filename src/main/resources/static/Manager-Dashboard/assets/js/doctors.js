@@ -509,12 +509,18 @@ function editDoctor(doctorId) {
         alert("Phone number must be exactly 10 digits.");
         return;
       }
+      const email = document.getElementById("doctorEmail").value.trim();
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (email && !emailRegex.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
       doctor.name = document.getElementById("doctorName").value;
       const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
       doctor.type = typeValue;
       doctor.specialty = document.getElementById("doctorSpecialty").value || "";
       doctor.phone = document.getElementById("doctorPhone").value;
-      doctor.email = document.getElementById("doctorEmail").value;
+      doctor.email = email;
       doctor.clinicName = document.getElementById("clinicName").value;
       // Do NOT overwrite address/notes (modal no longer has those fields)
       const doctorCityEl = document.getElementById("doctorCity");
@@ -640,6 +646,13 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Phone number must be exactly 10 digits.");
           return;
         }
+        const email = document.getElementById("doctorEmail").value.trim();
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (email && !emailRegex.test(email)) {
+          alert("Please enter a valid email address.");
+          return;
+        }
+
         const nextId = doctorsData.length > 0 ? Math.max(...doctorsData.map((d) => d.id)) + 1 : 1;
         const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
         const newDoctor = {
@@ -648,7 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
           type: typeValue, // dropdown value: doctor / other
           specialty: document.getElementById("doctorSpecialty").value || "",
           phone: document.getElementById("doctorPhone").value,
-          email: document.getElementById("doctorEmail").value,
+          email: email,
           clinicName: document.getElementById("clinicName").value,
           // Address & Notes removed from add modal \u2014 set to empty strings
           address: "",

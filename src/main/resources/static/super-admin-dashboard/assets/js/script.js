@@ -8,8 +8,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Load saved profile picture
-  const savedPic = localStorage.getItem('kavya_profile_pic');
+  // Load saved profile data
+  const profileName = document.getElementById("profileName");
+  const profileEmail = document.getElementById("profileEmail");
+
+  const userStr = localStorage.getItem("kavya_user");
+  let currentUser = null;
+  try { if (userStr) currentUser = JSON.parse(userStr); } catch (e) { }
+
+  const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
+  const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
+  if (profileName) profileName.textContent = savedName;
+  if (profileEmail) profileEmail.textContent = savedEmail;
+
+  // Load saved profile picture (Isolated by email)
+  const userEmailForPic = savedEmail || localStorage.getItem("kavya_user_email");
+  const profilePicKey = userEmailForPic ? `kavya_profile_pic_${userEmailForPic}` : 'kavya_profile_pic';
+  const savedPic = localStorage.getItem(profilePicKey);
+
   if (savedPic) {
     // 1. Update Profile Modals (any img in profileModal or with flaticon/avatar source)
     document.querySelectorAll('img').forEach(img => {
@@ -30,19 +46,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       navbarIcon.parentNode.replaceChild(img, navbarIcon);
     }
   }
-
-  // Load saved profile data
-  const profileName = document.getElementById("profileName");
-  const profileEmail = document.getElementById("profileEmail");
-
-  const userStr = localStorage.getItem("kavya_user");
-  let currentUser = null;
-  try { if (userStr) currentUser = JSON.parse(userStr); } catch (e) { }
-
-  const savedName = (currentUser && currentUser.name) ? currentUser.name : (localStorage.getItem("signup_name") || "");
-  const savedEmail = (currentUser && currentUser.email) ? currentUser.email : (localStorage.getItem("signup_email") || "");
-  if (profileName) profileName.textContent = savedName;
-  if (profileEmail) profileEmail.textContent = savedEmail;
 
   // Update Navbar name
   const userDropdownBtn = document.getElementById("userDropdown");

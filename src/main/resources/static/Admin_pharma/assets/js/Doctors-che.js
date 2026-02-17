@@ -195,12 +195,19 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const email = document.getElementById("doctorContact").value.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById("doctorName").value,
       specialty: document.getElementById("doctorSpecialty").value,
       city: document.getElementById("doctorCity").value,
       phone: phone,
-      email: document.getElementById("doctorContact").value,
+      email: email,
       assignedMR: assignMR.value,
       type: "Doctor",
       clinicName: "Default Clinic",

@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = inputPassword.value.trim();
 
     const nameRegex = /^[A-Za-z\s]+$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const phoneRegex = /^[0-9]{10}$/;
 
     const emailExists = mrs.some(m => m.email.toLowerCase() === email.toLowerCase() && m.id !== editId);
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return false;
     }
     if (!emailRegex.test(email)) {
-      showAlert("⚠️ Enter a valid email.");
+      showAlert("⚠️ Please enter a valid email address.");
       return false;
     }
     if (!phoneRegex.test(phone)) {
@@ -313,8 +313,9 @@ document.addEventListener("DOMContentLoaded", () => {
       showAlert("⚠️ Territory should contain only letters and spaces.");
       return false;
     }
-    if (password && password.length < 5) {
-      showAlert("⚠️ Password must be at least 5 characters.");
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (password && !passRegex.test(password)) {
+      showAlert("⚠️ Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
       return false;
     }
 
