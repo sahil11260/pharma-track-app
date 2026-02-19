@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/assets/js/auth-check.js"></script>
   <title>MR-Dashboard | Doctors</title>
 
   <!-- Bootstrap CSS -->
@@ -32,39 +33,45 @@
       <!-- <h5 class="mt-2 fw-bold">MR Dashboard</h5> -->
 
       <div class="d-flex ms-auto">
-        
+
 
         <div class="dropdown">
-  <button class="btn btn-outline-secondary me-2 position-relative" 
-          id="notificationsBtn" 
-          data-bs-toggle="dropdown">
-    <i class="bi bi-bell"></i>
+          <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
+            data-bs-toggle="dropdown">
+            <i class="bi bi-bell"></i>
 
-    <!-- Red Dot -->
-    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
-  </button>
+            <!-- Red Dot -->
+            <span id="notificationBadge"
+              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
+              style="display:none;"></span>
+          </button>
 
-  <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
-    <li class="dropdown-header fw-bold">Notifications</li>
-    <li><hr class="dropdown-divider" /></li>
-    
-    <!-- Dynamic notifications will be inserted here -->
-    <li id="notificationList">
-      <div class="dropdown-item small text-center text-muted">
-        <i class="bi bi-hourglass-split me-2"></i>Loading...
-      </div>
-    </li>
-  </ul>
-</div>
+          <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
+            <li class="dropdown-header fw-bold">Notifications</li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
+
+            <!-- Dynamic notifications will be inserted here -->
+            <li id="notificationList">
+              <div class="dropdown-item small text-center text-muted">
+                <i class="bi bi-hourglass-split me-2"></i>Loading...
+              </div>
+            </li>
+          </ul>
+        </div>
 
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             <i class="bi bi-person-circle"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a>
+            </li>
             <li><a class="dropdown-item" href="Profile.html">Settings</a></li>
-            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
             <li><a class="dropdown-item text-danger" href="../index.html">Logout</a></li>
           </ul>
         </div>
@@ -79,67 +86,68 @@
       <!-- <img src="assets/images/logo-dark.png" class="logo dark-logo" /> -->
     </div>
     <ul class="sidebar-menu mb-5">
-            <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
-            <!-- <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li> -->
-            <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
-            <li class="active"><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
-            <li><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
-            <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
-            <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
-            <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
-            
-        </ul>
+      <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
+      <!-- <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li> -->
+      <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
+      <li class="active"><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
+      <li><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
+      <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
+      <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
+      <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
+
+    </ul>
   </div>
 
   <!-- MAIN CONTENT -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
 
-        <h3 class="fw-bold mb-4">
-            <i class="bi bi-people me-2"></i>My Assigned Doctors
-        </h3>
+      <h3 class="fw-bold mb-4">
+        <i class="bi bi-people me-2"></i>My Assigned Doctors
+      </h3>
 
-        <div class="row mb-4">
-            <div class="col-lg-4 col-md-6 mb-3">
-                <div class="card shadow-sm border-0 dailyplan-summary-card bg-info text-white">
-                     <div class="card-body"
-             style="background: linear-gradient(135deg, #0fd850, #00c1a1);
+      <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+          <div class="card shadow-sm border-0 dailyplan-summary-card bg-info text-white">
+            <div class="card-body" style="background: linear-gradient(135deg, #0fd850, #00c1a1);
                     color: #ffffff;
                     border-radius: 12px;">
-                        <h6 class="card-title mb-0">Total Assigned Doctors</h6>
-                        <h3 class="fw-bold" id="totalDoctorsCount">0</h3>
-                    </div>
-                </div>
+              <h6 class="card-title mb-0">Total Assigned Doctors</h6>
+              <h3 class="fw-bold" id="totalDoctorsCount">0</h3>
             </div>
+          </div>
         </div>
+      </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light fw-bold">
-                List of Doctors (Territory Coverage)
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" id="doctorTable">
-                        <thead>
-                            <tr class="table-header-custom">
-                                <th scope="col">Sr.No.</th>
-                                <th scope="col">DR Name</th>
-                                <th scope="col">Clinic Name</th>
-                                <th scope="col">Specialization</th>
-                                <th scope="col">City</th>
-                                
-                            </tr>
-                        </thead>
-                        <tbody id="doctorListBody">
-                            <tr><td colspan="6" class="text-center text-muted p-4">Loading assigned doctors...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light fw-bold">
+          List of Doctors (Territory Coverage)
         </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="doctorTable">
+              <thead>
+                <tr class="table-header-custom">
+                  <th scope="col">Sr.No.</th>
+                  <th scope="col">DR Name</th>
+                  <th scope="col">Clinic Name</th>
+                  <th scope="col">Specialization</th>
+                  <th scope="col">City</th>
+
+                </tr>
+              </thead>
+              <tbody id="doctorListBody">
+                <tr>
+                  <td colspan="6" class="text-center text-muted p-4">Loading assigned doctors...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
     </div>
-</div>
+  </div>
 
   <!-- ðŸ§‘â€ ðŸ’¼ Profile Info Modal -->
   <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
@@ -186,5 +194,3 @@
 </body>
 
 </html>
-
-

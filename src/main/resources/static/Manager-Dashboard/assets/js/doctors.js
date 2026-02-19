@@ -31,7 +31,7 @@ let mrData = [];
 
 const USERS_API_BASE = `${API_BASE}/api/users`;
 
-// start empty \u2014 will be populated from API or localStorage
+// start empty — will be populated from API or localStorage
 let doctorsData = [];
 
 // Load/save to localStorage
@@ -239,6 +239,7 @@ function getFilteredData() {
 function renderDoctorsTablePage(page = 1) {
   const doctorsList = document.getElementById("doctorsList");
   const paginationContainer = document.getElementById("paginationContainer");
+  if (!doctorsList) return;
   doctorsList.innerHTML = "";
   if (paginationContainer) paginationContainer.innerHTML = "";
 
@@ -326,7 +327,7 @@ function populateMRDropdowns() {
     const option1 = document.createElement("option");
     option1.value = mr.email; // Use email for backend assignment
     option1.textContent = mr.name; // Display name for user-friendly UI
-    assignToMR.appendChild(option1);
+    if (assignToMR) assignToMR.appendChild(option1);
   });
 
   console.log("[DOCTOR] Populated MR dropdown with", mrData.length, "MRs (using email values)");
@@ -492,7 +493,6 @@ function editDoctor(doctorId) {
   document.getElementById("clinicName").value = doctor.clinicName;
   const doctorCityEl = document.getElementById("doctorCity");
   if (doctorCityEl) doctorCityEl.value = doctor.city || "";
-  // NOTE: Address and Notes fields were removed from modal \u2014 do not attempt to set them
   document.getElementById("assignToMR").value = doctor.assignedMR || "";
 
   modalTitle.innerHTML = '<i class="bi bi-pencil-square"></i> Edit Doctor';
@@ -503,38 +503,55 @@ function editDoctor(doctorId) {
 
   const handleUpdate = (e) => {
     e.preventDefault();
+    const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
+    const specValue = document.getElementById("doctorSpecialty").value;
+
+    // Specialty validation for Doctors
+    if (typeValue === "doctor" && !specValue) {
+      alert("Please select a specialty.");
+      document.getElementById("doctorSpecialty").focus();
+      return;
+    }
+
     if (form.checkValidity()) {
-      const phone = document.getElementById("doctorPhone").value;
-      if (phone && phone.length !== 10) {
-        alert("Phone number must be exactly 10 digits.");
-        return;
-      }
       const email = document.getElementById("doctorEmail").value.trim();
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (email && !emailRegex.test(email)) {
         alert("Please enter a valid email address.");
         return;
       }
+
+      const phone = document.getElementById("doctorPhone").value;
+      if (phone && phone.length !== 10) {
+        alert("Phone number must be exactly 10 digits.");
+        return;
+      }
       doctor.name = document.getElementById("doctorName").value;
-      const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
       doctor.type = typeValue;
-      doctor.specialty = document.getElementById("doctorSpecialty").value || "";
+      doctor.specialty = specValue || "";
       doctor.phone = document.getElementById("doctorPhone").value;
       doctor.email = email;
       doctor.clinicName = document.getElementById("clinicName").value;
-      // Do NOT overwrite address/notes (modal no longer has those fields)
       const doctorCityEl = document.getElementById("doctorCity");
       doctor.city = doctorCityEl ? doctorCityEl.value : (doctor.city || "");
       doctor.assignedMR = document.getElementById("assignToMR").value;
-      // keep doctor.notes unchanged
 
       (async function () {
         if (doctorsApiMode) {
           try {
             await updateDoctorApi(doctor.id, doctor);
             await refreshDoctorsFromApiOrFallback();
+            saveData();
+            renderDoctorsTablePage(currentPage);
+            modal.hide();
+            return; // Success
           } catch (e) {
-            console.warn("Doctor update API failed. Falling back to localStorage.", e);
+            console.error("[DOCTOR] Update API error:", e);
+            alert("Error: " + e.message);
+            if (e.message.includes("HTTP 400") || (e.message && e.message.toLowerCase().includes("required"))) {
+              return;
+            }
+            console.warn("Falling back to localStorage due to unexpected API error.");
             doctorsApiMode = false;
           }
         }
@@ -556,7 +573,7 @@ function editDoctor(doctorId) {
   saveBtn.addEventListener("click", handleUpdate);
 }
 
-// DELETE doctor (newly added)
+// DELETE doctor 
 function deleteDoctor(doctorId) {
   const idx = doctorsData.findIndex((d) => d.id === doctorId);
   if (idx === -1) return; // not found
@@ -597,28 +614,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const sidebarToggle = document.getElementById("sidebarToggle");
   const sidebar = document.getElementById("sidebar");
   const mainContent = document.getElementById("mainContent");
-
-  sidebarToggle.addEventListener("click", () => {
-    sidebar.classList.toggle("collapsed");
-    mainContent.classList.toggle("expanded");
-  });
-
-
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", () => {
+      if (sidebar) sidebar.classList.toggle("collapsed");
+      if (mainContent) mainContent.classList.toggle("expanded");
+    });
+  }
 
   const storedMrs = localStorage.getItem("kavyaPharmMRs");
   if (storedMrs) {
     try {
       const parsed = JSON.parse(storedMrs);
       mrData = Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-    }
+    } catch (e) { }
   }
+
   const phoneInput = document.getElementById("doctorPhone");
   if (phoneInput) {
     phoneInput.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
     });
   }
+
   populateMRDropdowns();
 
   // Search
@@ -640,6 +657,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // Only run add logic if in Add mode
     if (saveDoctorBtn.textContent.toLowerCase().includes("add")) {
       const form = document.getElementById("addDoctorForm");
+      const doctorTypeEl = document.getElementById("doctorType");
+      const typeValue = (doctorTypeEl ? doctorTypeEl.value : "doctor");
+      const specValue = document.getElementById("doctorSpecialty").value;
+
+      // Special handling for Doctor type: Specialty is mandatory
+      if (typeValue === "doctor" && !specValue) {
+        alert("Please select a specialty.");
+        document.getElementById("doctorSpecialty").focus();
+        return;
+      }
+
       if (form.checkValidity()) {
         const phone = document.getElementById("doctorPhone").value;
         if (phone && phone.length !== 10) {
@@ -654,18 +682,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const nextId = doctorsData.length > 0 ? Math.max(...doctorsData.map((d) => d.id)) + 1 : 1;
-        const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
         const newDoctor = {
           id: nextId,
           name: document.getElementById("doctorName").value,
-          type: typeValue, // dropdown value: doctor / other
-          specialty: document.getElementById("doctorSpecialty").value || "",
+          type: typeValue,
+          specialty: specValue || "",
           phone: document.getElementById("doctorPhone").value,
           email: email,
           clinicName: document.getElementById("clinicName").value,
-          // Address & Notes removed from add modal \u2014 set to empty strings
           address: "",
-          city: (document.getElementById("doctorCity")?.value) || "",
+          city: (document.getElementById("doctorCity") ? document.getElementById("doctorCity").value : ""),
           assignedMR: document.getElementById("assignToMR").value,
           notes: "",
           status: "active",
@@ -688,23 +714,28 @@ document.addEventListener("DOMContentLoaded", () => {
               form.reset();
               return;
             } catch (e) {
-              console.warn("Doctor create API failed. Falling back to localStorage.", e);
-              doctorsApiMode = false;
+              console.error("[DOCTOR] Create API error:", e);
               alert("Error: " + e.message);
+              if (e.message.includes("HTTP 400") || (e.message && e.message.toLowerCase().includes("required"))) {
+                saveDoctorBtn.disabled = false;
+                saveDoctorBtn.textContent = originalText;
+                return;
+              }
+              console.warn("Falling back to localStorage due to unexpected API error.");
+              doctorsApiMode = false;
             } finally {
-              saveDoctorBtn.disabled = false;
-              saveDoctorBtn.textContent = originalText;
+              if (doctorsApiMode) {
+                saveDoctorBtn.disabled = false;
+                saveDoctorBtn.textContent = originalText;
+              }
             }
           }
 
           doctorsData.push(newDoctor);
           saveData();
-
-          // re-render on first page (or current) \u2014 reset to page 1 to show new record
           currentPage = 1;
           renderDoctorsTablePage(currentPage);
 
-          // Close modal and reset form
           const modal = bootstrap.Modal.getInstance(document.getElementById("addDoctorModal"));
           if (modal) modal.hide();
           form.reset();
@@ -723,26 +754,25 @@ document.addEventListener("DOMContentLoaded", () => {
   saveDoctorBtn.addEventListener("click", saveDoctorBtn.currentAddHandler);
 
   // Reset modal state when closed (ensure Add is restored)
-  document.getElementById("addDoctorModal").addEventListener("hidden.bs.modal", function () {
-    const form = document.getElementById("addDoctorForm");
-    const modalTitle = document.querySelector("#addDoctorModal .modal-title");
+  const addModalEl = document.getElementById("addDoctorModal");
+  if (addModalEl) {
+    addModalEl.addEventListener("hidden.bs.modal", function () {
+      const form = document.getElementById("addDoctorForm");
+      const modalTitle = document.querySelector("#addDoctorModal .modal-title");
 
-    // Remove update listener if it exists
-    if (saveDoctorBtn.currentUpdateHandler) {
-      saveDoctorBtn.removeEventListener("click", saveDoctorBtn.currentUpdateHandler);
-      saveDoctorBtn.currentUpdateHandler = null;
-    }
+      if (saveDoctorBtn.currentUpdateHandler) {
+        saveDoctorBtn.removeEventListener("click", saveDoctorBtn.currentUpdateHandler);
+        saveDoctorBtn.currentUpdateHandler = null;
+      }
 
-    // Reset form + button text back to Add
-    form.reset();
-    saveDoctorBtn.textContent = "Add Doctor";
+      form.reset();
+      saveDoctorBtn.textContent = "Add Doctor";
+      if (modalTitle) modalTitle.innerHTML = '<i class="bi bi-plus-circle"></i> Add New Doctor';
 
-    modalTitle.innerHTML = '<i class="bi bi-plus-circle"></i> Add New Doctor';
-
-    // Re-attach Add handler (remove and add to avoid duplicates)
-    saveDoctorBtn.removeEventListener("click", saveDoctorBtn.currentAddHandler);
-    saveDoctorBtn.addEventListener("click", saveDoctorBtn.currentAddHandler);
-  });
+      saveDoctorBtn.removeEventListener("click", saveDoctorBtn.currentAddHandler);
+      saveDoctorBtn.addEventListener("click", saveDoctorBtn.currentAddHandler);
+    });
+  }
 
   (async function () {
     await refreshMrsFromApiOrFallback();

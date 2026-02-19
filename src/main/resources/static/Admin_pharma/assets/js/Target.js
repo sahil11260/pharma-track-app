@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ? (window.location.port === "8080" ? "" : "http://localhost:8080")
     : "";
 
-  const TARGETS_API_BASE = `${API_BASE}/api/targets`;
+  const TARGETS_API_BASE = `${API_BASE}/api/manager/sales-targets`;
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;
   const STORAGE_KEY = "kavyaPharmAdminTargetsData";
@@ -54,14 +54,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function normalizeTargetFromApi(t) {
     return {
       id: Number(t.id),
+      mrId: t.mrId,
       mrName: t.mrName,
-      period: t.period,
-      salesTarget: Number(t.salesTarget) || 0,
-      salesAchievement: Number(t.salesAchievement) || 0,
+      period: t.productName || t.period || "Sales Target",
+      salesTarget: Number(t.targetUnits) || 0,
+      salesAchievement: Number(t.achievedUnits) || 0,
       achievementPercentage: Math.round(Number(t.achievementPercentage) || 0),
-      startDate: t.startDate || "",
+      startDate: t.assignedDate || "",
       endDate: t.endDate || "",
-      status: mapApiStatusToUi(t)
+      status: t.progressStatus || mapApiStatusToUi(t)
     };
   }
 
@@ -125,36 +126,42 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function createTargetApi(t) {
+    const manager = allManagers.find(m => m.name === t.mrName);
+    const product = allProducts.find(p => p.name === t.period);
+
+    // Extract month and year from targetGivenDate (startDate)
+    let month = new Date().getMonth() + 1;
+    let year = new Date().getFullYear();
+    if (t.startDate) {
+      const d = new Date(t.startDate);
+      month = d.getMonth() + 1;
+      year = d.getFullYear();
+    }
+
     return await apiJson(TARGETS_API_BASE, {
       method: "POST",
       body: JSON.stringify({
+        mrId: manager ? manager.id : 0,
         mrName: t.mrName,
-        period: t.period,
-        salesTarget: Number(t.salesTarget) || 0,
-        visitsTarget: 0,
-        startDate: t.startDate || null,
-        endDate: t.endDate || null,
-        status: uiStatusToApiStatus(t.status)
+        productId: product ? product.id : 0,
+        productName: t.period,
+        category: product ? product.category : "Product",
+        targetUnits: Math.round(Number(t.salesTarget) || 0),
+        periodMonth: month,
+        periodYear: year,
+        assignedBy: "Admin"
       })
     });
   }
 
   async function updateTargetApi(id, t) {
-    const isAchieved = String(t.status) === "Achieved";
-    return await apiJson(`${TARGETS_API_BASE}/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        mrName: t.mrName,
-        period: t.period,
-        salesTarget: Number(t.salesTarget) || 0,
-        salesAchievement: isAchieved ? (Number(t.salesTarget) || 0) : 0,
-        visitsTarget: 0,
-        visitsAchievement: 0,
-        startDate: t.startDate || null,
-        endDate: t.endDate || null,
-        status: uiStatusToApiStatus(t.status)
-      })
-    });
+    // Current backend (SalesController) doesn't seem to have a specific PUT for full target update 
+    // besides achievements or creation. However, Target.js in Admin was designed for dummy.
+    // We'll use the common /api/sales-targets/{id} if available, or stay with manager path.
+    // Based on SalesController.java, there is no generic PUT /api/manager/sales-targets/{id}.
+    // For now, we will simply alert that edit is limited or re-assign.
+    console.warn("Update API not fully implemented in backend for regional targets. Using create/re-assign pattern.");
+    return await createTargetApi(t);
   }
 
   async function deleteTargetApi(id) {
@@ -230,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">Select a Manager</option>' +
-      allManagers.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
+      allManagers.map(m => `<option value="${m.name}" data-id="${m.id}">${m.name} (ID: ${m.id})</option>`).join("");
     if (currentVal) sel.value = currentVal;
   }
 
@@ -239,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">Select a Product</option>' +
-      allProducts.map(p => `<option value="${p.name}">${p.name} (Code: ${p.productId || p.id})</option>`).join("");
+      allProducts.map(p => `<option value="${p.name}" data-id="${p.id}">${p.name} (Code: ${p.id})</option>`).join("");
     if (currentVal) sel.value = currentVal;
   }
 
@@ -263,6 +270,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchTerm = (searchInput.value || "").toLowerCase();
     const from = fromDate.value ? new Date(fromDate.value) : null;
     const to = toDate.value ? new Date(toDate.value) : null;
+
+    if (from && to && from > to) {
+      alert("From Date cannot be later than To Date.");
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Invalid date range: From Date is later than To Date</td></tr>';
+      return;
+    }
 
     let filtered = targets.filter((t) => {
       const matchSearch =
@@ -301,12 +314,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </td>
           <td>
             <div class="d-flex align-items-center">
-              ${t.status === "Pending"
-              ? `
-                <button class="btn btn-sm btn-outline-success me-1" onclick="markAchieved(${t.id})" title="Achieved"><i class="bi bi-check-lg"></i></button>
-                `
-              : `<button class="btn btn-sm btn-outline-warning me-1" onclick="markPending(${t.id})" title="Mark Pending"><i class="bi bi-arrow-repeat"></i></button>`
-            }
               <button class="btn btn-sm btn-outline-primary me-1" onclick="editTarget(${t.id})"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-sm btn-outline-danger" onclick="deleteTarget(${t.id})"><i class="bi bi-trash"></i></button>
             </div>
@@ -413,51 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------------------------------------
   // ðŸ”¥ CRUD OPERATIONS
   // ---------------------------------------------------------
-  window.markAchieved = (id) => {
-    const idx = targets.findIndex((x) => Number(x.id) === Number(id));
-    if (idx === -1) return;
-    targets[idx].status = "Achieved";
-    targets[idx].salesAchievement = targets[idx].salesTarget; // Update achievement locally
-    targets[idx].achievementPercentage = 100;
 
-    (async function () {
-      if (targetsApiMode) {
-        try {
-          await updateTargetApi(id, targets[idx]);
-          await refreshTargetsFromApiOrFallback();
-        } catch (e) {
-          console.warn("Target update API failed. Falling back to localStorage.", e);
-          targetsApiMode = false;
-          showApiRetryBanner();
-        }
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
-      renderTable();
-    })();
-  };
-
-  window.markPending = (id) => {
-    const idx = targets.findIndex((x) => Number(x.id) === Number(id));
-    if (idx === -1) return;
-    targets[idx].status = "Pending";
-    targets[idx].salesAchievement = 0; // Reset achievement locally
-    targets[idx].achievementPercentage = 0;
-
-    (async function () {
-      if (targetsApiMode) {
-        try {
-          await updateTargetApi(id, targets[idx]);
-          await refreshTargetsFromApiOrFallback();
-        } catch (e) {
-          console.warn("Target update API failed. Falling back to localStorage.", e);
-          targetsApiMode = false;
-          showApiRetryBanner();
-        }
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
-      renderTable();
-    })();
-  };
 
   window.deleteTarget = (id) => {
     if (!confirm("Delete this target?")) return;

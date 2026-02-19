@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const DCR_API = `${API_BASE}/api/dcrs`;
   const EXPENSE_API = `${API_BASE}/api/expenses`;
   const TARGET_API = `${API_BASE}/api/targets`;
+  const DOCTORS_API = `${API_BASE}/api/doctors`;
 
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token");
@@ -38,6 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let allDcrs = [];
   let allExpenses = [];
   let allTargets = [];
+  let doctorRegionMap = {};
+  let lastDoctorIdMap = {};
 
   const reportTableBody = document.getElementById("reportTableBody");
   const tableSearch = document.getElementById("tableSearch");
@@ -47,19 +50,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchAllData() {
     try {
-      const [dcrs, expenses, targets] = await Promise.all([
+      const [dcrs, expenses, targets, doctors] = await Promise.all([
         apiJson(DCR_API),
         apiJson(EXPENSE_API),
-        apiJson(TARGET_API)
+        apiJson(TARGET_API),
+        apiJson(DOCTORS_API)
       ]);
 
       allDcrs = Array.isArray(dcrs) ? dcrs : [];
       allExpenses = Array.isArray(expenses) ? expenses : [];
       allTargets = Array.isArray(targets) ? targets : [];
 
+      // Build doctor region maps
+      let doctorIdMap = {};
+      if (Array.isArray(doctors)) {
+        doctors.forEach(d => {
+          const regionVal = d.city || d.territory || d.address || '-';
+          if (d.name) {
+            doctorRegionMap[d.name.toLowerCase().trim()] = regionVal;
+            // Also store without 'Dr.' prefix for fuzzier matching
+            doctorRegionMap[d.name.toLowerCase().replace('dr.', '').trim()] = regionVal;
+          }
+          if (d.id) {
+            doctorIdMap[String(d.id)] = regionVal;
+          }
+        });
+      }
+
+      // Merge maps or just use ID as priority in renderTable
+      window._doctorIdMap = doctorIdMap; // Expose for renderTable to use if it's outside this scope or just use local variable if I move it inside
+
+      lastDoctorIdMap = doctorIdMap;
       updateSummaryCards();
       updateCharts();
-      renderTable(allDcrs);
+      renderTable(allDcrs, doctorIdMap);
     } catch (e) {
       console.error("Failed to fetch data:", e);
     }
@@ -81,18 +105,42 @@ document.addEventListener("DOMContentLoaded", () => {
     salesAchievedEl.textContent = `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
 
-  function renderTable(data) {
+  function renderTable(data, doctorIdMap = {}) {
     reportTableBody.innerHTML = data
       .map(
-        (r) => `
+        (r) => {
+          // Lookup region robustly
+          let region = r.region;
+
+          // If backend didn't provide it, use frontend mapping
+          if (!region || region === '-' || region === 'null' || region === 'undefined') {
+            // 1. Try by ID (highest accuracy)
+            if (r.doctorId && doctorIdMap[String(r.doctorId)]) {
+              region = doctorIdMap[String(r.doctorId)];
+            }
+            // 2. Try by Name
+            else {
+              const docNameKey = (r.doctorName || '').toLowerCase().trim();
+              region = doctorRegionMap[docNameKey] || r.clinicLocation || '-';
+
+              // Try without 'Dr.' prefix if still missing
+              if ((!region || region === '-') && docNameKey.startsWith('dr.')) {
+                const stripped = docNameKey.replace('dr.', '').trim();
+                region = doctorRegionMap[stripped] || region;
+              }
+            }
+          }
+
+          return `
       <tr>
-        <td>${r.visitDate || '-'}</td>
+        <td>${r.dateTime || '-'}</td>
         <td>${r.mrName || '-'}</td>
         <td>${r.doctorName || '-'}</td>
-        <td>${r.region || '-'}</td>
-        <td>${r.feedback || '-'}</td>
-        <td><span class="badge ${r.status === "COMPLETED" ? "bg-success" : "bg-warning text-dark"}">${r.status || 'Pending'}</span></td>
-      </tr>`
+        <td>${region}</td>
+        <td>${r.remarks || '-'}</td>
+        <td><span class="badge ${r.status === "COMPLETED" || !r.status ? "bg-success" : "bg-warning text-dark"}">${r.status || 'Completed'}</span></td>
+      </tr>`;
+        }
       )
       .join("") || '<tr><td colspan="6" class="text-center text-muted">No visit records found</td></tr>';
   }
@@ -103,9 +151,10 @@ document.addEventListener("DOMContentLoaded", () => {
       (r) =>
         (r.mrName || '').toLowerCase().includes(term) ||
         (r.doctorName || '').toLowerCase().includes(term) ||
+        (r.remarks || '').toLowerCase().includes(term) ||
         (r.region || '').toLowerCase().includes(term)
     );
-    renderTable(filtered);
+    renderTable(filtered, lastDoctorIdMap);
   });
 
   // ===== Charts =====

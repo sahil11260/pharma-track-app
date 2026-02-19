@@ -11,4 +11,6 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 	java.util.List<Doctor> findByAssignedMRIgnoreCase(String assignedMR);
 
 	java.util.List<Doctor> findByManagerEmailIgnoreCase(String managerEmail);
+
+	java.util.Optional<Doctor> findByNameIgnoreCase(String name);
 }

@@ -332,6 +332,9 @@ async function populateMRDropdowns() {
 
         // Store MR names globally for filtering targetsData if needed
         window.managerMrIds = mrs.map(m => String(m.id));
+        if (userObj && userObj.id) {
+            window.managerMrIds.push(String(userObj.id));
+        }
 
     } catch (error) {
         console.error('Error populating MR dropdowns:', error);

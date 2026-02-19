@@ -653,6 +653,30 @@ function setupDoctorFiltering() {
     doctorSelect.addEventListener("change", onDoctorChange);
     console.log("[TASK] Doctor change listener attached");
   }
+
+  // Setup dynamic field visibility based on task type
+  const taskTypeSelect = document.getElementById("taskType");
+  if (taskTypeSelect) {
+    taskTypeSelect.addEventListener("change", () => {
+      updateTaskFieldsVisibility(taskTypeSelect.value);
+    });
+  }
+}
+
+function updateTaskFieldsVisibility(type) {
+  const doctorFieldsContainer = document.getElementById("doctorFieldsContainer");
+  if (!doctorFieldsContainer) return;
+
+  if (type === "doctor-visit") {
+    doctorFieldsContainer.style.display = "block";
+  } else {
+    doctorFieldsContainer.style.display = "none";
+    // Optional: clear values when hidden
+    const clinicInput = document.getElementById("clinicName");
+    const doctorSelect = document.getElementById("doctorName");
+    if (clinicInput) clinicInput.value = "";
+    if (doctorSelect) doctorSelect.value = "";
+  }
 }
 
 function getTaskTypeIcon(type) {
@@ -947,6 +971,9 @@ function editTask(taskId) {
 
     const modal = new bootstrap.Modal(createModalEl);
     modal.show();
+
+    // Trigger visibility update for edit mode
+    updateTaskFieldsVisibility(task.type);
     return;
   }
 
@@ -1044,6 +1071,9 @@ function initCreateTaskHandler() {
       modalTitle.innerHTML =
         '<i class="bi bi-plus-circle"></i> Create New Task';
     if (saveTaskBtn) saveTaskBtn.textContent = "Create Task";
+
+    // Reset visibility to hidden by default for new tasks or based on default selection
+    updateTaskFieldsVisibility("");
   });
 
   // Event listener for the "Create Task" button

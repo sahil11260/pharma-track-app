@@ -174,6 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const addMRBtn = document.querySelector('[data-bs-target="#mrModal"]');
   const togglePassword = document.getElementById("togglePassword");
   const passwordInput = document.getElementById("mrPassword");
+  const passwordFieldContainer = document.getElementById("passwordFieldContainer");
 
   const inputName = document.getElementById("mrName");
   const inputEmail = document.getElementById("mrEmail");
@@ -504,6 +505,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalTitle = document.querySelector("#mrModal .modal-title");
     if (modalTitle) modalTitle.textContent = "Edit MR";
 
+    if (passwordFieldContainer) passwordFieldContainer.style.display = "none";
+    if (passwordInput) {
+      passwordInput.required = false;
+      passwordInput.value = "";
+    }
+
     if (inputEmail) inputEmail.disabled = true;
   };
 
@@ -576,6 +583,8 @@ document.addEventListener("DOMContentLoaded", () => {
       editId = null;
       const modalTitle = document.querySelector("#mrModal .modal-title");
       if (modalTitle) modalTitle.textContent = "Add MR";
+      if (passwordFieldContainer) passwordFieldContainer.style.display = "block";
+      if (passwordInput) passwordInput.required = true;
       if (inputEmail) inputEmail.disabled = false;
     });
   }
