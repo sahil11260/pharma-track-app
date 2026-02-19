@@ -5,6 +5,7 @@ import com.kavyapharm.farmatrack.sales.model.SalesAchievement;
 import com.kavyapharm.farmatrack.sales.model.SalesTarget;
 import com.kavyapharm.farmatrack.sales.repository.SalesAchievementRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
+import com.kavyapharm.farmatrack.mrstock.repository.MrStockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,21 +19,50 @@ public class SalesServiceImpl implements SalesService {
 
     private final SalesTargetRepository targetRepository;
     private final SalesAchievementRepository achievementRepository;
+    private final MrStockRepository mrStockRepository;
     private final com.kavyapharm.farmatrack.user.repository.UserRepository userRepository;
     private final com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository;
 
     public SalesServiceImpl(SalesTargetRepository targetRepository,
             SalesAchievementRepository achievementRepository,
+            MrStockRepository mrStockRepository,
             com.kavyapharm.farmatrack.user.repository.UserRepository userRepository,
             com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository) {
         this.targetRepository = targetRepository;
         this.achievementRepository = achievementRepository;
+        this.mrStockRepository = mrStockRepository;
         this.userRepository = userRepository;
         this.dcrRepository = dcrRepository;
     }
 
     @Override
     public SalesTarget assignTarget(CreateTargetRequest request) {
+        if (request.startDate() != null && request.endDate() != null && request.endDate().isBefore(request.startDate())) {
+            throw new IllegalArgumentException("End Date cannot be earlier than Start Date");
+        }
+
+        if ("Product".equalsIgnoreCase(String.valueOf(request.category())) && request.productId() == null) {
+            throw new IllegalArgumentException("Please select a product");
+        }
+
+        if (request.productId() != null && "Product".equalsIgnoreCase(String.valueOf(request.category()))) {
+            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+            String managerIdentifier = auth != null ? auth.getName() : null;
+            if (managerIdentifier != null && !managerIdentifier.isBlank()) {
+                String productId = String.valueOf(request.productId());
+                Integer available = mrStockRepository.findByIdAndUserName(productId, managerIdentifier)
+                        .map(it -> it.getStock())
+                        .orElse(0);
+
+                int availableStock = available == null ? 0 : available;
+                int requested = request.targetUnits() == null ? 0 : request.targetUnits();
+                if (availableStock <= 0 || requested > availableStock) {
+                    throw new IllegalArgumentException("Insufficient stock to assign target");
+                }
+            }
+        }
+
         // Check for existing target for the same MR, product, and period
         List<SalesTarget> existing = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                 request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
@@ -122,7 +152,25 @@ public class SalesServiceImpl implements SalesService {
                 })
                 .collect(Collectors.toList());
 
-        String topPerformer = topPerformers.isEmpty() ? "N/A" : topPerformers.get(0).mrName();
+        // Determine top performer - only show if there are actual achievements
+        String topPerformer = "No Top Performer";
+        if (!topPerformers.isEmpty()) {
+            ManagerDashboardSummary.TopPerformerData best = topPerformers.get(0);
+            System.out.println("[DEBUG] Best performer: " + best.mrName() + 
+                ", achievement: " + best.achievement() + 
+                ", percentage: " + best.achievementPercentage() + 
+                ", total MRs: " + mrPerformanceMap.size());
+            
+            // Only show a top performer if they have some achievement (> 0% or > 0 units)
+            if (best.achievementPercentage() > 0 || (best.achievement() != null && best.achievement() > 0)) {
+                topPerformer = best.mrName();
+                System.out.println("[DEBUG] Top performer selected based on achievement: " + topPerformer);
+            } else {
+                System.out.println("[DEBUG] No top performer - all achievements are 0");
+            }
+        } else {
+            System.out.println("[DEBUG] No performers found");
+        }
 
         return new ManagerDashboardSummary(totalTarget, totalAchievement, Math.round(avgPercentage * 100.0) / 100.0,
                 topPerformer, targetResponses, topPerformers);

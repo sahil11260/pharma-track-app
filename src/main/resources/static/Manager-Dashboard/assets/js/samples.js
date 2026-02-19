@@ -55,6 +55,18 @@ const STOCK_RECEIVED_API_BASE = `${API_BASE}/api/stock-received`;
 const DISTRIBUTIONS_API_BASE = `${API_BASE}/api/distributions`;
 let samplesApiMode = true;
 
+function getCurrentUserIdentifier() {
+  try {
+    const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+    const email = String(userObj.email || localStorage.getItem("signup_email") || "").trim();
+    if (email) return email;
+    const name = String(userObj.name || localStorage.getItem("signup_name") || "").trim();
+    return name;
+  } catch (e) {
+    return String(localStorage.getItem("signup_email") || localStorage.getItem("signup_name") || "").trim();
+  }
+}
+
 function getAuthHeader() {
   const token = localStorage.getItem("kavya_auth_token");
   if (!token) return {};
@@ -122,8 +134,8 @@ async function refreshMrsFromApiOrFallback() {
 
 async function refreshSamplesFromApiOrFallback() {
   try {
-    const currentUserName = localStorage.getItem("signup_name") || "";
-    const stockItems = await apiJson(`${MR_STOCK_API_BASE}?userName=${encodeURIComponent(currentUserName)}`);
+    const currentUserIdentifier = getCurrentUserIdentifier();
+    const stockItems = await apiJson(`${MR_STOCK_API_BASE}?userName=${encodeURIComponent(currentUserIdentifier)}`);
     if (!Array.isArray(stockItems)) {
       samplesApiMode = false;
       return;
@@ -176,8 +188,8 @@ async function refreshSamplesFromApiOrFallback() {
 
 async function refreshDistributionsFromApiOrFallback() {
   try {
-    const currentUserName = localStorage.getItem("signup_name") || "";
-    const list = await apiJson(`${DISTRIBUTIONS_API_BASE}?userName=${encodeURIComponent(currentUserName)}`);
+    const currentUserIdentifier = getCurrentUserIdentifier();
+    const list = await apiJson(`${DISTRIBUTIONS_API_BASE}?userName=${encodeURIComponent(currentUserIdentifier)}`);
     if (!Array.isArray(list)) {
       return;
     }
@@ -766,12 +778,12 @@ document.addEventListener("DOMContentLoaded", () => {
       (async function () {
         if (samplesApiMode) {
           try {
-            const currentUserName = localStorage.getItem("signup_name") || "";
-            const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserName)}`);
+            const currentUserIdentifier = getCurrentUserIdentifier();
+            const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserIdentifier)}`);
             const currentStock = Number(stockItem.stock) || 0;
             const nextStock = currentStock + quantityAdded;
 
-            await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserName)}`, {
+            await apiJson(`${MR_STOCK_API_BASE}/${productId}?userName=${encodeURIComponent(currentUserIdentifier)}`, {
               method: "PUT",
               body: JSON.stringify({
                 name: stockItem.name || productName,
@@ -786,7 +798,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   productId: String(productId),
                   quantity: quantityAdded,
                   date: new Date().toISOString(),
-                  userName: currentUserName,
+                  userName: currentUserIdentifier,
                   notes: `Added stock via Manager Samples page`,
                 }),
               });
@@ -904,15 +916,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const sample = samplesData.find((s) => s.productName === productName);
       if (sample && sample.remaining >= quantity) {
         (async function () {
-          if (samplesApiMode && sample.productId) {
+          if (samplesApiMode) {
             try {
-              const currentUserName = localStorage.getItem("signup_name") || "";
+              const currentUserName = getCurrentUserIdentifier();
               const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`);
               const currentStock = Number(stockItem.stock) || 0;
               const nextStock = currentStock - quantity;
               if (nextStock < 0) {
-                alert("Insufficient stock!");
-                return;
+                throw new Error("Insufficient stock");
               }
 
               await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`, {
