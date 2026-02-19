@@ -98,12 +98,14 @@ public class SalesServiceImpl implements SalesService {
 
         List<Long> assignedMrIds = new ArrayList<>();
         if (managerIden != null) {
-            List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
-                    .findByAssignedManagerIgnoreCase(managerIden);
+            List<com.kavyapharm.farmatrack.user.model.User> trackedUsers = new ArrayList<>(userRepository
+                    .findByAssignedManagerIgnoreCase(managerIden));
             userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
-                mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+                trackedUsers.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+                trackedUsers.add(u); // Manager themselves are also included
             });
-            assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct().toList();
+            assignedMrIds = trackedUsers.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct()
+                    .toList();
         }
 
         List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
@@ -255,12 +257,14 @@ public class SalesServiceImpl implements SalesService {
         }
 
         // Otherwise filter by manager
-        List<com.kavyapharm.farmatrack.user.model.User> mrs = userRepository
-                .findByAssignedManagerIgnoreCase(managerIden);
+        List<com.kavyapharm.farmatrack.user.model.User> trackedUsers = new ArrayList<>(userRepository
+                .findByAssignedManagerIgnoreCase(managerIden));
         userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
-            mrs.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+            trackedUsers.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+            trackedUsers.add(u); // Manager themselves are also included
         });
-        List<Long> assignedMrIds = mrs.stream().map(com.kavyapharm.farmatrack.user.model.User::getId).distinct()
+        List<Long> assignedMrIds = trackedUsers.stream().map(com.kavyapharm.farmatrack.user.model.User::getId)
+                .distinct()
                 .toList();
 
         return allTargets.stream()

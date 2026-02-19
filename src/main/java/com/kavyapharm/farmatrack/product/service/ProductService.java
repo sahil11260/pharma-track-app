@@ -39,6 +39,7 @@ public class ProductService {
                     existingProduct.setCategory(request.category());
                     existingProduct.setPrice(request.price());
                     existingProduct.setDescription(request.description());
+                    existingProduct.setExpiryDate(request.expiryDate());
                     return toResponse(productRepository.save(existingProduct));
                 })
                 .orElseGet(() -> {
@@ -49,6 +50,7 @@ public class ProductService {
                     product.setPrice(request.price());
                     product.setStock(request.stock());
                     product.setDescription(request.description());
+                    product.setExpiryDate(request.expiryDate());
                     return toResponse(productRepository.save(product));
                 });
     }
@@ -62,6 +64,7 @@ public class ProductService {
         product.setPrice(request.price());
         product.setStock(request.stock());
         product.setDescription(request.description());
+        product.setExpiryDate(request.expiryDate());
 
         return toResponse(productRepository.save(product));
     }
@@ -87,7 +90,7 @@ public class ProductService {
                 product.getCategory(),
                 product.getPrice(),
                 product.getStock(),
-                product.getDescription()
-        );
+                product.getDescription(),
+                product.getExpiryDate());
     }
 }

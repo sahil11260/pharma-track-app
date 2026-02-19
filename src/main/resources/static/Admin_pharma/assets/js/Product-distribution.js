@@ -174,7 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
           price: parsePrice(p.price),
           priceStr: String(p.price || "0"),
           category: p.category || "General",
-          description: p.description || p.desc || ""
+          description: p.description || p.desc || "",
+          expiryDate: p.expiryDate || ""
         }));
         saveStockToStorage();
         productsApiMode = true;
@@ -197,7 +198,8 @@ document.addEventListener("DOMContentLoaded", () => {
       category: product.category || "General",
       price: String(product.priceStr != null ? product.priceStr : (product.price != null ? product.price : "0")),
       stock: Number(newStock) || 0,
-      description: product.description || ""
+      description: product.description || "",
+      expiryDate: product.expiryDate || ""
     };
     return await apiJson(`${PRODUCTS_API_BASE}/${product.id}`, { method: "PUT", body: JSON.stringify(payload) });
   }
@@ -296,7 +298,8 @@ document.addEventListener("DOMContentLoaded", () => {
       category: (newCategory.value || "General").trim(),
       price: String(price).trim(),
       stock: stock,
-      description: (newDescription.value || "").trim()
+      description: (newDescription.value || "").trim(),
+      expiryDate: (document.getElementById("newExpiryDate").value || "").trim()
     };
 
     (async function () {
@@ -345,6 +348,20 @@ document.addEventListener("DOMContentLoaded", () => {
         mrSelectContainer.style.display = "none"; // Default role is Manager
         populateMrSelect(null);
         updateAvailableInfo();
+      }
+    });
+  }
+
+  // \u2705 Fix: Reset form when modal is hidden (Cancel or backdrop click)
+  if (allocateModalEl) {
+    allocateModalEl.addEventListener('hidden.bs.modal', function () {
+      if (allocateForm) {
+        allocateForm.reset();
+        editingIndexInput.value = "-1";
+        allocateModalTitle.textContent = "New Allocation";
+        mrSelectContainer.style.display = "none";
+        availableInfo.textContent = "";
+        availableInfo.classList.remove("text-danger");
       }
     });
   }
@@ -462,6 +479,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     const displayStock = Array.from(uniqueMap.values());
 
+    // Sort by ID ascending
+    displayStock.sort((a, b) => a.id - b.id);
+
     if (summaryViewMode === "Cards") {
       renderSummaryCards(displayStock);
     } else {
@@ -511,6 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const isLow = p.available < 20;
         return `
         <tr>
+          <td><span class="text-muted small">${p.id}</span></td>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
           <td class="text-end">\u20B9${p.price}</td>
@@ -546,6 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (a) => `
       <tr>
         <td>${a.date}</td>
+        <td><span class="text-muted small">${a.productId || '-'}</span></td>
         <td>${a.productName}</td>
         <td>${a.allocateTo}</td>
         <td>${a.role}</td>

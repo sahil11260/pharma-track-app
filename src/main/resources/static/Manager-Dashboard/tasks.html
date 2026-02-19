@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/assets/js/auth-check.js"></script>
   <link rel="icon" type="image/png" href="assets/images/fevicon-icon.png" />
   <title>KavyaPharm Manager - Tasks / Assignments</title>
 
@@ -14,6 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/config.js"></script>
   <link href="assets/css/tasks.css" rel="stylesheet" />
+  <link href="assets/css/style.css" rel="stylesheet" />
   <style>
     /* small inline adjustments to make table aligned and responsive */
     .main-content .table-responsive {
@@ -62,7 +64,8 @@
         <button class="btn btn-outline-secondary me-2 position-relative" id="notifyBtn" data-bs-toggle="modal"
           data-bs-target="#notificationsModal">
           <i class="bi bi-bell"></i>
-          <span id="notifyBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none; font-size: 0.6rem;">0</span>
+          <span id="notifyBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+            style="display:none; font-size: 0.6rem;">0</span>
         </button>
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown"
@@ -81,7 +84,7 @@
             <li>
               <hr class="dropdown-divider" />
             </li>
-            <li><a class="dropdown-item" href="#">Logout</a></li>
+            <li><a class="dropdown-item" href="../index.html">Logout</a></li>
           </ul>
         </div>
       </div>
@@ -119,9 +122,12 @@
       <li>
         <a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a>
       </li>
-      
+
       <li>
         <a href="notifications.html"><i class="bi bi-bell"></i> Notifications</a>
+      </li>
+      <li>
+        <a href="setting.html"><i class="bi bi-gear"></i> Settings</a>
       </li>
     </ul>
   </div>
@@ -276,19 +282,21 @@
                 </div>
               </div>
             </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label">Clinic Name</label>
-                  <input type="text" class="form-control" id="clinicName" placeholder="Optional" />
+            <div id="doctorFieldsContainer">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Doctor Name</label>
+                    <select class="form-select" id="doctorName">
+                      <option value="">Optional</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label">Doctor Name</label>
-                  <select class="form-select" id="doctorName">
-                    <option value="">Optional</option>
-                  </select>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Clinic Name</label>
+                    <input type="text" class="form-control" id="clinicName" placeholder="Optional" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,4 +391,5 @@
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
 </body>
+
 </html>

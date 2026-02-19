@@ -548,7 +548,6 @@ document.addEventListener("DOMContentLoaded", () => {
       row.innerHTML = `
                 <td><i class="bi bi-box-seam me-2"></i>${sample.productName
         }</td>
-                <td>${sample.batchNumber}</td>
                 <td>${sample.totalStock}</td>
                 <td>${sample.distributed}</td>
                 <td>${sample.remaining}</td>
@@ -665,13 +664,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === "Invalid Date") return "NA";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "NA";
+      return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "NA";
+    }
   }
 
   // Search functionality
@@ -749,8 +754,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const unitPriceEl = document.getElementById("unitPrice");
       const unitPriceValue = unitPriceEl ? parseFloat(unitPriceEl.value) : NaN;
-      const batchNumberEl = document.getElementById("batchNumber");
-      const batchNumberValue = batchNumberEl ? String(batchNumberEl.value || "").trim() : "";
+      const batchNumberValue = "";
       const expiryDateEl = document.getElementById("expiryDate");
       const expiryDateValue = expiryDateEl ? String(expiryDateEl.value || "").trim() : "";
       const descEl = document.getElementById("productDescription");

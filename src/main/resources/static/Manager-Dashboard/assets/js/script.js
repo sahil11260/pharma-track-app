@@ -180,74 +180,72 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------
   // Product Sales (dynamic)
   // -----------------------
-  const productList = Object.keys(chartsData.productSalesByMonth);
-  const months6 = chartsData.monthLabels;
-
   function getPaletteColor(i, alpha) {
     const palette = [
       '102,126,234', // indigo
       '240,147,251', // pink
       '40,167,69',   // green
-      '255,193,7'    // amber
+      '255,193,7',   // amber
+      '220,53,69',   // red
+      '23,162,184'   // cyan
     ];
     const rgb = palette[i % palette.length];
     return `rgba(${rgb}, ${alpha})`;
   }
 
-  // We'll create datasets per (product Ã\u2014 month) so we can control stacking order per month.
   let productSalesChartInstance = null;
-  let productDatasetIndexMap = {};
 
-  function renderProductSales(stacked = true) {
+  async function renderProductSales() {
     const canvas = document.getElementById("productSalesChart");
     const togglesContainer = document.getElementById("productToggles");
-    if (!canvas || !togglesContainer) return;
+    if (!canvas) return;
 
-    const monthData = [];
-    for (let m = 0; m < months6.length; m++) {
-      const arr = [];
-      for (let p = 0; p < productList.length; p++) {
-        const productName = productList[p];
-        const value = chartsData.productSalesByMonth[productName]?.[m] || 0;
-        arr.push({ productIndex: p, productName, value });
+    // Fetch top 6 products from /api/products
+    let products = [];
+    try {
+      const res = await fetch(`${API_BASE}/api/products`, {
+        headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader())
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          // Sort by stock descending, take top 6
+          products = data
+            .filter(p => p.name)
+            .sort((a, b) => (Number(b.stock) || 0) - (Number(a.stock) || 0))
+            .slice(0, 6)
+            .map((p, i) => ({
+              name: p.name,
+              value: Number(p.stock) || 0,
+              price: parseFloat(String(p.price || "0").replace(/[^0-9.]/g, "")) || 0,
+              colorFill: getPaletteColor(i, 0.85),
+              colorBorder: getPaletteColor(i, 1),
+            }));
+        }
       }
-      // sort ascending so the highest value is drawn on top of the stack
-      arr.sort((a, b) => a.value - b.value);
-      monthData.push(arr);
+    } catch (e) {
+      console.warn("Products API unavailable for chart, using fallback.", e);
     }
 
-    const datasets = [];
-    productDatasetIndexMap = {};
-    for (let p = 0; p < productList.length; p++) productDatasetIndexMap[productList[p]] = [];
-
-    let datasetIndex = 0;
-    for (let m = 0; m < months6.length; m++) {
-      const stackId = 'stack_' + m;
-      const sortedArr = monthData[m];
-      for (let itemIdx = 0; itemIdx < sortedArr.length; itemIdx++) {
-        const item = sortedArr[itemIdx];
-        const dataArr = new Array(months6.length).fill(0);
-        dataArr[m] = item.value;
-
-        const color = getPaletteColor(item.productIndex, 0.9);
-        const border = getPaletteColor(item.productIndex, 1);
-
-        const ds = {
-          label: item.productName,
-          data: dataArr,
-          backgroundColor: color,
-          borderColor: border,
-          borderWidth: 1,
-          stack: stackId,
-          _productIndex: item.productIndex,
-          _productName: item.productName
-        };
-
-        datasets.push(ds);
-        productDatasetIndexMap[item.productName].push(datasetIndex);
-        datasetIndex++;
-      }
+    // Fallback: use productSalesByMonth totals if API failed
+    if (products.length === 0) {
+      const fallbackMap = chartsData.productSalesByMonth || {};
+      products = Object.entries(fallbackMap)
+        .map(([name, months], i) => ({
+          name,
+          value: months.reduce((s, v) => s + (Number(v) || 0), 0),
+          price: 0,
+          colorFill: getPaletteColor(i, 0.85),
+          colorBorder: getPaletteColor(i, 1),
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
     }
+
+    const labels = products.map(p => p.name);
+    const values = products.map(p => p.value);
+    const bgColors = products.map(p => p.colorFill);
+    const borderColors = products.map(p => p.colorBorder);
 
     if (productSalesChartInstance) {
       try { productSalesChartInstance.destroy(); } catch (e) { }
@@ -257,110 +255,91 @@ document.addEventListener("DOMContentLoaded", () => {
     const ctx = canvas.getContext("2d");
     productSalesChartInstance = new Chart(ctx, {
       type: 'bar',
-      data: { labels: months6, datasets },
+      data: {
+        labels,
+        datasets: [{
+          label: 'Stock Quantity',
+          data: values,
+          backgroundColor: bgColors,
+          borderColor: borderColors,
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-          x: {
-            stacked: stacked,
-            title: { display: false },
-            categoryPercentage: 0.6,
-            barPercentage: 1.0,
-            offset: true,
-            ticks: {
-              maxRotation: 90,
-              minRotation: 90,
-              autoSkip: false
-            }
-          },
-          y: {
-            stacked: stacked,
-            beginAtZero: true,
-            title: { display: true, text: 'Sales (\u20B9)' },
-            ticks: {
-              callback: function (value) {
-                if (value >= 1000) return '\u20B9' + (value / 1000).toFixed(0) + 'K';
-                return '\u20B9' + value;
-              }
-            }
-          }
-        },
-        elements: {
-          bar: {
-            borderRadius: 3,
-            barThickness: 34,
-            maxBarThickness: 64
-          }
-        },
         plugins: {
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: function (context) {
-                const ds = context.dataset;
-                const value = context.raw ?? context.parsed?.y ?? 0;
-                if (value === 0) return null;
-                if (value >= 1000) return ds._productName + ': \u20B9' + (value / 1000).toLocaleString() + 'K';
-                return ds._productName + ': \u20B9' + value;
+                const idx = context.dataIndex;
+                const p = products[idx];
+                const qty = context.parsed.y;
+                let tip = `Stock: ${qty} units`;
+                if (p && p.price > 0) {
+                  const total = qty * p.price;
+                  if (total >= 100000) tip += ` | ₹${(total / 100000).toFixed(1)}L`;
+                  else if (total >= 1000) tip += ` | ₹${(total / 1000).toFixed(0)}K`;
+                  else tip += ` | ₹${total}`;
+                }
+                return tip;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Product Name' },
+            ticks: {
+              maxRotation: 30,
+              minRotation: 0,
+              autoSkip: false,
+              callback: function (value, index) {
+                // Truncate long product names
+                const name = labels[index] || '';
+                return name.length > 12 ? name.substring(0, 12) + '…' : name;
               }
             }
           },
-          legend: { display: false }
-        },
-        layout: {
-          padding: {
-            top: 6,
-            bottom: 6,
-            left: 6,
-            right: 6
+          y: {
+            beginAtZero: true,
+            suggestedMax: 5000,
+            title: { display: true, text: 'Stock Quantity' },
+            ticks: {
+              stepSize: 500,
+              callback: function (value) {
+                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                return (value / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+              }
+            }
           }
-        }
+        },
+        layout: { padding: { top: 6, bottom: 6, left: 6, right: 6 } }
       }
     });
 
-    // toggles
-    togglesContainer.innerHTML = '';
-    for (let p = 0; p < productList.length; p++) {
-      const name = productList[p];
-      const id = `prodToggle_${p}`;
-      const wrapper = document.createElement('div');
-      wrapper.className = 'form-check form-check-inline';
-
-      const input = document.createElement('input');
-      input.className = 'form-check-input';
-      input.type = 'checkbox';
-      input.id = id;
-      input.checked = true;
-      input.dataset.product = name;
-
-      const label = document.createElement('label');
-      label.className = 'form-check-label small';
-      label.htmlFor = id;
-      label.textContent = name;
-
-      input.addEventListener('change', (e) => {
-        const prod = e.target.dataset.product;
-        const visible = e.target.checked;
-        const indices = productDatasetIndexMap[prod] || [];
-        indices.forEach((dsIndex) => {
-          if (productSalesChartInstance) {
-            productSalesChartInstance.setDatasetVisibility(dsIndex, visible);
-          }
-        });
-        if (productSalesChartInstance) productSalesChartInstance.update();
+    // Render product legend/toggles
+    if (togglesContainer) {
+      togglesContainer.innerHTML = '';
+      products.forEach((p, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex align-items-center me-3 mb-1';
+        wrapper.innerHTML = `
+          <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${p.colorBorder};margin-right:5px;"></span>
+          <span class="small text-muted">${p.name}</span>
+        `;
+        togglesContainer.appendChild(wrapper);
       });
-
-      wrapper.appendChild(input);
-      wrapper.appendChild(label);
-      togglesContainer.appendChild(wrapper);
     }
 
-    // dark-mode adjustments
     if (document.body.classList.contains("dark-mode")) {
       injectDarkCardStyles();
       applyDarkToEqualHeightCards(true);
     }
   }
+
 
   // -----------------------
   // Update stats & notifications
@@ -451,37 +430,106 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Smart tick formatter: shows actual numbers for small values, K/L for large
+    const makeSmartTick = function (prefix) {
+      return function (value) {
+        if (value === 0) return prefix ? prefix + "0" : "0";
+        if (Math.abs(value) >= 100000) return (prefix || "") + (value / 100000).toFixed(1) + "L";
+        if (Math.abs(value) >= 1000) return (prefix || "") + (value / 1000).toFixed(0) + "K";
+        return (prefix || "") + value;
+      };
+    };
+
     performanceChart = new Chart(context, {
       type: "line",
       data: {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Team Sales (\u20B9)",
+            label: "Team Sales (₹)",
             data: chartsData.salesByMonth,
             borderColor: "#667eea",
             backgroundColor: "rgba(102, 126, 234, 0.1)",
+            borderWidth: 2,
+            pointRadius: 4,
             tension: 0.4,
             fill: true,
+            yAxisID: "y",
           },
           {
-            label: "Target (\u20B9)",
+            label: "Target (₹)",
             data: chartsData.targetsByMonth,
             borderColor: "#f093fb",
             backgroundColor: "rgba(240, 147, 251, 0.1)",
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0.4,
+            borderDash: [5, 5],
+            fill: false,
+            yAxisID: "y",
+          },
+          {
+            label: "Doctor Visits",
+            data: chartsData.visitsByMonth,
+            borderColor: "#28a745",
+            backgroundColor: "rgba(40, 167, 69, 0.1)",
+            borderWidth: 2,
+            pointRadius: 4,
             tension: 0.4,
             fill: true,
+            yAxisID: "y2",
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: "top" } },
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 16,
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const label = context.dataset.label || "";
+                const value = context.parsed.y;
+                if (context.datasetIndex === 2) return label + ": " + value + " visits";
+                if (value >= 100000) return label + ": ₹" + (value / 100000).toFixed(1) + "L";
+                if (value >= 1000) return label + ": ₹" + (value / 1000).toFixed(0) + "K";
+                return label + ": ₹" + value;
+              }
+            }
+          }
+        },
         scales: {
           y: {
+            type: "linear",
+            position: "left",
             beginAtZero: true,
-            ticks: { callback: function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; } },
+            suggestedMax: 100000,
+            title: { display: true, text: "Sales / Target (₹)" },
+            ticks: {
+              precision: 0,
+              callback: makeSmartTick("₹")
+            },
+          },
+          y2: {
+            type: "linear",
+            position: "right",
+            beginAtZero: true,
+            suggestedMax: 50,
+            title: { display: true, text: "Visits" },
+            ticks: {
+              precision: 0,
+              callback: makeSmartTick("")
+            },
+            grid: { drawOnChartArea: false },
           },
         },
       },
@@ -498,12 +546,12 @@ document.addEventListener("DOMContentLoaded", () => {
         labels: chartsData.monthLabels,
         datasets: [
           {
-            label: "Sales (\u20B9)",
+            label: "Sales (₹)",
             data: chartsData.salesByMonth,
             backgroundColor: "#667eea",
           },
           {
-            label: "Target (\u20B9)",
+            label: "Target (₹)",
             data: chartsData.targetsByMonth,
             backgroundColor: "#f093fb",
           },
@@ -515,7 +563,14 @@ document.addEventListener("DOMContentLoaded", () => {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { callback: function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; } },
+            suggestedMax: 10,
+            ticks: {
+              callback: function (value) {
+                if (value >= 100000) return "₹" + (value / 100000).toFixed(1) + "L";
+                if (value >= 1000) return "₹" + (value / 1000).toFixed(0) + "K";
+                return "₹" + value;
+              }
+            },
           },
         },
       },
@@ -584,39 +639,67 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const currencyTick = function (value) { return "\u20B9" + (value / 1000).toFixed(0) + "K"; };
+    const smartCurrencyTick = function (value) {
+      if (value === 0) return "₹0";
+      if (Math.abs(value) >= 100000) return "₹" + (value / 100000).toFixed(1) + "L";
+      if (Math.abs(value) >= 1000) return "₹" + (value / 1000).toFixed(0) + "K";
+      return "₹" + value;
+    };
     const plainTick = function (value) { return value; };
     const percentTick = function (value) { return value + "%"; };
 
     switch (type) {
       case "sales":
+        // Restore all 3 datasets to their default state
         performanceChart.data.datasets[0].data = chartsData.salesByMonth;
-        performanceChart.data.datasets[0].label = "Team Sales (\u20B9)";
+        performanceChart.data.datasets[0].label = "Team Sales (₹)";
         performanceChart.data.datasets[0].borderColor = "#667eea";
         performanceChart.data.datasets[0].backgroundColor = "rgba(102, 126, 234, 0.1)";
+        performanceChart.data.datasets[0].hidden = false;
         if (performanceChart.data.datasets[1]) {
           performanceChart.data.datasets[1].data = chartsData.targetsByMonth;
-          performanceChart.data.datasets[1].label = "Target (\u20B9)";
+          performanceChart.data.datasets[1].label = "Target (₹)";
           performanceChart.data.datasets[1].borderColor = "#f093fb";
           performanceChart.data.datasets[1].backgroundColor = "rgba(240, 147, 251, 0.1)";
+          performanceChart.data.datasets[1].hidden = false;
         }
-        performanceChart.options.scales.y.ticks.callback = currencyTick;
+        if (performanceChart.data.datasets[2]) {
+          performanceChart.data.datasets[2].data = chartsData.visitsByMonth;
+          performanceChart.data.datasets[2].label = "Doctor Visits";
+          performanceChart.data.datasets[2].hidden = false;
+        }
+        // suggestedMax 100000 so smart formatter shows ₹10K, ₹20K...
+        performanceChart.options.scales.y.suggestedMax = 100000;
+        performanceChart.options.scales.y.max = undefined;
+        performanceChart.options.scales.y.ticks.callback = smartCurrencyTick;
+        performanceChart.options.scales.y.ticks.precision = 0;
+        performanceChart.options.scales.y.title.text = "Sales / Target (₹)";
+        performanceChart.options.scales.y2.suggestedMax = 50;
+        performanceChart.options.scales.y2.ticks.callback = plainTick;
+        performanceChart.options.scales.y2.ticks.precision = 0;
         break;
 
       case "visits":
-        performanceChart.data.datasets[0].data = chartsData.visitsByMonth;
-        performanceChart.data.datasets[0].label = "Doctor Visits";
-        performanceChart.data.datasets[0].borderColor = "#28a745";
-        performanceChart.data.datasets[0].backgroundColor = "rgba(40, 167, 69, 0.1)";
-        if (performanceChart.data.datasets[1]) {
-          performanceChart.data.datasets[1].data = chartsData.visitsByMonth.map(() => 0);
-          performanceChart.data.datasets[1].label = "";
+        // Highlight visits, hide sales/target
+        performanceChart.data.datasets[0].hidden = true;
+        if (performanceChart.data.datasets[1]) performanceChart.data.datasets[1].hidden = true;
+        if (performanceChart.data.datasets[2]) {
+          performanceChart.data.datasets[2].data = chartsData.visitsByMonth;
+          performanceChart.data.datasets[2].label = "Doctor Visits";
+          performanceChart.data.datasets[2].hidden = false;
         }
+        performanceChart.options.scales.y.suggestedMax = 50;
+        performanceChart.options.scales.y.max = undefined;
         performanceChart.options.scales.y.ticks.callback = plainTick;
+        performanceChart.options.scales.y.ticks.precision = 0;
+        performanceChart.options.scales.y.title.text = "Visits";
+        performanceChart.options.scales.y2.suggestedMax = 50;
+        performanceChart.options.scales.y2.ticks.callback = plainTick;
+        performanceChart.options.scales.y2.ticks.precision = 0;
         break;
 
       case "targets":
-        // Show percentage achievement: (sales/target)*100 if target>0 else 0
+        // Show % achievement on primary axis, hide visits
         const percentAchievement = chartsData.salesByMonth.map((sale, i) => {
           const target = chartsData.targetsByMonth[i] || 0;
           return target > 0 ? Math.round((sale / target) * 100) : 0;
@@ -625,11 +708,19 @@ document.addEventListener("DOMContentLoaded", () => {
         performanceChart.data.datasets[0].label = "Target Achievement (%)";
         performanceChart.data.datasets[0].borderColor = "#f093fb";
         performanceChart.data.datasets[0].backgroundColor = "rgba(240, 147, 251, 0.1)";
+        performanceChart.data.datasets[0].hidden = false;
         if (performanceChart.data.datasets[1]) {
-          performanceChart.data.datasets[1].data = chartsData.targetsByMonth.map(() => 0);
-          performanceChart.data.datasets[1].label = "";
+          performanceChart.data.datasets[1].hidden = true;
         }
+        if (performanceChart.data.datasets[2]) {
+          performanceChart.data.datasets[2].hidden = true;
+        }
+        // suggestedMax 100 so Y-axis shows 0%–100%
+        performanceChart.options.scales.y.suggestedMax = 100;
+        performanceChart.options.scales.y.max = undefined;
         performanceChart.options.scales.y.ticks.callback = percentTick;
+        performanceChart.options.scales.y.ticks.precision = 0;
+        performanceChart.options.scales.y.title.text = "Achievement (%)";
         break;
 
       default:
@@ -655,7 +746,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     updateStats();
-    renderProductSales(true);
+    renderProductSales();
   };
 
   // -----------------------
@@ -719,7 +810,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await fetchDashboardStats();
     await fetchDashboardCharts();
     updateStats();
-    renderProductSales(true);
+    renderProductSales();
     renderNotifications();
     initPerformanceChart();
     initSalesChart();

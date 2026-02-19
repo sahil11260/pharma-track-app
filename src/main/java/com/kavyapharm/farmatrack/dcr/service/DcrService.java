@@ -8,6 +8,7 @@ import com.kavyapharm.farmatrack.dcr.dto.UpdateDcrRequest;
 import com.kavyapharm.farmatrack.dcr.model.DcrReport;
 import com.kavyapharm.farmatrack.dcr.model.DcrSampleItem;
 import com.kavyapharm.farmatrack.dcr.repository.DcrRepository;
+import com.kavyapharm.farmatrack.doctor.repository.DoctorRepository;
 import com.kavyapharm.farmatrack.mrstock.service.MrStockService;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -23,21 +24,23 @@ public class DcrService {
 
     private final DcrRepository dcrRepository;
     private final MrStockService mrStockService;
+    private final DoctorRepository doctorRepository;
 
-    public DcrService(DcrRepository dcrRepository, MrStockService mrStockService) {
+    public DcrService(DcrRepository dcrRepository, MrStockService mrStockService, DoctorRepository doctorRepository) {
         this.dcrRepository = dcrRepository;
         this.mrStockService = mrStockService;
+        this.doctorRepository = doctorRepository;
     }
 
     public List<DcrResponse> list() {
         return dcrRepository.findAll(Sort.by(Sort.Direction.DESC, "reportId"))
-                .stream().map(DcrService::toResponse).toList();
+                .stream().map(this::toResponse).toList();
     }
 
     public List<DcrResponse> listByMr(String mrName) {
         return dcrRepository.findByMrNameIgnoreCase(mrName, Sort.by(Sort.Direction.DESC, "reportId"))
                 .stream()
-                .map(DcrService::toResponse).toList();
+                .map(this::toResponse).toList();
     }
 
     public DcrResponse get(Long reportId) {
@@ -55,6 +58,20 @@ public class DcrService {
         applyFields(report, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(),
                 request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(),
                 request.samplesGiven());
+
+        // Fetch and set region from doctor profile
+        try {
+            String docIdStr = request.doctorId();
+            if (docIdStr != null && docIdStr.matches("\\d+")) {
+                doctorRepository.findById(Long.parseLong(docIdStr)).ifPresent(d -> report.setRegion(d.getCity()));
+            } else if (request.doctorName() != null) {
+                doctorRepository.findByNameIgnoreCase(request.doctorName())
+                        .ifPresent(d -> report.setRegion(d.getCity()));
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+
         report.setSubmissionTime(Instant.now().toString());
 
         deductStock(report.getMrName(), report.getSamplesGiven());
@@ -72,6 +89,20 @@ public class DcrService {
         applyFields(existing, request.visitTitle(), request.visitType(), request.doctorId(), request.doctorName(),
                 request.clinicLocation(), request.dateTime(), request.rating(), request.remarks(),
                 request.samplesGiven());
+
+        // Fetch and set region from doctor profile
+        try {
+            String docIdStr = request.doctorId();
+            if (docIdStr != null && docIdStr.matches("\\d+")) {
+                doctorRepository.findById(Long.parseLong(docIdStr)).ifPresent(d -> existing.setRegion(d.getCity()));
+            } else if (request.doctorName() != null) {
+                doctorRepository.findByNameIgnoreCase(request.doctorName())
+                        .ifPresent(d -> existing.setRegion(d.getCity()));
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+
         existing.setSubmissionTime(Instant.now().toString());
 
         deductStock(existing.getMrName(), existing.getSamplesGiven());
@@ -165,12 +196,34 @@ public class DcrService {
                 .orElseThrow(() -> new IllegalArgumentException("DCR not found"));
     }
 
-    public static DcrResponse toResponse(DcrReport report) {
+    public DcrResponse toResponse(DcrReport report) {
         List<DcrSampleItemResponse> samples = report.getSamplesGiven() == null
                 ? List.of()
                 : report.getSamplesGiven().stream().filter(Objects::nonNull)
                         .map(i -> new DcrSampleItemResponse(i.getProductId(), i.getProductName(), i.getQuantity()))
                         .toList();
+
+        // Dynamic fallback for missing region in legacy data
+        String region = report.getRegion();
+        if (region == null || region.isBlank() || "-".equals(region)) {
+            try {
+                String docIdStr = report.getDoctorId();
+                if (docIdStr != null && docIdStr.matches("\\d+")) {
+                    region = doctorRepository.findById(Long.parseLong(docIdStr)).map(d -> d.getCity()).orElse(null);
+                }
+
+                if (region == null && report.getDoctorName() != null) {
+                    region = doctorRepository.findByNameIgnoreCase(report.getDoctorName()).map(d -> d.getCity())
+                            .orElse(null);
+                }
+
+                if (region == null) {
+                    region = report.getClinicLocation();
+                }
+            } catch (Exception e) {
+                region = report.getClinicLocation();
+            }
+        }
 
         return new DcrResponse(
                 report.getReportId(),
@@ -183,6 +236,7 @@ public class DcrService {
                 report.getDateTime(),
                 report.getRating(),
                 report.getRemarks(),
+                region,
                 samples,
                 report.getSubmissionTime());
     }

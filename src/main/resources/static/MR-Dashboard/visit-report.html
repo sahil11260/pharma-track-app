@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/assets/js/auth-check.js"></script>
   <title>MR-Dashboard | DCR</title>
 
   <!-- Bootstrap CSS -->
@@ -32,39 +33,45 @@
       <!-- <h5 class="mt-2 fw-bold">MR Dashboard</h5> -->
 
       <div class="d-flex ms-auto">
-        
+
 
         <div class="dropdown">
-  <button class="btn btn-outline-secondary me-2 position-relative" 
-          id="notificationsBtn" 
-          data-bs-toggle="dropdown">
-    <i class="bi bi-bell"></i>
+          <button class="btn btn-outline-secondary me-2 position-relative" id="notificationsBtn"
+            data-bs-toggle="dropdown">
+            <i class="bi bi-bell"></i>
 
-    <!-- Red Dot -->
-    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
-  </button>
+            <!-- Red Dot -->
+            <span id="notificationBadge"
+              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
+              style="display:none;"></span>
+          </button>
 
-  <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
-    <li class="dropdown-header fw-bold">Notifications</li>
-    <li><hr class="dropdown-divider" /></li>
-    
-    <!-- Dynamic notifications will be inserted here -->
-    <li id="notificationList">
-      <div class="dropdown-item small text-center text-muted">
-        <i class="bi bi-hourglass-split me-2"></i>Loading...
-      </div>
-    </li>
-  </ul>
-</div>
+          <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationDropdown">
+            <li class="dropdown-header fw-bold">Notifications</li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
+
+            <!-- Dynamic notifications will be inserted here -->
+            <li id="notificationList">
+              <div class="dropdown-item small text-center text-muted">
+                <i class="bi bi-hourglass-split me-2"></i>Loading...
+              </div>
+            </li>
+          </ul>
+        </div>
 
         <div class="dropdown">
           <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             <i class="bi bi-person-circle"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">My Profile</a>
+            </li>
             <li><a class="dropdown-item" href="Profile.html">Settings</a></li>
-            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
             <li><a class="dropdown-item text-danger" href="../index.html">Logout</a></li>
           </ul>
         </div>
@@ -83,7 +90,8 @@
       <!-- <li><a href="attendance.html"><i class="bi bi-clipboard-check"></i> Attendance</a></li> -->
       <li><a href="dailyplan.html"><i class="bi bi-calendar-check"></i> Daily Plan / Tasks</a></li>
       <li><a href="doctors.html"><i class="bi bi-people"></i> My Doctors</a></li>
-      <li class="active"><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report (DCR)</a></li>
+      <li class="active"><a href="visit-report.html"><i class="bi bi-file-earmark-text"></i> Submit Visit Report
+          (DCR)</a></li>
       <li><a href="product-sample.html"><i class="bi bi-capsule"></i> Product Samples</a></li>
       <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expenses</a></li>
       <li><a href="sales.html"><i class="bi bi-graph-up"></i> Sales & Target</a></li>
@@ -91,171 +99,181 @@
   </div>
 
   <!-- MAIN CONTENT -->
-<div class="main-content" id="mainContent">
+  <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
 
-        <h3 class="fw-bold mb-4">
-            <i class="bi bi-journal-check me-2"></i> Daily Call Reports (DCRs)
-        </h3>
-        
-        <p class="text-muted mb-4">
-            View, add, and manage your doctor visit reports.
-        </p>
+      <h3 class="fw-bold mb-4">
+        <i class="bi bi-journal-check me-2"></i> Daily Call Reports (DCRs)
+      </h3>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0">Submitted Reports</h5>
-            <button class="btn btn-success btn-lg fw-bold" id="addDCRButton" data-bs-toggle="modal" data-bs-target="#dcrModal">
-                <i class="bi bi-plus-lg me-2"></i> Add New DCR
-            </button>
-        </div>
+      <p class="text-muted mb-4">
+        View, add, and manage your doctor visit reports.
+      </p>
 
-        <div class="card shadow-lg mb-4">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0" id="submittedDCRTable">
-                        <thead>
-                            <tr class="table-primary"> <th>Date & Time</th>
-                                <th>Doctor / Location</th>
-                                <th>Visit Type</th>
-                                <th>Rating</th>
-                                <th>Samples (Qty)</th>
-                                <th>Remarks</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="submittedDCRTableBody">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer d-flex justify-content-center" id="dcrPaginationFooter">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                    </ul>
-                </nav>
-            </div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">Submitted Reports</h5>
+        <button class="btn btn-success btn-lg fw-bold" id="addDCRButton" data-bs-toggle="modal"
+          data-bs-target="#dcrModal">
+          <i class="bi bi-plus-lg me-2"></i> Add New DCR
+        </button>
+      </div>
+
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0" id="submittedDCRTable">
+              <thead>
+                <tr class="table-primary">
+                  <th>Date & Time</th>
+                  <th>Doctor / Location</th>
+                  <th>Visit Type</th>
+                  <th>Rating</th>
+                  <th>Samples (Qty)</th>
+                  <th>Remarks</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="submittedDCRTableBody">
+              </tbody>
+            </table>
+          </div>
         </div>
+        <div class="card-footer d-flex justify-content-center" id="dcrPaginationFooter">
+          <nav aria-label="Page navigation">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+              <li class="page-item active"><a class="page-link" href="#">1</a></li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<div class="modal fade" id="dcrModal" tabindex="-1" aria-labelledby="dcrModalLabel" aria-hidden="true">
+  <div class="modal fade" id="dcrModal" tabindex="-1" aria-labelledby="dcrModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="dcrModalLabel"><i class="bi bi-file-earmark-text me-2"></i> Add New Visit Report</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="dcrForm">
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3">
-                            <label for="visitTitle" class="form-label fw-bold">Visit Title (Task Reference) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="visitTitle" required />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="visitType" class="form-label fw-bold">Visit Type <span class="text-danger">*</span></label>
-                            <select class="form-select" id="visitType" required>
-                                <option value="">Select Visit Type</option>
-                                <option value="Doctor Visit">Doctor Visit (Detailing)</option>
-                                <option value="Follow-up">Follow-up</option>
-                                <option value="Promotion">Promotion/Launch</option>
-                                <option value="Meeting">Team Meeting</option>
-                                <option value="Training">Training/CME</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <label for="doctorSelect" class="form-label fw-bold">Doctor Visited <span class="text-danger">*</span></label>
-                            <select class="form-select" id="doctorSelect" required>
-                                <option value="">Select Doctor</option>
-                                </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="clinicLocation" class="form-label fw-bold">Clinic / Location <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="clinicLocation" required />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span class="text-danger">*</span></label>
-                            <input type="datetime-local" class="form-control" id="visitDate" required>
-                        </div>
-                    </div>
-
-                    <div class="row mb-5">
-                        <div class="col-md-4 mb-3">
-                            <label for="doctorRating" class="form-label fw-bold">Doctor Engagement Rating <span class="text-danger">*</span></label>
-                            <select class="form-select" id="doctorRating" required>
-                                <option value="">Select Rating</option>
-                                <option value="5">5 ⭐ - Excellent</option>
-                                <option value="4">4 ⭐ - Good</option>
-                                <option value="3" selected>3 ⭐ - Average</option>
-                                <option value="2">2 ⭐ - Poor</option>
-                                <option value="1">1 ⭐ - Very Poor</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8 mb-3">
-                            <label for="mrRemarks" class="form-label fw-bold">Remarks / Discussion Points</label>
-                            <textarea class="form-control" id="mrRemarks" rows="3"></textarea>
-                        </div>
-                    </div>
-
-                    <h5 class="mt-4 mb-3 border-bottom pb-2">📦 Samples Provided (MR Stock)</h5>
-
-                    <div class="samples-entry-container p-3 border rounded mb-4">
-                        <label class="form-label fw-bold">Add Samples to Report</label>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-6">
-                                <select class="form-select" id="sampleProductSelect">
-                                    <option value="">Select Product</option>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <input type="number" class="form-control" id="sampleQuantityInput" />
-                            </div>
-                            <div class="col-2">
-                                <button type="button" class="btn btn-primary w-100" id="addSampleBtn">
-                                    <i class="bi bi-plus-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="table-responsive mt-3">
-                            <table class="table table-sm table-striped mb-0" id="samplesEntryTable">
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th class="text-center">Quantity</th>
-                                        <th class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="samplesTableBody">
-                                    <tr><td colspan="3" class="text-center text-muted">No samples added yet.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <input type="hidden" id="reportIdField"> 
-                    <div class="alert alert-success mt-4 d-none" id="successMessage" role="alert">
-                        ✅ **Success!** Report submitted/updated successfully.
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary fw-bold" id="modalSubmitButton" form="dcrForm">
-                    <i class="bi bi-check-circle-fill me-2"></i> Save Report
-                </button>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="dcrModalLabel"><i class="bi bi-file-earmark-text me-2"></i> Add New Visit Report
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body p-4">
+          <form id="dcrForm">
+
+            <div class="row mb-4">
+              <div class="col-md-6 mb-3">
+                <label for="visitTitle" class="form-label fw-bold">Visit Title (Task Reference) <span
+                    class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="visitTitle" required />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="visitType" class="form-label fw-bold">Visit Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="visitType" required>
+                  <option value="">Select Visit Type</option>
+                  <option value="Doctor Visit">Doctor Visit (Detailing)</option>
+                  <option value="Follow-up">Follow-up</option>
+                  <option value="Promotion">Promotion/Launch</option>
+                  <option value="Meeting">Team Meeting</option>
+                  <option value="Training">Training/CME</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-4 mb-3">
+                <label for="doctorSelect" class="form-label fw-bold">Doctor Visited <span
+                    class="text-danger">*</span></label>
+                <select class="form-select" id="doctorSelect" required>
+                  <option value="">Select Doctor</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="clinicLocation" class="form-label fw-bold">Clinic / Location <span
+                    class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="clinicLocation" required />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span
+                    class="text-danger">*</span></label>
+                <input type="datetime-local" class="form-control" id="visitDate" required>
+              </div>
+            </div>
+
+            <div class="row mb-5">
+              <div class="col-md-4 mb-3">
+                <label for="doctorRating" class="form-label fw-bold">Doctor Engagement Rating <span
+                    class="text-danger">*</span></label>
+                <select class="form-select" id="doctorRating" required>
+                  <option value="">Select Rating</option>
+                  <option value="5">5 ⭐ - Excellent</option>
+                  <option value="4">4 ⭐ - Good</option>
+                  <option value="3" selected>3 ⭐ - Average</option>
+                  <option value="2">2 ⭐ - Poor</option>
+                  <option value="1">1 ⭐ - Very Poor</option>
+                </select>
+              </div>
+              <div class="col-md-8 mb-3">
+                <label for="mrRemarks" class="form-label fw-bold">Remarks / Discussion Points</label>
+                <textarea class="form-control" id="mrRemarks" rows="3"></textarea>
+              </div>
+            </div>
+
+            <h5 class="mt-4 mb-3 border-bottom pb-2">📦 Samples Provided (MR Stock)</h5>
+
+            <div class="samples-entry-container p-3 border rounded mb-4">
+              <label class="form-label fw-bold">Add Samples to Report</label>
+              <div class="row g-2 align-items-end">
+                <div class="col-6">
+                  <select class="form-select" id="sampleProductSelect">
+                    <option value="">Select Product</option>
+                  </select>
+                </div>
+                <div class="col-4">
+                  <input type="number" class="form-control" id="sampleQuantityInput" />
+                </div>
+                <div class="col-2">
+                  <button type="button" class="btn btn-primary w-100" id="addSampleBtn">
+                    <i class="bi bi-plus-lg"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-responsive mt-3">
+                <table class="table table-sm table-striped mb-0" id="samplesEntryTable">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th class="text-center">Quantity</th>
+                      <th class="text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="samplesTableBody">
+                    <tr>
+                      <td colspan="3" class="text-center text-muted">No samples added yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <input type="hidden" id="reportIdField">
+            <div class="alert alert-success mt-4 d-none" id="successMessage" role="alert">
+              ✅ **Success!** Report submitted/updated successfully.
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary fw-bold" id="modalSubmitButton" form="dcrForm">
+            <i class="bi bi-check-circle-fill me-2"></i> Save Report
+          </button>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
   <!-- ðŸ§‘â€ðŸ’¼ Profile Info Modal -->
   <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
@@ -303,5 +321,3 @@
 </body>
 
 </html>
-
-
