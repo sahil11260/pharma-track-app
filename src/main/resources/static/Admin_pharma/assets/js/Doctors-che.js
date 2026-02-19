@@ -188,6 +188,12 @@ document.addEventListener("DOMContentLoaded", function () {
   doctorForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     const phone = document.getElementById("doctorPhone").value;
+    const specialty = document.getElementById("doctorSpecialty").value;
+
+    if (!specialty) {
+      alert("Specialty is required.");
+      return;
+    }
 
     // Phone validation: Must be exactly 10 digits
     if (phone && phone.length !== 10) {

@@ -21,6 +21,7 @@ public class Doctor {
     @Column(nullable = false)
     private String type;
 
+    @Column(nullable = false)
     private String specialty;
 
     @Column(nullable = false)
@@ -34,6 +35,7 @@ public class Doctor {
 
     private String address;
 
+    @Column(nullable = false)
     private String city;
 
     private String assignedMR;

@@ -280,7 +280,16 @@ public class UserService {
         user.setAssignedManager(request.assignedManager());
 
         if (request.password() != null && !request.password().isBlank()) {
-            user.setPasswordHash(passwordEncoder.encode(request.password()));
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
+
+            if (isAdmin) {
+                user.setPasswordHash(passwordEncoder.encode(request.password()));
+            } else {
+                System.out.println("[SECURITY] Non-admin user " + (auth != null ? auth.getName() : "anonymous")
+                        + " attempted to update password for user " + user.getEmail());
+            }
         }
 
         User saved = userRepository.save(user);

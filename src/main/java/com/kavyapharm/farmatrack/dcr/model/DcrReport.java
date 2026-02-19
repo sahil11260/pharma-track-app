@@ -52,6 +52,8 @@ public class DcrReport {
     @Column(nullable = false)
     private String submissionTime;
 
+    private String region;
+
     public DcrReport() {
     }
 
@@ -149,5 +151,13 @@ public class DcrReport {
 
     public void setSubmissionTime(String submissionTime) {
         this.submissionTime = submissionTime;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 }

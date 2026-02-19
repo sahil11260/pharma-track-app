@@ -30,6 +30,9 @@ public class Product {
     @Column(nullable = false)
     private Integer stock;
 
+    @Column
+    private String expiryDate;
+
     public Product() {
     }
 
@@ -65,7 +68,6 @@ public class Product {
         this.price = price;
     }
 
-
     public String getDescription() {
         return description;
     }
@@ -80,5 +82,13 @@ public class Product {
 
     public void setStock(Integer stock) {
         this.stock = stock;
+    }
+
+    public String getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(String expiryDate) {
+        this.expiryDate = expiryDate;
     }
 }
