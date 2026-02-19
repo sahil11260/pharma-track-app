@@ -649,7 +649,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      if (status === "Completed") {
+            if (status === "Completed") {
         product.available -= qty;
         if (productsApiMode) {
           try {
@@ -658,16 +658,27 @@ document.addEventListener("DOMContentLoaded", () => {
             // SYNC with MR Stock / Manager Samples
             // Call stock-received API to increment the "field stock"
             try {
-              await apiJson(`${API_BASE}/api/stock-received`, {
+              // Ensure we use the correct identifier for the recipient
+              // If 'to' is an email, it will be used. If it's a name, the backend will resolve it.
+              const syncPayload = {
+                productId: String(product.id),
+                quantity: Number(qty),
+                date: new Date().toISOString(),
+                userName: to, // This is 'manager' email or 'mrName'
+                notes: `Allocated to ${to} (${role}) by Admin`
+              };
+              console.log("[SYNC] Sending stock-received payload:", syncPayload);
+
+              const syncRes = await fetch(`${API_BASE}/api/stock-received`, {
                 method: "POST",
-                body: JSON.stringify({
-                  productId: String(product.id),
-                  quantity: Number(qty),
-                  date: new Date().toISOString(),
-                  userName: to,
-                  notes: `Allocated to ${to} (${role}) by Admin`
-                })
+                headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader()),
+                body: JSON.stringify(syncPayload)
               });
+
+              if (!syncRes.ok) {
+                const errText = await syncRes.text();
+                throw new Error(`Sync failed: ${errText}`);
+              }
               console.log("Successfully synced with MR stock");
             } catch (err) {
               console.warn("MR stock sync failed", err);
