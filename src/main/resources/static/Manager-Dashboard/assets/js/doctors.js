@@ -514,17 +514,23 @@ function editDoctor(doctorId) {
     }
 
     if (form.checkValidity()) {
+      const email = document.getElementById("doctorEmail").value.trim();
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (email && !emailRegex.test(email)) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
       const phone = document.getElementById("doctorPhone").value;
       if (phone && phone.length !== 10) {
         alert("Phone number must be exactly 10 digits.");
         return;
       }
-
       doctor.name = document.getElementById("doctorName").value;
       doctor.type = typeValue;
       doctor.specialty = specValue || "";
       doctor.phone = document.getElementById("doctorPhone").value;
-      doctor.email = document.getElementById("doctorEmail").value;
+      doctor.email = email;
       doctor.clinicName = document.getElementById("clinicName").value;
       const doctorCityEl = document.getElementById("doctorCity");
       doctor.city = doctorCityEl ? doctorCityEl.value : (doctor.city || "");
@@ -651,7 +657,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Only run add logic if in Add mode
     if (saveDoctorBtn.textContent.toLowerCase().includes("add")) {
       const form = document.getElementById("addDoctorForm");
-      const typeValue = (document.getElementById("doctorType")?.value) || "doctor";
+      const doctorTypeEl = document.getElementById("doctorType");
+      const typeValue = (doctorTypeEl ? doctorTypeEl.value : "doctor");
       const specValue = document.getElementById("doctorSpecialty").value;
 
       // Special handling for Doctor type: Specialty is mandatory
@@ -662,6 +669,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (form.checkValidity()) {
+        const phone = document.getElementById("doctorPhone").value;
+        if (phone && phone.length !== 10) {
+          alert("Phone number must be exactly 10 digits.");
+          return;
+        }
+        const email = document.getElementById("doctorEmail").value.trim();
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (email && !emailRegex.test(email)) {
+          alert("Please enter a valid email address.");
+          return;
+        }
+
         const nextId = doctorsData.length > 0 ? Math.max(...doctorsData.map((d) => d.id)) + 1 : 1;
         const newDoctor = {
           id: nextId,
@@ -669,10 +688,10 @@ document.addEventListener("DOMContentLoaded", () => {
           type: typeValue,
           specialty: specValue || "",
           phone: document.getElementById("doctorPhone").value,
-          email: document.getElementById("doctorEmail").value,
+          email: email,
           clinicName: document.getElementById("clinicName").value,
           address: "",
-          city: (document.getElementById("doctorCity")?.value) || "",
+          city: (document.getElementById("doctorCity") ? document.getElementById("doctorCity").value : ""),
           assignedMR: document.getElementById("assignToMR").value,
           notes: "",
           status: "active",

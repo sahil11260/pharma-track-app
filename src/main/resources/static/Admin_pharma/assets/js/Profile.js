@@ -31,8 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
         emailInput.value = localStorage.getItem('signup_email') || '';
     }
 
-    // Load saved profile picture
-    const savedProfilePic = localStorage.getItem('kavya_profile_pic');
+    // Load saved profile picture (Isolated by email)
+    const userEmailForPic = (currentUser && currentUser.email) || localStorage.getItem('kavya_user_email') || localStorage.getItem('signup_email');
+    const profilePicKey = userEmailForPic ? `kavya_profile_pic_${userEmailForPic}` : 'kavya_profile_pic';
+    const savedProfilePic = localStorage.getItem(profilePicKey);
     if (savedProfilePic) {
         if (profilePreview) {
             profilePreview.src = savedProfilePic;
@@ -149,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function validateEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return emailRegex.test(email);
     }
 
@@ -204,7 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileInput && profileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    localStorage.setItem('kavya_profile_pic', e.target.result);
+                    const userEmailForPicSave = (currentUser && currentUser.email) || localStorage.getItem('kavya_user_email') || emailInput.value.trim();
+                    const profilePicKeySave = userEmailForPicSave ? `kavya_profile_pic_${userEmailForPicSave}` : 'kavya_profile_pic';
+                    localStorage.setItem(profilePicKeySave, e.target.result);
                     if (profileModalImg) profileModalImg.src = e.target.result;
                     // Also update any other profile images on the page
                     document.querySelectorAll('.profile-img, .rounded-circle').forEach(img => {

@@ -21,8 +21,9 @@
   // Persistence setup
   const STORAGE_KEY = "kavyaPharmTargetsData";
 
-  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+  const API_BASE = (window.location.port === "5500" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? (window.location.port === "8080" ? "" : "http://localhost:8080")
+    : "";
 
   const USERS_API_BASE = `${API_BASE}/api/users`;
   const TARGETS_API_BASE = `${API_BASE}/api/targets`;
@@ -120,23 +121,35 @@
       const data = await apiJson(url);
 
       if (Array.isArray(data)) {
-        // Additional client-side filtering to ensure only manager's MRs are shown
         // Get the list of MR names that belong to this manager
         const managerMrNames = window.mrData.map(mr => mr.name.trim().toLowerCase());
         console.log("[TARGETS] Manager's MRs:", managerMrNames);
 
-        // Filter targets to only include those for the manager's MRs
+        // Filter targets to include:
+        // 1. Targets assigned TO this manager by Admin (mrName = manager's name)
+        // 2. Targets assigned BY this manager to their MRs (mrName = MR's name)
+        const managerNameLower = (currentName || currentEmail).trim().toLowerCase();
+
         const filteredData = data.filter(t => {
           const targetMrName = (t.mrName || "").trim().toLowerCase();
-          return managerMrNames.includes(targetMrName);
+
+          // Check if target is assigned to this manager
+          const isAssignedToManager = targetMrName === managerNameLower;
+
+          // Check if target is assigned to one of manager's MRs
+          const isAssignedToManagersMR = managerMrNames.includes(targetMrName);
+
+          return isAssignedToManager || isAssignedToManagersMR;
         });
 
         console.log("[TARGETS] Total targets from API:", data.length);
-        console.log("[TARGETS] Filtered targets for manager's MRs:", filteredData.length);
+        console.log("[TARGETS] Targets assigned TO manager:", filteredData.filter(t => (t.mrName || "").trim().toLowerCase() === managerNameLower).length);
+        console.log("[TARGETS] Targets assigned to manager's MRs:", filteredData.filter(t => managerMrNames.includes((t.mrName || "").trim().toLowerCase())).length);
+        console.log("[TARGETS] Total filtered targets:", filteredData.length);
 
         window.targetsData = filteredData.map(normalizeTargetFromApi);
         targetsApiMode = true;
-        console.log("[TARGETS] Loaded", window.targetsData.length, "targets for manager's MRs");
+        console.log("[TARGETS] Loaded", window.targetsData.length, "targets for manager");
         return;
       }
     } catch (e) {

@@ -134,12 +134,19 @@ public class SalesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(achievement);
     }
 
-    /**
-     * Common: Get target by ID
-     */
     @GetMapping("/sales-targets/{id}")
     public ResponseEntity<SalesTarget> getTargetById(@PathVariable Long id) {
         SalesTarget target = salesService.getTargetById(id);
         return ResponseEntity.ok(target);
+    }
+
+    /**
+     * Manager: Update target and achievement
+     */
+    @PutMapping("/manager/sales-targets/{id}/achievement")
+    public ResponseEntity<SalesTarget> updateTargetAndAchievement(
+            @PathVariable Long id,
+            @RequestBody UpdateAchievementRequest request) {
+        return ResponseEntity.ok(salesService.updateTargetAndAchievement(id, request));
     }
 }

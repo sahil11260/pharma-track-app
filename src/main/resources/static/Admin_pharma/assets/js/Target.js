@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  const API_BASE = (window.location.port === "5500" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? (window.location.port === "8080" ? "" : "http://localhost:8080")
-    : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+    : "";
 
   const TARGETS_API_BASE = `${API_BASE}/api/manager/sales-targets`;
   const USERS_API_BASE = `${API_BASE}/api/users`;
@@ -207,9 +207,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (product) {
       const stock = Number(product.stock) || 0;
-      const after = stock - qty;
-      availableInfo.textContent = `Available: ${stock} units \u2014 After allocation: ${after >= 0 ? after : "--- (insufficient)"
-        }`;
+
+      // Calculate total assigned for this product
+      const assignedTotal = targets
+        .filter(t => t.period === productName && (editIndex === null || Number(t.id) !== Number(editIndex)))
+        .reduce((sum, t) => sum + (Number(t.salesTarget) || 0), 0);
+
+      const availableToAssign = stock - assignedTotal;
+      const after = availableToAssign - qty;
+
+      let infoText = `Total Stock: ${stock} | Assigned: ${assignedTotal} | Remaining: ${availableToAssign}`;
+      if (qty > 0) {
+        infoText += ` \u2014 After this: ${after >= 0 ? after : "--- (insufficient)"}`;
+      }
+
+      availableInfo.textContent = infoText;
       if (after < 0) availableInfo.classList.add("text-danger");
       else availableInfo.classList.remove("text-danger");
     } else {
@@ -371,7 +383,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const deadline = form.targetDeadline.value;
 
     const productObj = allProducts.find(p => p.name === product);
-    const stock = productObj ? (Number(productObj.stock) || 0) : 0;
+    const totalStock = productObj ? (Number(productObj.stock) || 0) : 0;
+
+    // Calculate total assigned for this product (excluding current if editing)
+    const prevAssignedTotal = targets
+      .filter(t => t.period === product && (editIndex === null || Number(t.id) !== Number(editIndex)))
+      .reduce((sum, t) => sum + (Number(t.salesTarget) || 0), 0);
 
     if (!name || !product || !qty || !given || !deadline) {
       alert("âš ï¸ Fill all fields.");
@@ -383,8 +400,12 @@ document.addEventListener("DOMContentLoaded", () => {
       return false;
     }
 
-    if (qty > stock) {
-      alert(`âš  Insufficient stock. Available: ${stock} units.`);
+    const availableToAssign = totalStock - prevAssignedTotal;
+    if (qty > availableToAssign) {
+      const msg = prevAssignedTotal > 0
+        ? `âš  Insufficient stock. Available: ${totalStock} units. \nAlready assigned: ${prevAssignedTotal} units. \nRemaining capacity: ${availableToAssign} units.`
+        : `âš  Insufficient stock. Available: ${totalStock} units.`;
+      alert(msg);
       return false;
     }
 

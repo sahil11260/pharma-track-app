@@ -11,9 +11,7 @@
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
-  <script src="/config.js"></script>
-  <link href="assets/css/reports.css" rel="stylesheet" />
-  <script src="/config.js"></script>
+  <link href="assets/css/style.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -49,7 +47,7 @@
             <li>
               <hr class="dropdown-divider" />
             </li>
-            <li><a class="dropdown-item" href="#">Logout</a></li>
+            <li><a class="dropdown-item" href="../index.html">Logout</a></li>
           </ul>
         </div>
       </div>
@@ -73,6 +71,9 @@
       <li><a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a></li>
 
       <li><a href="notifications.html"><i class="bi bi-bell"></i> Notifications</a></li>
+      <li>
+        <a href="setting.html"><i class="bi bi-gear"></i> Settings</a>
+      </li>
     </ul>
   </div>
 
@@ -85,32 +86,18 @@
         </h3>
       </div>
 
-      <!-- SUMMARY CARDS REMOVED -->
-      <div class="row mb-4" id="summaryCards"></div>
-
-      <!-- FILTERS AND SEARCH -->
+      <!-- SEARCH -->
       <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <input type="text" class="form-control" id="searchReport"
             placeholder="Search reports by MR name or Doctor name" />
-        </div>
-
-        <!-- smaller All Types -->
-        <div class="col-md-4">
-          <select class="form-select form-select-sm" id="filterReportType">
-            <option value="">All Types</option>
-            <option value="visit-report">Visit Reports</option>
-            <option value="doctor-feedback">Doctor Feedback</option>
-            <option value="product-feedback">Product Feedback</option>
-            <!-- Chemist Feedback removed -->
-          </select>
         </div>
       </div>
 
       <!-- REPORTS LIST -->
       <div class="table-responsive">
-        <table class="table table-striped table-hover" id="reportsTable">
-          <thead style="background-color: #343a40; color: white">
+        <table class="table table-hover" id="reportsTable">
+          <thead class="table-light">
             <tr>
               <th>Title</th>
               <th>MR Name</th>
@@ -120,12 +107,12 @@
             </tr>
           </thead>
           <tbody id="reportsList">
-            <!-- Report rows will be populated here -->
+            <!-- Table content will be injected by JS -->
           </tbody>
         </table>
       </div>
 
-      <!-- PAGINATION (Prev / pages / Next) -->
+      <!-- PAGINATION -->
       <nav aria-label="Reports pagination">
         <ul id="reportsPagination" class="pagination justify-content-center mt-3"></ul>
       </nav>

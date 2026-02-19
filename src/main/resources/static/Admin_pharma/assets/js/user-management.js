@@ -348,15 +348,29 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const email = document.getElementById(`${prefix}Email`).value.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
     const payload = {
       name: document.getElementById(`${prefix}Name`).value,
-      email: document.getElementById(`${prefix}Email`).value,
+      email: email,
       phone: phone,
       status: "ACTIVE"
     };
 
     const password = document.getElementById(`${prefix}Password`).value;
-    if (password) payload.password = password;
+    if (password) {
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+      if (!passRegex.test(password)) {
+        alert("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
+        return;
+      }
+      payload.password = password;
+    }
 
     let uiRole = "";
     if (prefix === "superAdmin") uiRole = "Super Admin";

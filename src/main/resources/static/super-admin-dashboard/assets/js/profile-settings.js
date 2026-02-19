@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const confirmPass = confirmPasswordInput.value;
 
       const namePattern = /^[A-Za-z\s]{1,250}$/;
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       const mobilePattern = /^\d{10}$/;
       const passPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 

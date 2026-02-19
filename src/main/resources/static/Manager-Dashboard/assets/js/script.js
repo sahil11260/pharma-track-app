@@ -853,8 +853,11 @@ document.addEventListener("DOMContentLoaded", () => {
     userDropdownBtn.appendChild(document.createTextNode(' ' + savedName));
   }
 
-  // Load saved profile picture
-  const savedPic = localStorage.getItem('kavya_profile_pic');
+  // Load saved profile picture (Isolated by email)
+  const userEmailForPic = savedEmail || localStorage.getItem("kavya_user_email");
+  const profilePicKey = userEmailForPic ? `kavya_profile_pic_${userEmailForPic}` : 'kavya_profile_pic';
+  const savedPic = localStorage.getItem(profilePicKey);
+
   if (savedPic) {
     // 1. Update Profile Modals (any img in profileModal or with flaticon/avatar source)
     document.querySelectorAll('img').forEach(img => {

@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== API Configuration =====
   // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
-  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  const API_BASE = (window.location.port === "5500" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? (window.location.port === "8080" ? "" : "http://localhost:8080")
-    : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+    : "";
 
   const USERS_API = `${API_BASE}/api/users`;
   const DOCTORS_API = `${API_BASE}/api/doctors`;
@@ -27,9 +27,28 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       return await res.json();
     } catch (e) {
-      console.error("API Error:", e);
+      console.error(`API Error (${url}):`, e);
       return [];
     }
+  }
+
+  function parseSafeDate(dateVal) {
+    if (!dateVal) return null;
+    // Handle array format [YYYY, MM, DD]
+    if (Array.isArray(dateVal)) {
+      return new Date(dateVal[0], dateVal[1] - 1, dateVal[2]);
+    }
+    // Handle string format
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d;
+
+    // Handle DD-MM-YYYY or other common formats if needed
+    if (typeof dateVal === 'string' && dateVal.includes('-')) {
+      const parts = dateVal.split('-');
+      if (parts[0].length === 4) return new Date(parts[0], parts[1] - 1, parts[2]); // YYYY-MM-DD
+      if (parts[2].length === 4) return new Date(parts[2], parts[1] - 1, parts[0]); // DD-MM-YYYY
+    }
+    return null;
   }
 
   // ===== Data Storage =====
@@ -103,9 +122,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("totalDoctorsDisplay").textContent = allDoctors.length;
 
     // Total Sales
-    const totalSales = allTargets.reduce((sum, t) =>
-      sum + (Number(t.salesAchievement || t.achieved) || 0), 0
-    );
+    const totalSales = allTargets.reduce((sum, t) => {
+      const ach = Number(t.salesAchievement || t.achieved || 0);
+      return sum + ach;
+    }, 0);
     document.getElementById("totalSalesDisplay").textContent =
       `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
@@ -130,10 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const salesByMonth = new Array(dynamicMonths.length).fill(0);
     const targetsByMonth = new Array(dynamicMonths.length).fill(0);
 
+    console.log('[DASHBOARD] Processing', allTargets.length, 'targets');
     allTargets.forEach(t => {
-      const dateVal = t.startDate || t.givenDate;
-      if (dateVal) {
-        const date = new Date(dateVal);
+      const dateVal = t.startDate || t.givenDate || t.period; // Some APIs use period as date string
+      const date = parseSafeDate(dateVal);
+
+      if (date) {
         const month = date.getMonth();
         const year = date.getFullYear();
         const currentYear = new Date().getFullYear();
@@ -146,8 +168,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    console.log('[DASHBOARD] Sales group data:', salesByMonth);
-    console.log('[DASHBOARD] Target group data:', targetsByMonth);
+    console.log('[DASHBOARD] Chart Data (Sales):', salesByMonth);
+    console.log('[DASHBOARD] Chart Data (Targets):', targetsByMonth);
 
     const salesCtx = document.getElementById("salesChart");
     if (!salesCtx) return;
@@ -182,9 +204,30 @@ document.addEventListener("DOMContentLoaded", () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(context.parsed.y);
+                }
+                return label;
+              }
+            }
+          }
+        },
         scales: {
           y: {
             beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Value (INR)',
+              font: { weight: 'bold' }
+            },
             ticks: {
               callback: function (value) {
                 if (value >= 100000) return (value / 100000).toFixed(1) + 'L';
@@ -232,7 +275,20 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         ],
       },
-      options: { responsive: true, maintainAspectRatio: false },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Visits',
+              font: { weight: 'bold' }
+            }
+          }
+        }
+      },
     });
   }
 
@@ -272,7 +328,23 @@ document.addEventListener("DOMContentLoaded", () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: "bottom" } }
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed !== null) {
+                  label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(context.parsed);
+                }
+                return label;
+              }
+            }
+          }
+        }
       }
     });
   }

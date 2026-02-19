@@ -45,15 +45,33 @@
 
   async function refreshMrList() {
     try {
-      const currentManager = localStorage.getItem("signup_name") || "";
-      const users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentManager)}`);
+      let userObj = {};
+      try {
+        userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+      } catch (e) { }
+
+      const currentName = userObj.name || localStorage.getItem("signup_name") || "";
+      const currentEmail = userObj.email || localStorage.getItem("signup_email") || "";
+
+      console.log("[REPORTS-MGR] Fetching MRs for manager:", currentName || currentEmail);
+      let users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentName || currentEmail)}&role=MR`);
+
+      // If empty result and we have both name and email, try the other one
+      if ((!users || users.length === 0) && currentName && currentEmail && currentName !== currentEmail) {
+        console.log("[REPORTS-MGR] First query empty, trying fallback query...");
+        users = await apiJson(`${USERS_API_BASE}?manager=${encodeURIComponent(currentEmail)}&role=MR`);
+      }
+
       if (Array.isArray(users)) {
         window.mrData = users
-          .filter((u) => u && String(u.role) === "MR" && u.assignedManager === currentManager)
-          .map((u) => ({ id: Number(u.id), name: u.name }));
+          .filter(u => u && u.role && String(u.role).toUpperCase().includes("MR"))
+          .map(u => ({ id: Number(u.id), name: u.name, email: u.email }));
+
+        console.log("[REPORTS-MGR] Successfully loaded", window.mrData.length, "MRs");
+        return;
       }
     } catch (e) {
-      console.warn("Could not load MR list from API, using local fallback.", e);
+      console.warn("[REPORTS-MGR] Users API unavailable for MR list.", e);
     }
   }
 
@@ -240,6 +258,13 @@
   const pageSize = 5;
 
 
+  function mapDcrType(vt) {
+    const t = (vt || "").toLowerCase();
+    if (t.includes("doctor") || t.includes("feedback")) return "doctor-feedback";
+    if (t.includes("product")) return "product-feedback";
+    return "visit-report";
+  }
+
   // -------------------------
   // Persistence & API Loading
   // -------------------------
@@ -304,10 +329,10 @@
 
       window.reportsData = filteredDcrs.map(dcr => ({
         id: dcr.reportId,
-        type: "visit-report",
+        type: mapDcrType(dcr.visitType),
         mrName: dcr.mrName || "Unknown",
         title: dcr.visitTitle || "DCR Report",
-        status: "pending",
+        status: (dcr.status || "pending").toLowerCase(),
         submittedDate: dcr.submissionTime ? dcr.submissionTime.split('T')[0] : new Date().toISOString().split('T')[0],
         visitDate: dcr.dateTime || "",
         doctorName: dcr.doctorName || "",
@@ -378,14 +403,16 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const totalItems = Array.isArray(data) ? data.length : 0;
+    const dataArr = Array.isArray(data) ? data : [];
+    const totalItems = dataArr.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
     if (currentPage > totalPages) currentPage = totalPages;
 
     const start = (currentPage - 1) * pageSize;
-    const pageItems = (data || []).slice(start, start + pageSize);
+    const pageItems = dataArr.slice(start, start + pageSize);
 
-    if (!pageItems.length) {
+    if (pageItems.length === 0) {
       container.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No reports found.</td></tr>`;
       renderPagination(totalItems, totalPages);
       return;
@@ -396,32 +423,29 @@
       row.innerHTML = `
         <td><i class="${getReportTypeIcon(report.type)} me-2"></i>${escapeHtml(report.title)}</td>
         <td>${escapeHtml(report.mrName)}</td>
-        <td>${escapeHtml(report.type.replace("-", " ").toUpperCase())}</td>
+        <td>${escapeHtml((report.type || "").replace("-", " ").toUpperCase())}</td>
         <td>${escapeHtml(report.doctorName)}</td>
-        <td>
-          <button class="btn btn-outline-info btn-sm btn-view me-1" data-id="${report.id}" title="View"><i class="bi bi-eye"></i></button>
-          <button class="btn btn-outline-primary btn-sm btn-download me-1" data-id="${report.id}" title="Download"><i class="bi bi-download"></i></button>
-          <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${report.id}" title="Delete"><i class="bi bi-trash"></i></button>
-        </td>
+        <td>${renderActions(report.id)}</td>
       `;
       container.appendChild(row);
     });
 
     // wire buttons
-    container.querySelectorAll(".btn-view").forEach((b) => {
-      b.removeEventListener("click", onViewClick);
-      b.addEventListener("click", onViewClick);
-    });
-    container.querySelectorAll(".btn-download").forEach((b) => {
-      b.removeEventListener("click", onDownloadClick);
-      b.addEventListener("click", onDownloadClick);
-    });
-    container.querySelectorAll(".btn-delete").forEach((b) => {
-      b.removeEventListener("click", onDeleteClick);
-      b.addEventListener("click", onDeleteClick);
-    });
+    container.querySelectorAll(".btn-view").forEach(b => b.addEventListener("click", onViewClick));
+    container.querySelectorAll(".btn-download").forEach(b => b.addEventListener("click", onDownloadClick));
+    container.querySelectorAll(".btn-delete").forEach(b => b.addEventListener("click", onDeleteClick));
 
     renderPagination(totalItems, totalPages);
+  }
+
+  function renderActions(id) {
+    return `
+      <div class="d-flex gap-1">
+        <button class="btn btn-outline-info btn-sm btn-view" data-id="${id}" title="View"><i class="bi bi-eye"></i></button>
+        <button class="btn btn-outline-primary btn-sm btn-download" data-id="${id}" title="Download"><i class="bi bi-download"></i></button>
+        <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${id}" title="Delete"><i class="bi bi-trash"></i></button>
+      </div>
+    `;
   }
 
   function renderPagination(totalItems, totalPages) {
@@ -500,10 +524,7 @@
     let data = Array.isArray(window.reportsData) ? window.reportsData.slice() : [];
 
     const searchEl = document.getElementById("searchReport");
-    const typeEl = document.getElementById("filterReportType");
-
     const searchVal = searchEl ? (searchEl.value || "").trim().toLowerCase() : "";
-    const typeVal = typeEl ? (typeEl.value || "").trim() : "";
 
     if (searchVal) {
       data = data.filter((r) => {
@@ -514,10 +535,6 @@
       });
     }
 
-    if (typeVal) {
-      data = data.filter((r) => (r.type || "") === typeVal);
-    }
-
     return data;
   }
 
@@ -526,7 +543,6 @@
     refreshAndPersist(filtered);
   }
 
-  // Debounce
   function debounce(fn, wait) {
     let t;
     return function () {
@@ -639,6 +655,8 @@
   }
 
   // -------------------------
+
+  // -------------------------
   // Initialization
   // -------------------------
   async function initialize() {
@@ -654,6 +672,7 @@
 
       // Initial render with loaded data
       refreshAndPersist(window.reportsData);
+      applyFilters(); // trigger initial section toggling
       populateNotifications();
     } catch (e) {
       console.error("[REPORTS] Initialization error:", e);
@@ -679,14 +698,10 @@
 
   function wireFilterControls() {
     const searchEl = document.getElementById("searchReport");
-    const typeEl = document.getElementById("filterReportType");
     if (searchEl) {
       // when user types, reset to page 1
       const debounced = debounce(() => { currentPage = 1; applyFilters(); }, 300);
       searchEl.addEventListener("input", debounced);
-    }
-    if (typeEl) {
-      typeEl.addEventListener("change", () => { currentPage = 1; applyFilters(); });
     }
   }
 
