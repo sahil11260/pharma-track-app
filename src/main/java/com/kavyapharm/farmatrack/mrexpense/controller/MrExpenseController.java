@@ -28,7 +28,7 @@ public class MrExpenseController {
     }
 
     @GetMapping("/{id}")
-    public MrExpenseResponse get(@PathVariable Long id) {
+    public MrExpenseResponse get(@PathVariable(value = "id") Long id) {
         return service.get(id);
     }
 
@@ -38,12 +38,13 @@ public class MrExpenseController {
     }
 
     @PutMapping("/{id}")
-    public MrExpenseResponse update(@PathVariable Long id, @Valid @RequestBody UpdateMrExpenseRequest request) {
+    public MrExpenseResponse update(@PathVariable(value = "id") Long id,
+            @Valid @RequestBody UpdateMrExpenseRequest request) {
         return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
