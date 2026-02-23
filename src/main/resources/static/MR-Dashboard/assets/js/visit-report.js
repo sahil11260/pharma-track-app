@@ -197,22 +197,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        // Combine systemProducts and mrStock for better coverage
-        // We use systemProducts as the primary list of what SHOULD exist
-        const displayList = systemProducts.length > 0 ? systemProducts : mrStock;
-
-        displayList.forEach(product => {
+        // Only display products that are in MR's stock and have quantity > 0
+        mrStock.forEach(product => {
             const effectiveStock = getProductStock(product.id);
 
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (Stock: ${effectiveStock})`;
-
-            if (effectiveStock <= 0) {
-                // option.disabled = true; // Don't disable, let them select it but they might see error on submit if stock check is active
+            if (effectiveStock > 0) {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (Stock: ${effectiveStock})`;
+                selectElement.appendChild(option);
             }
-
-            selectElement.appendChild(option);
         });
     }
 

@@ -90,6 +90,14 @@
         return statusMap[s] || `<span class="badge bg-secondary">${esc(s)}</span>`;
     }
 
+    // Attachment link helper
+    function getAttachmentLink(receiptPath, originalName) {
+        if (!receiptPath) return '<span class="text-muted">No attachment</span>';
+        const storedFilename = receiptPath.split(/[\\/]/).pop();
+        const displayName = originalName || storedFilename;
+        return `<a href="/uploads/receipts/${storedFilename}" target="_blank" class="text-primary" title="${displayName}"><i class="bi bi-paperclip"></i> ${displayName}</a>`;
+    }
+
     // Load expenses from API
     async function loadExpenses() {
         try {
@@ -218,6 +226,7 @@
           <td><i class="${catIcon(exp.category)} me-2"></i>${esc(exp.mrName)}</td>
           <td>${esc(exp.category)}</td>
           <td>₹${Number(exp.amount || 0).toFixed(2)}</td>
+          <td>${getAttachmentLink(exp.receiptPath, exp.receiptFilename)}</td>
           <td>${statusBadge(exp.status)}</td>
           <td>${fmtDate(exp.submittedDate)}</td>
           <td class="table-actions">
