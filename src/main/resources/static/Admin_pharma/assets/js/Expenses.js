@@ -66,15 +66,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return "pending";
   }
 
-  function billUrlFromAttachments(attachments) {
-    if (!Array.isArray(attachments) || attachments.length === 0) return "";
-    const a = attachments[0];
-    if (!a) return "";
-    if (/^https?:\/\//i.test(a)) return a;
-    return `assets/uploads/${a}`;
+  function billUrlFromAttachments(storedFilename) {
+    if (!storedFilename) return "";
+    return `/uploads/receipts/${storedFilename}`;
   }
 
   function normalizeExpenseFromApi(e) {
+    const storedFilename = e.receiptPath ? e.receiptPath.split(/[\\/]/).pop() : null;
     return {
       id: Number(e.id),
       person: e.mrName,
@@ -82,8 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
       amount: Number(e.amount) || 0,
       date: e.expenseDate ? String(e.expenseDate) : (e.submittedDate ? String(e.submittedDate) : ""),
       status: toUiStatus(e.status),
-      bill: billUrlFromAttachments(e.attachments),
-      attachments: Array.isArray(e.attachments) ? e.attachments : []
+      bill: billUrlFromAttachments(storedFilename),
+      originalName: e.receiptFilename || ""
     };
   }
 
@@ -164,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <p><strong>Amount:</strong> \u20B9${e.amount}</p>
               <p><strong>Date:</strong> ${e.date}</p>
               <p><strong>Receipt:</strong> ${e.bill
-              ? `<a href="${e.bill}" target="_blank" class="text-primary">View Bill</a>`
+              ? `<a href="${e.bill}" target="_blank" class="text-primary" title="${e.originalName || 'View Bill'}"><i class="bi bi-paperclip"></i> ${e.originalName || 'View Bill'}</a>`
               : `<span class="text-muted">Not Uploaded</span>`
             }</p>
               <span class="badge ${e.status === "Approved"

@@ -27,7 +27,7 @@ public class DoctorController {
     }
 
     @GetMapping("/{id}")
-    public DoctorResponse get(@PathVariable Long id) {
+    public DoctorResponse get(@PathVariable(value = "id") Long id) {
         return doctorService.get(id);
     }
 
@@ -37,12 +37,12 @@ public class DoctorController {
     }
 
     @PutMapping("/{id}")
-    public DoctorResponse update(@PathVariable Long id, @Valid @RequestBody UpdateDoctorRequest request) {
+    public DoctorResponse update(@PathVariable(value = "id") Long id, @Valid @RequestBody UpdateDoctorRequest request) {
         return doctorService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
         doctorService.delete(id);
         return ResponseEntity.noContent().build();
     }

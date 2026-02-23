@@ -14,12 +14,14 @@ public record TargetWithAchievementResponse(
         Double achievementPercentage,
         String progressStatus,
         LocalDate assignedDate,
+        LocalDate startDate,
+        LocalDate endDate,
         Integer periodMonth,
         Integer periodYear) {
 
     public static TargetWithAchievementResponse from(Long id, Long mrId, String mrName, String productName,
             String category, String targetType, Integer targetUnits, Integer achievedUnits,
-            LocalDate assignedDate, Integer periodMonth, Integer periodYear) {
+            LocalDate assignedDate, LocalDate startDate, LocalDate endDate, Integer periodMonth, Integer periodYear) {
         int achieved = achievedUnits != null ? achievedUnits : 0;
         double percentage = targetUnits > 0 ? (achieved * 100.0 / targetUnits) : 0.0;
 
@@ -37,6 +39,6 @@ public record TargetWithAchievementResponse(
         return new TargetWithAchievementResponse(
                 id, mrId, mrName, productName, category, targetType, targetUnits, achieved,
                 Math.round(percentage * 100.0) / 100.0, status,
-                assignedDate, periodMonth, periodYear);
+                assignedDate, startDate, endDate, periodMonth, periodYear);
     }
 }

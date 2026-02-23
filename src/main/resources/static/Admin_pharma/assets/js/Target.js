@@ -149,6 +149,8 @@ document.addEventListener("DOMContentLoaded", () => {
         targetUnits: Math.round(Number(t.salesTarget) || 0),
         periodMonth: month,
         periodYear: year,
+        startDate: t.startDate,
+        endDate: t.endDate,
         assignedBy: "Admin"
       })
     });

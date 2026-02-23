@@ -42,6 +42,12 @@ public class SalesTarget {
     @Column(name = "period_year", nullable = false)
     private Integer periodYear;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
     @Column(name = "assigned_by")
     private String assignedBy;
 
@@ -141,6 +147,22 @@ public class SalesTarget {
 
     public void setPeriodYear(Integer periodYear) {
         this.periodYear = periodYear;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
     public String getAssignedBy() {

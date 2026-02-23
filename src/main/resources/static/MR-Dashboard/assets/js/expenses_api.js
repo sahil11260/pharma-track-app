@@ -102,7 +102,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 amount: exp.amount,
                 date: exp.expenseDate,
                 desc: exp.description || "",
-                attachment: exp.receiptFilename || null,
+                attachment: exp.receiptPath ? exp.receiptPath.split(/[\\/]/).pop() : null,
+                originalName: exp.receiptFilename || null,
                 status: (exp.status || "PENDING").charAt(0).toUpperCase() + (exp.status || "pending").slice(1).toLowerCase(),
                 submittedDate: exp.submittedDate,
                 rejectionReason: exp.rejectionReason
@@ -125,9 +126,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Attachment link
-    function getAttachmentLink(filename) {
-        if (!filename) return '<span class="text-muted">No attachment</span>';
-        return `<a href="/uploads/receipts/${filename}" target="_blank" class="text-primary"><i class="bi bi-paperclip"></i> ${filename}</a>`;
+    function getAttachmentLink(storedFilename, originalName) {
+        if (!storedFilename) return '<span class="text-muted">No attachment</span>';
+        const displayName = originalName || storedFilename;
+        return `<a href="/uploads/receipts/${storedFilename}" target="_blank" class="text-primary" title="${displayName}"><i class="bi bi-paperclip"></i> ${displayName}</a>`;
     }
 
     // Render pagination
@@ -197,7 +199,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <td>${new Date(expense.date).toLocaleDateString()}</td>
           <td>${expense.category}</td>
           <td>₹${Number(expense.amount).toFixed(2)}</td>
-          <td>${getAttachmentLink(expense.attachment)}</td>
+          <td>${getAttachmentLink(expense.attachment, expense.originalName)}</td>
           <td>${expense.desc || "-"}</td>
           <td>${getStatusBadge(expense.status)}</td>
           <td>
@@ -220,6 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const category = document.getElementById("expCategory").value;
         const amount = document.getElementById("expAmount").value;
         const date = document.getElementById("expDate").value;
+        const fileInput = document.getElementById("expAttachmentFile");
 
         if (!category || !amount || !date) {
             showToast("Please fill all required fields", "error");
@@ -228,6 +231,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (parseFloat(amount) <= 0) {
             showToast("Amount must be greater than 0", "error");
+            return false;
+        }
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showToast("Please upload a proof attachment (image or PDF)", "error");
             return false;
         }
 

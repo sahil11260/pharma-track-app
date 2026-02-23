@@ -30,19 +30,21 @@ public class UserController {
 
     @GetMapping
     public List<UserResponse> list(
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String manager,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String role) {
+            @org.springframework.web.bind.annotation.RequestParam(value = "manager", required = false) String manager,
+            @org.springframework.web.bind.annotation.RequestParam(value = "role", required = false) String role) {
         if (role != null && !role.isBlank()) {
             try {
-                com.kavyapharm.farmatrack.user.model.UserRole userRole = com.kavyapharm.farmatrack.user.model.UserRole.valueOf(role.toUpperCase());
+                com.kavyapharm.farmatrack.user.model.UserRole userRole = com.kavyapharm.farmatrack.user.model.UserRole
+                        .valueOf(role.toUpperCase());
                 return userService.listByRoleAndManager(userRole, manager);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return userService.list(manager);
     }
 
     @GetMapping("/{id}")
-    public UserResponse get(@PathVariable Long id) {
+    public UserResponse get(@PathVariable(value = "id") Long id) {
         return userService.get(id);
     }
 
@@ -52,12 +54,12 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public UserResponse update(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+    public UserResponse update(@PathVariable(value = "id") Long id, @Valid @RequestBody UpdateUserRequest request) {
         return userService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
