@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getAuthHeader() {
-    const token = localStorage.getItem("kavya_auth_token");
+    const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
     if (!token) return {};
     return { Authorization: `Bearer ${token}` };
   }

@@ -7,9 +7,7 @@ import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
 import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesAchievementRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
-import com.kavyapharm.farmatrack.sales.model.SalesAchievement;
 import com.kavyapharm.farmatrack.sales.model.SalesTarget;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -148,17 +146,6 @@ public class MrDashboardService {
             e.printStackTrace();
             return new MrDashboardResponse(0.0, 0, 0, 0.0, 0.0);
         }
-    }
-
-    private String getCurrentMrName() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            return null;
-        }
-        String email = auth.getName();
-        return userRepository.findByEmailIgnoreCase(email)
-                .map(com.kavyapharm.farmatrack.user.model.User::getName)
-                .orElse(email);
     }
 
     private void logFirstFewUsers() {

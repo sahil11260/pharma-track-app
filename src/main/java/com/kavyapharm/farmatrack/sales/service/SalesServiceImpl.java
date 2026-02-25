@@ -129,7 +129,7 @@ public class SalesServiceImpl implements SalesService {
         // Calculate top performers by MR
         Map<Long, MrPerformance> mrPerformanceMap = new HashMap<>();
         for (TargetWithAchievementResponse res : targetResponses) {
-            mrPerformanceMap.putIfAbsent(res.mrId(), new MrPerformance(res.mrId(), res.mrName()));
+            mrPerformanceMap.putIfAbsent(res.mrId(), new MrPerformance(res.mrName()));
             mrPerformanceMap.get(res.mrId()).addTarget(res.targetUnits());
             mrPerformanceMap.get(res.mrId()).addAchievement(res.achievedUnits());
         }
@@ -397,13 +397,11 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private static class MrPerformance {
-        private final Long mrId;
         private final String mrName;
         private int totalTarget = 0;
         private int totalAchievement = 0;
 
-        public MrPerformance(Long mrId, String mrName) {
-            this.mrId = mrId;
+        public MrPerformance(String mrName) {
             this.mrName = mrName;
         }
 

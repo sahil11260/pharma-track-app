@@ -16,6 +16,33 @@ document.addEventListener("DOMContentLoaded", () => {
         return token ? { "Authorization": `Bearer ${token}` } : {};
     }
 
+    function getCurrentUserIdentifier() {
+        try {
+            const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
+            if (email) return email;
+            const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
+            if (name) return name;
+        } catch (e) {
+        }
+        return "";
+    }
+
+    function getCurrentUserIdentifierLower() {
+        const id = getCurrentUserIdentifier();
+        return id ? id.toLowerCase() : "";
+    }
+
+    function stockStorageKey() {
+        const id = getCurrentUserIdentifierLower() || "anonymous";
+        return `mrProductStock:${id}`;
+    }
+
+    function dcrStorageKey() {
+        const id = getCurrentUserIdentifierLower() || "anonymous";
+        return `submittedDCRs:${id}`;
+    }
+
     async function apiJson(url, options) {
         const headers = {
             'Content-Type': 'application/json',
@@ -36,13 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Doctors will be loaded from API
     let assignedDoctors = [];
 
-    let mrStock = JSON.parse(localStorage.getItem('mrProductStock')) || [];
+    let mrStock = JSON.parse(localStorage.getItem(stockStorageKey())) || [];
 
     // --- STATE MANAGEMENT ---
     let tempSamples = [];
     let systemProducts = []; // Global system products
     let sampleEntryIdCounter = 1;
-    let submittedDCRs = JSON.parse(localStorage.getItem('submittedDCRs')) || [];
+    let submittedDCRs = JSON.parse(localStorage.getItem(dcrStorageKey())) || [];
     let currentPage = 1;
 
     // Ensure we have at least 4 mock entries for initial display if storage is empty
@@ -80,24 +107,26 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- PERSISTENCE/STOCK FUNCTIONS ---
 
     function saveStock() {
-        localStorage.setItem('mrProductStock', JSON.stringify(mrStock));
+        localStorage.setItem(stockStorageKey(), JSON.stringify(mrStock));
     }
 
     function saveDCRs() {
-        localStorage.setItem('submittedDCRs', JSON.stringify(submittedDCRs));
+        localStorage.setItem(dcrStorageKey(), JSON.stringify(submittedDCRs));
     }
 
     async function refreshFromApiOrFallback() {
-        const currentUserName = localStorage.getItem('signup_name') || '';
-        console.log('[DCR] Refreshing data for user:', currentUserName);
+        const currentUserIdentifier = getCurrentUserIdentifier();
+        console.log('[DCR] Refreshing data for user:', currentUserIdentifier);
 
         // 1. Fetch Stock
         try {
-            const stockItems = await apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserName)}`);
-            if (Array.isArray(stockItems)) {
-                mrStock = stockItems.map(p => ({ id: p.id, name: p.name, stock: Number(p.stock) || 0 }));
-                saveStock();
-                console.log('[DCR] Loaded stock:', mrStock.length);
+            if (currentUserIdentifier) {
+                const stockItems = await apiJson(`${API.MR_STOCK}?userName=${encodeURIComponent(currentUserIdentifier)}`);
+                if (Array.isArray(stockItems)) {
+                    mrStock = stockItems.map(p => ({ id: p.id, name: p.name, stock: Number(p.stock) || 0 }));
+                    saveStock();
+                    console.log('[DCR] Loaded stock:', mrStock.length);
+                }
             }
         } catch (e) {
             console.warn('[DCR] Failed to load stock from API.', e);
@@ -105,11 +134,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 2. Fetch DCRs
         try {
-            const dcrs = await apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserName)}`);
-            if (Array.isArray(dcrs)) {
-                submittedDCRs = dcrs;
-                saveDCRs();
-                console.log('[DCR] Loaded DCRs:', submittedDCRs.length);
+            if (currentUserIdentifier) {
+                const dcrs = await apiJson(`${API.DCRS}?mrName=${encodeURIComponent(currentUserIdentifier)}`);
+                if (Array.isArray(dcrs)) {
+                    submittedDCRs = dcrs;
+                    saveDCRs();
+                    console.log('[DCR] Loaded DCRs:', submittedDCRs.length);
+                }
             }
         } catch (e) {
             console.warn('[DCR] Failed to load DCRs from API.', e);
@@ -123,8 +154,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 assignedDoctors = doctors.map(d => ({
                     id: d.id || d.doctorId || d.id,
                     name: d.name || d.doctorName || 'Unknown Doctor',
-                    clinic: d.clinicName || d.clinic || 'Default Clinic'
+                    clinic: d.clinicName || d.clinic || 'Default Clinic',
+                    assignedMR: d.assignedMR || d.assignedMr || ''
                 }));
+
+                // Defensive filtering: if backend returns broader list (e.g. anonymous access),
+                // keep only doctors assigned to the logged-in MR.
+                const currentLower = getCurrentUserIdentifierLower();
+                if (currentLower) {
+                    const scoped = assignedDoctors.filter(d => {
+                        const amr = (d.assignedMR || '').trim().toLowerCase();
+                        return amr === '' || amr === currentLower;
+                    });
+                    // If filtering would hide everything due to missing assignedMR, keep original.
+                    if (scoped.length > 0) {
+                        assignedDoctors = scoped;
+                    }
+                }
                 console.log('[DCR] Loaded doctors:', assignedDoctors.length);
                 populateDoctors();
                 doctorsLoaded = true;
@@ -197,23 +243,20 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        // Combine systemProducts and mrStock for better coverage
-        // We use systemProducts as the primary list of what SHOULD exist
-        const displayList = systemProducts.length > 0 ? systemProducts : mrStock;
+        // Only show MR-assigned products (mrStock) with available stock (>0)
+        const displayList = Array.isArray(mrStock) ? mrStock : [];
 
-        displayList.forEach(product => {
-            const effectiveStock = getProductStock(product.id);
+        displayList
+            .filter(p => (Number(p.stock) || 0) > 0)
+            .forEach(product => {
+                const effectiveStock = getProductStock(product.id);
+                if (effectiveStock <= 0) return;
 
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (Stock: ${effectiveStock})`;
-
-            if (effectiveStock <= 0) {
-                // option.disabled = true; // Don't disable, let them select it but they might see error on submit if stock check is active
-            }
-
-            selectElement.appendChild(option);
-        });
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (Stock: ${effectiveStock})`;
+                selectElement.appendChild(option);
+            });
     }
 
     // --- TEMPORARY SAMPLES TABLE MANAGEMENT (for the form) ---

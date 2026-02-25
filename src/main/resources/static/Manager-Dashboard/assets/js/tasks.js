@@ -107,7 +107,7 @@ let tasksApiMode = true;
 let isSubmittingTask = false;
 
 function getAuthHeader() {
-  const token = localStorage.getItem("kavya_auth_token");
+  const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
@@ -255,14 +255,32 @@ function hideTasksApiRetryBanner() {
    Utilities
    --------------------------- */
 function formatDate(dateString) {
-  if (!dateString) return "-";
-  const date = new Date(dateString.replace(/-/g, "/")); // Use replace for better cross-browser date parsing
-  if (isNaN(date)) return dateString;
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  if (!dateString) return "No Due Date";
+
+  // Parse yyyy-mm-dd safely (avoid timezone shifting and cross-browser quirks)
+  let due;
+  if (typeof dateString === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [y, m, d] = dateString.split("-").map((n) => Number(n));
+    // Use local noon to prevent DST edge cases when normalizing to start-of-day
+    due = new Date(y, m - 1, d, 12, 0, 0, 0);
+  } else {
+    due = new Date(String(dateString).replace(/-/g, "/"));
+  }
+
+  if (isNaN(due)) return String(dateString);
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((dueStart - todayStart) / msPerDay);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays > 1) return `${diffDays} days to go`;
+  return `${Math.abs(diffDays)} days ago`;
 }
 function escapeHtml(s) {
   if (s === null || s === undefined) return "";
@@ -571,7 +589,7 @@ async function refreshDoctorList() {
         id: Number(d.id),
         name: d.name,
         clinicName: d.clinicName || "",
-        assignedMr: d.assignedMR || "" // Backend returns assignedMR (capital MR)
+        assignedMr: (d.assignedMR || d.assignedMr || d.mrName || d.mr || "") // tolerate backend field variants
       }));
       console.log("[TASK] Successfully loaded", doctorData.length, "doctors");
       console.log("[TASK] Doctor data sample:", doctorData.slice(0, 2));
@@ -587,6 +605,11 @@ function populateDoctorDropdown(mrEmail) {
   const selectEl = document.getElementById("doctorName");
   if (!selectEl) return;
 
+  const normalize = (v) => (v == null ? "" : String(v).trim().toLowerCase());
+  const selectedMrKey = normalize(mrEmail);
+  const selectedMrObj = (mrData || []).find((m) => normalize(m.email) === selectedMrKey);
+  const selectedMrNameKey = normalize(selectedMrObj && selectedMrObj.name);
+
   console.log("[TASK] Populating doctors for MR email:", mrEmail);
   console.log("[TASK] Total doctors available:", doctorData.length);
 
@@ -596,13 +619,22 @@ function populateDoctorDropdown(mrEmail) {
   defaultOpt.textContent = "Optional";
   selectEl.appendChild(defaultOpt);
 
-  // Filter doctors by assigned MR email
-  const filteredDoctors = mrEmail
+  // Filter doctors by assigned MR. In some datasets assignedMR stores MR name (not email),
+  // so we match against both selected MR email and selected MR display name, case-insensitively.
+  let filteredDoctors = selectedMrKey
     ? doctorData.filter((d) => {
-      console.log("[TASK] Checking doctor:", d.name, "assignedMr:", d.assignedMr, "matches:", d.assignedMr === mrEmail);
-      return d.assignedMr === mrEmail;
+      const assigned = normalize(d.assignedMr);
+      const matchesEmail = selectedMrKey && assigned === selectedMrKey;
+      const matchesName = selectedMrNameKey && assigned === selectedMrNameKey;
+      return matchesEmail || matchesName;
     })
     : doctorData;
+
+  // Fallback: if filter yields none, show all doctors (better UX than empty dropdown)
+  if (selectedMrKey && filteredDoctors.length === 0) {
+    console.warn("[TASK] No doctors matched selected MR. Falling back to full doctor list.");
+    filteredDoctors = doctorData;
+  }
 
   console.log("[TASK] Filtered doctors count:", filteredDoctors.length);
 
@@ -647,6 +679,13 @@ function setupDoctorFiltering() {
       if (clinicInput) clinicInput.value = "";
     });
     console.log("[TASK] MR change listener attached");
+
+    // Populate immediately if a MR is already selected (e.g., when editing or reopening modal)
+    if (mrSelect.value) {
+      populateDoctorDropdown(mrSelect.value);
+    } else {
+      populateDoctorDropdown("");
+    }
   }
 
   if (doctorSelect) {
@@ -659,6 +698,15 @@ function setupDoctorFiltering() {
   if (taskTypeSelect) {
     taskTypeSelect.addEventListener("change", () => {
       updateTaskFieldsVisibility(taskTypeSelect.value);
+    });
+  }
+
+  // Ensure dropdown is refreshed when create modal opens
+  const modalEl = document.getElementById("createTaskModal");
+  if (modalEl) {
+    modalEl.addEventListener("shown.bs.modal", () => {
+      const mrSel = document.getElementById("assignedTo");
+      populateDoctorDropdown(mrSel ? mrSel.value : "");
     });
   }
 }
@@ -688,14 +736,23 @@ function getTaskTypeIcon(type) {
   };
   return icons[type] || "bi bi-clipboard";
 }
+
+function normalizeTaskStatus(status) {
+  if (status == null) return status;
+  return String(status)
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+}
 function getStatusBadge(status) {
+  const key = normalizeTaskStatus(status);
   const badges = {
     pending: '<span class="badge bg-warning">Pending</span>',
     "in-progress": '<span class="badge bg-primary">In Progress</span>',
     completed: '<span class="badge bg-success">Completed</span>',
     overdue: '<span class="badge bg-danger">Overdue</span>',
   };
-  return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+  return badges[key] || '<span class="badge bg-secondary">Unknown</span>';
 }
 function getPriorityBadge(priority) {
   const badges = {
@@ -727,6 +784,7 @@ function renderTaskTable(data, page = 1) {
     const typeIcon = getTaskTypeIcon(task.type);
     const statusBadge = getStatusBadge(task.status);
     const priorityBadge = getPriorityBadge(task.priority);
+    const isCompleted = normalizeTaskStatus(task.status) === "completed";
 
     // Find MR name from email for display
     const mr = mrData.find((m) => m.email === task.assignedTo);
@@ -743,10 +801,10 @@ function renderTaskTable(data, page = 1) {
         <td>${task.location ? escapeHtml(task.location) : "-"}</td>
         <td>
           <div class="d-flex flex-row flex-nowrap align-items-center justify-content-center">
-            <button aria-label="Edit task" class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${task.id}">
+            <button aria-label="Edit task" class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${task.id}" ${isCompleted ? "disabled aria-disabled=\"true\"" : ""}>
               <i class="bi bi-pencil"></i>
             </button>
-            <button aria-label="Update status" class="btn btn-outline-success btn-sm btn-update me-1" data-id="${task.id}">
+            <button aria-label="Update status" class="btn btn-outline-success btn-sm btn-update me-1" data-id="${task.id}" ${isCompleted ? "disabled aria-disabled=\"true\"" : ""}>
               <i class="bi bi-check-circle"></i>
             </button>
             <button aria-label="Delete task" class="btn btn-outline-danger btn-sm btn-delete" data-id="${task.id}">
@@ -758,21 +816,36 @@ function renderTaskTable(data, page = 1) {
     tasksList.appendChild(row);
   });
 
-  // Attach handlers
-  tasksList.querySelectorAll(".btn-edit").forEach((btn) => {
-    btn.removeEventListener("click", onEditClick);
-    btn.addEventListener("click", onEditClick);
-  });
-  tasksList.querySelectorAll(".btn-update").forEach((btn) => {
-    btn.removeEventListener("click", onUpdateClick);
-    btn.addEventListener("click", onUpdateClick);
-  });
-  tasksList.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.removeEventListener("click", onDeleteClick);
-    btn.addEventListener("click", onDeleteClick);
-  });
-
   renderPagination(total, page, pageSize);
+}
+
+function initTasksTableDelegatedHandlers() {
+  const tasksList = document.getElementById("tasksList");
+  if (!tasksList) return;
+  if (tasksList.dataset.handlersBound === "true") return;
+  tasksList.dataset.handlersBound = "true";
+
+  tasksList.addEventListener("click", (e) => {
+    const editBtn = e.target.closest(".btn-edit");
+    if (editBtn && tasksList.contains(editBtn)) {
+      if (editBtn.hasAttribute("disabled")) return;
+      onEditClick({ currentTarget: editBtn });
+      return;
+    }
+
+    const updateBtn = e.target.closest(".btn-update");
+    if (updateBtn && tasksList.contains(updateBtn)) {
+      if (updateBtn.hasAttribute("disabled")) return;
+      onUpdateClick({ currentTarget: updateBtn });
+      return;
+    }
+
+    const deleteBtn = e.target.closest(".btn-delete");
+    if (deleteBtn && tasksList.contains(deleteBtn)) {
+      onDeleteClick({ currentTarget: deleteBtn });
+      return;
+    }
+  });
 }
 
 /* ---------------------------
@@ -905,6 +978,11 @@ function onEditClick(e) {
 }
 function onUpdateClick(e) {
   const id = Number(e.currentTarget.dataset.id);
+  const task = tasksData.find((t) => t.id === Number(id));
+  if (task && normalizeTaskStatus(task.status) === "completed") {
+    showToast("Read-only", "Completed tasks cannot be updated.");
+    return;
+  }
   // Get current status to pre-select in modal
   const currentStatus = tasksData.find((t) => t.id === id)?.status;
   updateTaskStatus(id, currentStatus);
@@ -922,6 +1000,11 @@ function editTask(taskId) {
   const task = tasksData.find((t) => t.id === Number(taskId));
   if (!task) {
     showToast("Error", "Task not found.");
+    return;
+  }
+
+  if (normalizeTaskStatus(task.status) === "completed") {
+    showToast("Read-only", "Completed tasks cannot be edited.");
     return;
   }
 
@@ -1078,6 +1161,19 @@ function initCreateTaskHandler() {
 
   // Event listener for the "Create Task" button
   saveTaskBtn.addEventListener("click", () => {
+    const locationEl = document.getElementById("taskLocation");
+    if (locationEl) locationEl.classList.remove("is-invalid");
+
+    const locationVal = (locationEl ? locationEl.value : "").trim();
+    if (!locationVal) {
+      if (locationEl) {
+        locationEl.classList.add("is-invalid");
+        locationEl.focus();
+      }
+      showToast("Validation", "Location is required.");
+      return;
+    }
+
     // Prevent double submission
     if (isSubmittingTask) {
       console.log("[TASK] Submit blocked: already in progress.");
@@ -1106,7 +1202,7 @@ function initCreateTaskHandler() {
       assignedTo: document.getElementById("assignedTo").value,
       priority: document.getElementById("taskPriority").value,
       dueDate: document.getElementById("dueDate").value || null,
-      location: document.getElementById("taskLocation").value,
+      location: locationVal,
       description: document.getElementById("taskDescription").value,
       clinicName: document.getElementById("clinicName").value,
       doctorName: document.getElementById("doctorName").value,
@@ -1225,7 +1321,8 @@ function applyFilters() {
 
   let filteredData = tasksData.slice();
   if (filterStatus && filterStatus.value) {
-    filteredData = filteredData.filter((task) => task.status === filterStatus.value);
+    const key = normalizeTaskStatus(filterStatus.value);
+    filteredData = filteredData.filter((task) => normalizeTaskStatus(task.status) === key);
   }
   if (filterPriority && filterPriority.value) {
     filteredData = filteredData.filter((task) => task.priority === filterPriority.value);
@@ -1303,6 +1400,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderTaskTable(filteredTasks, currentPage);
     renderSummaryCards(tasksData);
   })();
+
+  initTasksTableDelegatedHandlers();
 
   // search
   const searchInput = document.getElementById("searchTask");
