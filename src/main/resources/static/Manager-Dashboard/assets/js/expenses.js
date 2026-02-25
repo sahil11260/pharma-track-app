@@ -618,7 +618,7 @@
     if (Array.isArray(exp.attachments) && exp.attachments.length) {
       exp.attachments.forEach((a) => {
         const name = esc(a);
-        const href = /^https?:\/\//i.test(a) ? a : `assets/uploads/${a}`;
+        const href = /^https?:\/\//i.test(a) ? a : `/uploads/receipts/${a}`;
         attList.innerHTML += `<div>${name} <a class="attachment-link" href="${href}" target="_blank" rel="noopener">[View file]</a></div>`;
       });
     } else {
@@ -741,7 +741,7 @@
       ${exp.attachments && exp.attachments.length
         ? `<p><strong>Attachments:</strong><br/>${exp.attachments
           .map((a) => {
-            const href = /^https?:\/\//i.test(a) ? a : `assets/uploads/${a}`;
+            const href = /^https?:\/\//i.test(a) ? a : `/uploads/receipts/${a}`;
             return `<div>${esc(a)} <a href="${href}" target="_blank" rel="noopener">[View file]</a></div>`;
           })
           .join("")}</p>`

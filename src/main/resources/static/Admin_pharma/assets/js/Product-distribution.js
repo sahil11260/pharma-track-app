@@ -2,7 +2,6 @@
 // Product Distribution with Price Display
 document.addEventListener("DOMContentLoaded", () => {
 
-  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const PRODUCTS_API_BASE = `${API_BASE}/api/products`;
@@ -76,14 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const users = await apiJson(USERS_API_BASE);
       if (Array.isArray(users)) {
-        // Filter for MANAGER role (Case Insensitive)
         allManagers = users.filter(u => {
           const roleRaw = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
           const role = String(roleRaw || "").toUpperCase();
           return role === "MANAGER";
         });
 
-        // Filter for MR role (Case Insensitive)
         allMRs = users.filter(u => {
           const roleRaw = (u.role && typeof u.role === 'object') ? u.role.name : u.role;
           const role = String(roleRaw || "").toUpperCase();
@@ -92,7 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         populateManagerSelect();
 
-        // Update MR dropdown if manager is already selected, else clear it
         const mSelect = document.getElementById("managerSelect");
         if (mSelect && mSelect.value) {
           populateMrSelect(mSelect.value);
@@ -109,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const mSelect = document.getElementById("managerSelect");
     if (!mSelect) return;
     const currentVal = mSelect.value;
-    // Use Email (unique) as value if available, else Name
     mSelect.innerHTML = '<option value="">Select a Manager</option>' +
       allManagers.map(m => `<option value="${m.email || m.name}">${m.name}</option>`).join("");
     if (currentVal) mSelect.value = currentVal;
@@ -123,8 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let filteredMRs = [];
     if (targetMgr && targetMgr.trim() !== "") {
       const target = targetMgr.trim().toLowerCase();
-
-      // Secondary lookup: find the manager object to get their name/email/id for cross-matching
       const managerObj = allManagers.find(m =>
         (m.email && m.email.toLowerCase() === target) ||
         (m.name && m.name.toLowerCase() === target) ||
@@ -138,8 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
       filteredMRs = allMRs.filter(m => {
         if (!m.assignedManager) return false;
         const assigned = String(m.assignedManager).trim().toLowerCase();
-
-        // Match against passed value (Email/Name/ID) OR look up the manager's other properties
         return assigned === target ||
           (mgrName && assigned === mgrName) ||
           (mgrEmail && assigned === mgrEmail) ||
@@ -151,17 +142,12 @@ document.addEventListener("DOMContentLoaded", () => {
     mrSelect.innerHTML = `<option value="">Select an MR${countText}</option>` +
       filteredMRs.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
 
-    // Preserve selection if still valid in filtered list
     if (currentVal && filteredMRs.some(m => m.name === currentVal)) {
       mrSelect.value = currentVal;
     } else {
       mrSelect.value = "";
     }
   }
-
-
-
-
 
   async function refreshStockFromApiOrFallback() {
     try {
@@ -204,7 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return await apiJson(`${PRODUCTS_API_BASE}/${product.id}`, { method: "PUT", body: JSON.stringify(payload) });
   }
 
-  // Dynamic stock & allocations (API-first)
   let receivedStock = [];
   let allocations = [];
 
@@ -236,13 +221,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
-  // Pagination state
   const itemsPerPage = 6;
   let currentPage = 1;
   let currentSearch = "";
 
-  // Elements
   const receivedSummaryRow = document.getElementById("receivedSummaryRow");
+  const summaryTableBody = document.getElementById("receivedSummaryTableBody");
   const distributionTableBody = document.getElementById("distributionTableBody");
   const pagination = document.getElementById("pagination");
   const searchInput = document.getElementById("searchInput");
@@ -258,11 +242,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const addProductModalTitle = document.getElementById("addProductModalTitle");
   const refreshBtn = document.getElementById("refreshBtn");
 
-  // Elements for Add Product
   const addProductForm = document.getElementById("addProductForm");
   const newProductName = document.getElementById("newProductName");
   const managerSelect = document.getElementById("managerSelect");
-  // Filter MRs when a Manager is selected
   if (managerSelect) {
     managerSelect.addEventListener("change", (e) => {
       const selectedManager = e.target.value;
@@ -277,38 +259,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const newCategory = document.getElementById("newCategory");
   const newPrice = document.getElementById("newPrice");
   const newStock = document.getElementById("newStock");
-  const newStockLabel = document.querySelector('label[for="newStock"]') || document.querySelector('#addProductModal label:nth-of-type(6)') || { textContent: "" }; // Fallback label lookup
   const newDescription = document.getElementById("newDescription");
   const productSuggestions = document.getElementById("productSuggestions");
 
-  // ✅ Add Product form submission (supports both Add and Edit modes)
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const price = parseFloat(newPrice.value || "0");
-    let stock = parseInt(newStock.value || "0", 10);
+    let stockToAdd = parseInt(newStock.value || "0", 10);
     const editingProductId = editingProductIdInput ? editingProductIdInput.value : "-1";
 
-    // Fix: If we are in editing mode, the input value is "Stock to Add"
-    // So we add it to the existing stock value
-    if (editingProductId !== "-1" && editingProductId !== "" && editingStockValueInput) {
-      const currentStock = parseInt(editingStockValueInput.value || "0", 10);
-      stock = currentStock + stock;
-    }
+    if (price < 0) return alert("Product price cannot be negative.");
+    if (stockToAdd < 0) return alert("Stock quantity cannot be negative.");
 
-    if (price < 0) {
-      alert("Product price cannot be negative.");
-      return;
-    }
-    if (stock < 0) {
-      alert("Stock quantity cannot be negative.");
-      return;
-    }
+    const existingProduct = receivedStock.find(p => String(p.id) === String(editingProductId));
+    const finalStock = existingProduct ? (existingProduct.available + stockToAdd) : stockToAdd;
 
     const payload = {
       name: (newProductName.value || "").trim(),
       category: (newCategory.value || "General").trim(),
       price: String(price).trim(),
-      stock: stock,
+      stock: finalStock,
       description: (newDescription.value || "").trim(),
       expiryDate: (document.getElementById("newExpiryDate") ? document.getElementById("newExpiryDate").value : "").trim()
     };
@@ -317,10 +287,9 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         if (editingProductId !== "-1" && editingProductId !== "") {
           await apiJson(`${PRODUCTS_API_BASE}/${editingProductId}`, { method: "PUT", body: JSON.stringify(payload) });
-          if (editingProductIdInput) editingProductIdInput.value = "-1";
-          if (addProductModalTitle) addProductModalTitle.textContent = "Add New Product";
+          editingProductIdInput.value = "-1";
+          addProductModalTitle.textContent = "Add New Product";
         } else {
-          // Point 1: Handle duplicate check via backend rejection
           await apiJson(PRODUCTS_API_BASE, { method: "POST", body: JSON.stringify(payload) });
         }
         await refreshStockFromApiOrFallback();
@@ -330,17 +299,12 @@ document.addEventListener("DOMContentLoaded", () => {
         addProductForm.reset();
         bootstrap.Modal.getOrCreateInstance(document.getElementById("addProductModal")).hide();
       } catch (err) {
-        // Point 1: Specific popup message for already added products
-        if (err.message.includes("already added")) {
-          alert("Product cannot be created as its been already added as per the project standards");
-        } else {
-          alert("Failed to save product: " + err.message);
-        }
+        if (err.message.includes("already added")) alert("Product cannot be created as its been already added as per the project standards");
+        else alert("Failed to save product: " + err.message);
       }
     })();
   });
 
-  // Reset form when modal is closed/opened
   const addProductModal = document.getElementById("addProductModal");
   if (addProductModal) {
     addProductModal.addEventListener('hidden.bs.modal', function () {
@@ -348,7 +312,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (editingProductIdInput) editingProductIdInput.value = "-1";
       if (addProductModalTitle) addProductModalTitle.textContent = "Add New Product";
 
-      // Reset the dynamic label ("Stock to Add" -> "Stock Quantity")
       const labels = addProductModal.querySelectorAll("label");
       labels.forEach(l => {
         if (l.textContent.includes("Stock to Add")) {
@@ -359,26 +322,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Handle New Allocation modal lifecycle
   const allocateModalEl = document.getElementById("allocateModal");
   if (allocateModalEl) {
     allocateModalEl.addEventListener('show.bs.modal', async function () {
-      // Refresh users to ensure we have latest assignments
       await refreshUsersFromApi();
-
-      // If not in editing mode, reset the form
       if (editingIndexInput.value === "-1") {
         allocateForm.reset();
         allocateModalTitle.textContent = "New Allocation";
-        mrSelectContainer.style.display = "none"; // Default role is Manager
+        mrSelectContainer.style.display = "none";
         populateMrSelect(null);
         updateAvailableInfo();
       }
     });
-  }
-
-  // \u2705 Fix: Reset form when modal is hidden (Cancel or backdrop click)
-  if (allocateModalEl) {
     allocateModalEl.addEventListener('hidden.bs.modal', function () {
       if (allocateForm) {
         allocateForm.reset();
@@ -391,50 +346,60 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-
-
-  // Search
-  searchInput.addEventListener("input", (e) => {
+  searchInput && searchInput.addEventListener("input", (e) => {
     currentSearch = e.target.value.trim().toLowerCase();
     currentPage = 1;
     renderTable();
   });
 
-  // Refresh
-  refreshBtn && refreshBtn.addEventListener("click", () => {
-    (async function () {
-      await refreshStockFromApiOrFallback();
-      populateProductSelect();
-      renderSummary();
-      renderTable();
-    })();
+  newProductName && newProductName.addEventListener("change", () => {
+    const name = newProductName.value.trim();
+    const existing = receivedStock.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const isEditMode = editingProductIdInput && editingProductIdInput.value !== "-1";
+
+    if (existing && !isEditMode) {
+      alert("Product cannot be created as its been already added as per the project standards");
+      newProductName.value = "";
+    } else if (existing) {
+      newCategory.value = existing.category || "";
+      newPrice.value = existing.price || "";
+      newDescription.value = existing.description || "";
+      const labels = document.getElementById("addProductModal").querySelectorAll("label");
+      labels.forEach(l => {
+        if (l.textContent.includes("Stock Quantity") || l.textContent.includes("Stock to Add")) {
+          l.textContent = "Stock to Add (Current: " + existing.available + ")";
+          l.classList.add("text-success", "fw-bold");
+        }
+      });
+    }
   });
 
-  // \u2705 Populate product dropdown (now showing price)
+  refreshBtn && refreshBtn.addEventListener("click", async () => {
+    await refreshStockFromApiOrFallback();
+    populateProductSelect();
+    renderSummary();
+    renderTable();
+  });
+
   function populateProductSelect() {
+    if (!productSelect) return;
     productSelect.innerHTML = receivedStock
-      .map(
-        (p) =>
-          `<option value="${p.id}">
-            ${p.name} \u2014 \u20B9${p.price}/unit (Available: ${p.available})
-          </option>`
-      )
+      .map(p => `<option value="${p.id}">${p.name} — ₹${p.price}/unit (Available: ${p.available})</option>`)
       .join("");
     updateAvailableInfo();
   }
 
-  // \u2705 Update available info on product/qty change
-  productSelect.addEventListener("change", updateAvailableInfo);
-  allocateQty.addEventListener("input", updateAvailableInfo);
+  productSelect && productSelect.addEventListener("change", updateAvailableInfo);
+  allocateQty && allocateQty.addEventListener("input", updateAvailableInfo);
 
   function updateAvailableInfo() {
+    if (!productSelect || !availableInfo) return;
     const pid = parseInt(productSelect.value, 10);
     const product = receivedStock.find((p) => p.id === pid);
     const qty = Number(allocateQty.value || 0);
     if (product) {
       const after = product.available - qty;
-      availableInfo.textContent = `Available: ${product.available} units \u2014 After allocation: ${after >= 0 ? after : "--- (insufficient)"
-        } | Price: \u20B9${product.price}/unit`;
+      availableInfo.textContent = `Available: ${product.available} units — After allocation: ${after >= 0 ? after : "--- (insufficient)"} | Price: ₹${product.price}/unit`;
       if (after < 0) availableInfo.classList.add("text-danger");
       else availableInfo.classList.remove("text-danger");
     } else {
@@ -442,7 +407,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // \u2705 Allocation Role Toggle Logic
   allocateRole && allocateRole.addEventListener("change", () => {
     const role = allocateRole.value;
     if (role === "Manager") {
@@ -453,22 +417,15 @@ document.addEventListener("DOMContentLoaded", () => {
       managerSelectLabel.textContent = "Reporting Manager";
       mrSelectContainer.style.display = "block";
       if (mrSelect) mrSelect.required = true;
-
-      // Trigger filtering if manager is already selected
-      if (managerSelect && managerSelect.value) {
-        populateMrSelect(managerSelect.value);
-      } else {
-        populateMrSelect(null);
-      }
+      if (managerSelect && managerSelect.value) populateMrSelect(managerSelect.value);
+      else populateMrSelect(null);
     }
   });
 
-  // \u2705 View Mode State
-  let summaryViewMode = "Cards"; // "Cards" or "Table"
+  let summaryViewMode = "Cards";
   const btnViewCards = document.getElementById("btnViewCards");
   const btnViewTable = document.getElementById("btnViewTable");
   const summaryTableContainer = document.getElementById("receivedSummaryTableContainer");
-  const summaryTableBody = document.getElementById("receivedSummaryTableBody");
 
   btnViewCards && btnViewCards.addEventListener("click", () => setSummaryViewMode("Cards"));
   btnViewTable && btnViewTable.addEventListener("click", () => setSummaryViewMode("Table"));
@@ -477,7 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
     summaryViewMode = mode;
     if (btnViewCards) btnViewCards.classList.toggle("active", mode === "Cards");
     if (btnViewTable) btnViewTable.classList.toggle("active", mode === "Table");
-
     if (mode === "Cards") {
       if (receivedSummaryRow) receivedSummaryRow.style.display = "flex";
       if (summaryTableContainer) summaryTableContainer.style.display = "none";
@@ -488,116 +444,81 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSummary();
   }
 
-  // \u2705 Render received stock summary content
   function renderSummary() {
     if (!receivedSummaryRow) return;
-
-    // Deduplicate by name for UI display
     const uniqueMap = new Map();
     receivedStock.forEach(p => {
       const name = p.name.trim();
-      if (!uniqueMap.has(name)) {
-        uniqueMap.set(name, { ...p });
-      } else {
-        uniqueMap.get(name).available += p.available;
-      }
+      if (!uniqueMap.has(name)) uniqueMap.set(name, { ...p });
+      else uniqueMap.get(name).available += p.available;
     });
-    const displayStock = Array.from(uniqueMap.values());
-
-    // Sort by ID ascending
-    displayStock.sort((a, b) => a.id - b.id);
-
-    if (summaryViewMode === "Cards") {
-      renderSummaryCards(displayStock);
-    } else {
-      renderSummaryTable(displayStock);
-    }
+    const displayStock = Array.from(uniqueMap.values()).sort((a, b) => a.id - b.id);
+    if (summaryViewMode === "Cards") renderSummaryCards(displayStock);
+    else renderSummaryTable(displayStock);
   }
 
   function renderSummaryCards(displayStock) {
     receivedSummaryRow.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 mb-4";
-    receivedSummaryRow.innerHTML = displayStock
-      .map(
-        (p) => {
-          const isLow = p.available < 20;
-          const statusClass = isLow ? "text-danger" : "text-success";
-          const bgClass = isLow ? "border-danger" : "border-primary-subtle";
-
-          return `
-          <div class="col">
-            <div class="card h-100 shadow-sm border-2 ${bgClass}">
-              <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div class="bg-primary-subtle p-2 rounded text-primary">
-                    <i class="bi bi-capsule fs-4"></i>
-                  </div>
-                  <div class="text-end">
-                    <h3 class="mb-0 fw-bold">${p.available}</h3>
-                    <small class="${statusClass} fw-medium">${isLow ? "Low Stock" : "In Stock"}</small>
-                  </div>
+    receivedSummaryRow.innerHTML = displayStock.map((p) => {
+      const isLow = p.available < 20;
+      return `
+        <div class="col">
+          <div class="card h-100 shadow-sm border-2 ${isLow ? "border-danger" : "border-primary-subtle"}">
+            <div class="card-body p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="bg-primary-subtle p-2 rounded text-primary"><i class="bi bi-capsule fs-4"></i></div>
+                <div class="text-end">
+                  <h3 class="mb-0 fw-bold">${p.available}</h3>
+                  <small class="${isLow ? "text-danger" : "text-success"} fw-medium">${isLow ? "Low Stock" : "In Stock"}</small>
                 </div>
-                <div>
-                  <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
-                  <div class="text-muted small">${p.category} | ₹${p.price}/unit</div>
-                </div>
-                <div class="d-flex justify-content-end mt-2 gap-1">
-                  <button class="btn btn-sm btn-outline-primary" onclick="prod_edit(${p.id})" title="Edit Product"><i class="bi bi-pencil"></i></button>
-                  <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})" title="Delete Product"><i class="bi bi-trash"></i></button>
-                </div>
+              </div>
+              <div>
+                <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
+                <div class="text-muted small">${p.category} | ₹${p.price}/unit</div>
+              </div>
+              <div class="d-flex justify-content-end mt-2 gap-1">
+                <button class="btn btn-sm btn-outline-primary" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
               </div>
             </div>
           </div>
-        `;
-        }
-      )
-      .join("");
+        </div>`;
+    }).join("");
   }
 
   function renderSummaryTable(displayStock) {
     if (!summaryTableBody) return;
-    summaryTableBody.innerHTML = displayStock
-      .map(p => {
-        const isLow = p.available < 20;
-        return `
+    summaryTableBody.innerHTML = displayStock.map(p => {
+      const isLow = p.available < 20;
+      return `
         <tr>
           <td><span class="text-muted small">${p.id}</span></td>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
           <td class="text-end">₹${p.price}</td>
           <td class="text-end fw-bold ${isLow ? 'text-danger' : 'text-primary'}">${p.available}</td>
+          <td class="text-center"><span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span></td>
           <td class="text-center">
-            <span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span>
-          </td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="prod_edit(${p.id})" title="Edit Product"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})" title="Delete Product"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
           </td>
         </tr>`;
-      })
-      .join("");
+    }).join("");
   }
 
-  // \u2705 Render distribution table
   function renderTable() {
+    if (!distributionTableBody) return;
     let filtered = allocations.filter((a) => {
       if (!currentSearch) return true;
-      return (
-        (a.productName && a.productName.toLowerCase().includes(currentSearch)) ||
+      return (a.productName && a.productName.toLowerCase().includes(currentSearch)) ||
         (a.allocateTo && a.allocateTo.toLowerCase().includes(currentSearch)) ||
-        (a.role && a.role.toLowerCase().includes(currentSearch))
-      );
+        (a.role && a.role.toLowerCase().includes(currentSearch));
     });
-
-    const total = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
     if (currentPage > totalPages) currentPage = totalPages;
+    const pageItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    const start = (currentPage - 1) * itemsPerPage;
-    const pageItems = filtered.slice(start, start + itemsPerPage);
-
-    distributionTableBody.innerHTML = pageItems
-      .map(
-        (a) => `
+    distributionTableBody.innerHTML = pageItems.map((a) => `
       <tr>
         <td>${a.date}</td>
         <td><span class="text-muted small">${a.productId || '-'}</span></td>
@@ -606,33 +527,22 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${a.role}</td>
         <td>${a.qty}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="pd_edit(${allocations.indexOf(
-          a
-        )})"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger" onclick="pd_delete(${allocations.indexOf(
-          a
-        )})"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="pd_edit(${allocations.indexOf(a)})"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="pd_delete(${allocations.indexOf(a)})"><i class="bi bi-trash"></i></button>
         </td>
-      </tr>`
-      )
-      .join("");
-
+      </tr>`).join("");
     renderPagination(totalPages);
   }
 
-  // Pagination controls
   function renderPagination(totalPages) {
+    if (!pagination) return;
     pagination.innerHTML = "";
     const prev = document.createElement("li");
     prev.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
     prev.innerHTML = `<a class="page-link" href="#" onclick="pd_changePage(${currentPage - 1})">Previous</a>`;
     pagination.appendChild(prev);
 
-    const range = 2;
-    const start = Math.max(1, currentPage - range);
-    const end = Math.min(totalPages, currentPage + range);
-
-    for (let i = start; i <= end; i++) {
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
       const li = document.createElement("li");
       li.className = `page-item ${i === currentPage ? "active" : ""}`;
       li.innerHTML = `<a class="page-link" href="#" onclick="pd_changePage(${i})">${i}</a>`;
@@ -645,13 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pagination.appendChild(next);
   }
 
-  function setFilter(f) {
-    currentPage = 1;
-    renderTable();
-  }
-
-  // \u2705 Add/Edit Allocation form
-  allocateForm.addEventListener("submit", (e) => {
+  allocateForm && allocateForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const editingIndex = Number(editingIndexInput.value);
     const pid = Number(productSelect.value);
@@ -660,7 +564,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const manager = managerSelect.value;
     const mrName = mrSelect ? mrSelect.value : "";
     const role = allocateRole.value;
-    const status = "Completed"; // Defaulted to Completed
 
     if (!product) return alert("Select a product");
     if (role === "Manager" && !manager) return alert("Please select a manager");
@@ -671,190 +574,87 @@ document.addEventListener("DOMContentLoaded", () => {
 
     (async function () {
       const prev = editingIndex >= 0 ? allocations[editingIndex] : null;
-      const prevIsCompleted = Boolean(prev && prev.status === "Completed");
-      const prevProd = prevIsCompleted
-        ? receivedStock.find((p) => p.id === Number(prev.productId))
-        : null;
+      const prevProd = (prev && prev.status === "Completed") ? receivedStock.find(p => p.id === prev.productId) : null;
+      let availableForCheck = product.available + (prevProd && prevProd.id === product.id ? prev.qty : 0);
 
-      if (status === "Completed") {
-        let availableForCheck = product.available;
-        if (prevIsCompleted && prevProd && Number(prev.productId) === Number(product.id)) {
-          availableForCheck += Number(prev.qty);
-        }
-        if (qty > availableForCheck) {
-          alert("Quantity exceeds available stock");
-          return;
-        }
+      if (qty > availableForCheck) return alert("Quantity exceeds available stock");
+
+      if (prevProd) {
+        prevProd.available += prev.qty;
+        if (productsApiMode) await updateProductStockApi(prevProd, prevProd.available);
       }
 
-      if (editingIndex >= 0) {
-        if (prev && prev.status === "Completed") {
-          const prevProd = receivedStock.find((p) => p.id === prev.productId);
-          if (prevProd) {
-            prevProd.available += Number(prev.qty);
-            if (productsApiMode) {
-              try {
-                await updateProductStockApi(prevProd, prevProd.available);
-              } catch (err) {
-                console.warn("Stock refund API failed. Falling back to localStorage.", err);
-                productsApiMode = false;
-              }
-            }
-          }
-        }
+      product.available -= qty;
+      if (productsApiMode) {
+        await updateProductStockApi(product, product.available);
+        try {
+          await fetch(`${API_BASE}/api/stock-received`, {
+            method: "POST",
+            headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader()),
+            body: JSON.stringify({ productId: String(product.id), quantity: qty, date: new Date().toISOString(), userName: to, notes: `Allocated by Admin` })
+          });
+        } catch (err) { console.warn("MR stock sync failed", err); }
       }
 
-      if (status === "Completed") {
-        product.available -= qty;
-        if (productsApiMode) {
-          try {
-            await updateProductStockApi(product, product.available);
-
-            // SYNC with MR Stock / Manager Samples
-            // Call stock-received API to increment the "field stock"
-            try {
-              // Ensure we use the correct identifier for the recipient
-              // If 'to' is an email, it will be used. If it's a name, the backend will resolve it.
-              const syncPayload = {
-                productId: String(product.id),
-                quantity: Number(qty),
-                date: new Date().toISOString(),
-                userName: to, // This is 'manager' email or 'mrName'
-                notes: `Allocated to ${to} (${role}) by Admin`
-              };
-              console.log("[SYNC] Sending stock-received payload:", syncPayload);
-
-              const syncRes = await fetch(`${API_BASE}/api/stock-received`, {
-                method: "POST",
-                headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader()),
-                body: JSON.stringify(syncPayload)
-              });
-
-              if (!syncRes.ok) {
-                const errText = await syncRes.text();
-                throw new Error(`Sync failed: ${errText}`);
-              }
-              console.log("Successfully synced with MR stock");
-            } catch (err) {
-              console.warn("MR stock sync failed", err);
-            }
-          } catch (err) {
-            console.warn("Stock deduct API failed. Falling back to localStorage.", err);
-            productsApiMode = false;
-          }
-        }
-      }
-
-      const today = new Date().toISOString().split("T")[0];
-      const entry = {
-        date: today,
-        productId: product.id,
-        productName: product.name,
-        allocateTo: to,
-        manager: manager,
-        role,
-        qty,
-        availableAfter: product.available,
-        status,
-      };
-
+      const entry = { date: new Date().toISOString().split("T")[0], productId: product.id, productName: product.name, allocateTo: to, manager, role, qty, status: "Completed" };
       if (editingIndex >= 0) {
         allocations[editingIndex] = entry;
         editingIndexInput.value = -1;
       } else {
         allocations.unshift(entry);
       }
-
-      saveAllocationsToStorage();
-      saveStockToStorage();
-
-      populateProductSelect();
-      renderSummary();
-      renderTable();
-      allocateForm.reset();
-      bootstrap.Modal.getInstance(document.getElementById("allocateModal")).hide();
+      saveAllocationsToStorage(); saveStockToStorage(); populateProductSelect(); renderSummary(); renderTable();
+      allocateForm.reset(); bootstrap.Modal.getInstance(allocateModalEl).hide();
     })();
   });
 
-  // \u2705 Global functions for edit/delete/page change
   window.pd_edit = function (index) {
     const item = allocations[index];
     if (!item) return;
     editingIndexInput.value = index;
     productSelect.value = item.productId;
     allocateRole.value = item.role;
-
-    // Attempt to set manager by email/name
     managerSelect.value = item.manager || "";
-
-    if (item.role === "Manager") {
-      mrSelectContainer.style.display = "none";
-      if (mrSelect) mrSelect.value = "";
-    } else {
+    if (item.role === "Manager") mrSelectContainer.style.display = "none";
+    else {
       mrSelectContainer.style.display = "block";
-      // No need to set mrSelect.value here, populateMrSelect will do it after refresh
+      refreshUsersFromApi().then(() => {
+        populateMrSelect(item.manager);
+        if (mrSelect) mrSelect.value = item.allocateTo;
+      });
     }
     allocateQty.value = item.qty;
     updateAvailableInfo();
     allocateModalTitle.textContent = "Edit Allocation";
-    new bootstrap.Modal(document.getElementById("allocateModal")).show();
-
-    // Refresh users and then trigger MR population if role is MR
-    refreshUsersFromApi().then(() => {
-      if (item.role === "MR" && item.manager) {
-        populateMrSelect(item.manager);
-        if (mrSelect) mrSelect.value = item.allocateTo;
-      }
-    });
+    bootstrap.Modal.getOrCreateInstance(allocateModalEl).show();
   };
 
   window.pd_delete = function (index) {
     if (!confirm("Delete this allocation?")) return;
-    (async function () {
-      const removed = allocations.splice(index, 1)[0];
-      if (removed && removed.status === "Completed") {
-        const prod = receivedStock.find((p) => p.id === removed.productId);
-        if (prod) {
-          prod.available += Number(removed.qty);
-          if (productsApiMode) {
-            try {
-              await updateProductStockApi(prod, prod.available);
-            } catch (err) {
-              console.warn("Stock refund API failed. Falling back to localStorage.", err);
-              productsApiMode = false;
-            }
-          }
-        }
+    const removed = allocations.splice(index, 1)[0];
+    if (removed && removed.status === "Completed") {
+      const prod = receivedStock.find(p => p.id === removed.productId);
+      if (prod) {
+        prod.available += removed.qty;
+        if (productsApiMode) updateProductStockApi(prod, prod.available);
       }
-
-      saveAllocationsToStorage();
-      saveStockToStorage();
-      populateProductSelect();
-      renderSummary();
-      renderTable();
-    })();
+    }
+    saveAllocationsToStorage(); saveStockToStorage(); populateProductSelect(); renderSummary(); renderTable();
   };
 
-  // ✅ Product Edit Function — opens Add Product modal in edit mode
   window.prod_edit = function (id) {
     const product = receivedStock.find(p => p.id === id);
     if (!product) return alert("Product not found.");
-
-    if (editingProductIdInput) editingProductIdInput.value = id;
-    if (editingStockValueInput) editingStockValueInput.value = product.available;
-    if (addProductModalTitle) addProductModalTitle.textContent = "Edit Product";
-
-    if (newProductName) newProductName.value = product.name;
-    if (newCategory) newCategory.value = product.category || "General";
-    if (newPrice) newPrice.value = product.price;
-
-    // Fix: Fill with 0 and change label to "Stock to Add" for clarity
-    if (newStock) newStock.value = 0;
-    if (newDescription) newDescription.value = product.description || "";
-
+    editingProductIdInput.value = id;
+    editingStockValueInput.value = product.available;
+    addProductModalTitle.textContent = "Edit Product";
+    newProductName.value = product.name;
+    newCategory.value = product.category || "General";
+    newPrice.value = product.price;
+    newStock.value = 0;
+    newDescription.value = product.description || "";
     const expiryDateEl = document.getElementById("newExpiryDate");
     if (expiryDateEl) expiryDateEl.value = product.expiryDate || "";
-
     const labels = document.getElementById("addProductModal").querySelectorAll("label");
     labels.forEach(l => {
       if (l.textContent.includes("Stock Quantity") || l.textContent.includes("Stock to Add")) {
@@ -862,83 +662,31 @@ document.addEventListener("DOMContentLoaded", () => {
         l.classList.add("text-success", "fw-bold");
       }
     });
-
-    bootstrap.Modal.getOrCreateInstance(document.getElementById("addProductModal")).show();
+    bootstrap.Modal.getOrCreateInstance(addProductModal).show();
   };
 
-  // ✅ Product Delete Function — fully API-backed
   window.prod_delete = function (id) {
     const product = receivedStock.find(p => p.id === id);
-    if (!product) return;
-    if (!confirm(`Delete product "${product.name}"? This cannot be undone.`)) return;
+    if (!product || !confirm(`Delete product "${product.name}"?`)) return;
     (async function () {
       try {
         await apiJson(`${PRODUCTS_API_BASE}/${id}`, { method: "DELETE" });
         await refreshStockFromApiOrFallback();
-        populateProductSelect();
-        renderSummary();
-        renderTable();
-      } catch (err) {
-        alert("Failed to delete product: " + err.message);
-      }
+        populateProductSelect(); renderSummary(); renderTable();
+      } catch (err) { alert("Failed to delete product: " + err.message); }
     })();
   };
 
   window.pd_changePage = function (page) {
-    const totalPages = Math.max(1, Math.ceil(allocations.length / itemsPerPage));
-    if (page < 1) page = 1;
-    if (page > totalPages) page = totalPages;
     currentPage = page;
     renderTable();
   };
 
-  // \u2705 Initial render
   loadFromStorageIfAny();
   (async function () {
     await refreshStockFromApiOrFallback();
     await refreshUsersFromApi();
-    updateProductSuggestions();
-    populateProductSelect();
-    renderSummary();
-    renderTable();
+    if (productSuggestions) productSuggestions.innerHTML = receivedStock.map(p => `<option value="${p.name}">`).join("");
+    populateProductSelect(); renderSummary(); renderTable();
   })();
-
-  function updateProductSuggestions() {
-    if (!productSuggestions) return;
-    productSuggestions.innerHTML = receivedStock
-      .map(p => `<option value="${p.name}">`)
-      .join("");
-  }
-
-  // Auto-fill form when existing product name is typed/selected
-  newProductName && newProductName.addEventListener("change", () => {
-    const name = newProductName.value.trim();
-    const existing = receivedStock.find(p => p.name.toLowerCase() === name.toLowerCase());
-    if (existing && (editingProductIdInput && editingProductIdInput.value === "-1")) {
-      // If we are in ADD mode and product exists, warn them
-      alert("Product cannot be created as its been already added as per the project standards");
-      newProductName.value = "";
-    } else if (existing) {
-      newCategory.value = existing.category || "";
-      newPrice.value = existing.price || "";
-      newDescription.value = existing.description || "";
-
-      const labels = document.getElementById("addProductModal").querySelectorAll("label");
-      labels.forEach(l => {
-        if (l.textContent.includes("Stock Quantity") || l.textContent.includes("Stock to Add")) {
-          l.textContent = "Stock to Add";
-          l.classList.add("text-success", "fw-bold");
-        }
-      });
-    } else {
-      const labels = document.getElementById("addProductModal").querySelectorAll("label");
-      labels.forEach(l => {
-        if (l.textContent.includes("Stock to Add")) {
-          l.textContent = "Stock Quantity";
-          l.classList.remove("text-success", "fw-bold");
-        }
-      });
-    }
-  });
 });
-

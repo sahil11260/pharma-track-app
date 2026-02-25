@@ -22,8 +22,8 @@ public class FileUploadController {
     @PostMapping
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         String filename = storageService.store(file);
-        // "assets/uploads/" is mapped in WebConfig to "file:uploads/"
-        String url = "assets/uploads/" + filename;
+        // "/uploads/" is mapped in WebConfig to "file:uploads/"
+        String url = "/uploads/" + filename;
         return ResponseEntity.ok(Map.of("url", url, "filename", filename));
     }
 }

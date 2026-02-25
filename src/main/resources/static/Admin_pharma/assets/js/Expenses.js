@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (billFile) {
       uploadedFilename = await uploadFile(billFile);
     }
-    let billUrl = uploadedFilename ? `assets/uploads/${uploadedFilename}` : "";
+    let billUrl = uploadedFilename ? `/uploads/receipts/${uploadedFilename}` : "";
 
     if (editIndex !== null && !billFile) {
       const existing = expenses.find((x) => Number(x.id) === Number(editIndex));

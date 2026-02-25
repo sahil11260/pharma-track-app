@@ -18,7 +18,13 @@ public class WebConfig implements WebMvcConfigurer {
         @Override
         public void addResourceHandlers(
                         @org.springframework.lang.NonNull org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+
+                String uploadPath = new java.io.File("uploads").getAbsolutePath();
+                if (!uploadPath.endsWith(java.io.File.separator)) {
+                        uploadPath += java.io.File.separator;
+                }
+
                 registry.addResourceHandler("/uploads/**")
-                                .addResourceLocations("file:uploads/");
+                                .addResourceLocations("file:" + uploadPath);
         }
 }
