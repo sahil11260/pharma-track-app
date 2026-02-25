@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const USERS_API = `${API_BASE}/api/users`;
   const DOCTORS_API = `${API_BASE}/api/doctors`;
-  const TARGETS_API = `${API_BASE}/api/targets`;
+  const TARGETS_API = `${API_BASE}/api/manager/sales-targets`;
   const DCR_API = `${API_BASE}/api/dcrs`;
   const EXPENSE_API = `${API_BASE}/api/expenses`;
 
@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Total Sales
     const totalSales = allTargets.reduce((sum, t) => {
-      const ach = Number(t.salesAchievement || t.achieved || 0);
+      const ach = Number(t.achievedUnits || t.salesAchievement || t.achieved || 0);
       return sum + ach;
     }, 0);
     document.getElementById("totalSalesDisplay").textContent =
@@ -162,8 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Only include data from the current year for the monthly chart
         if (year === currentYear && month < dynamicMonths.length) {
-          salesByMonth[month] += Number(t.salesAchievement || t.achieved || 0);
-          targetsByMonth[month] += Number(t.salesTarget || t.qty || 0);
+          salesByMonth[month] += Number(t.achievedUnits || t.salesAchievement || t.achieved || 0);
+          targetsByMonth[month] += Number(t.targetUnits || t.salesTarget || t.qty || 0);
         }
       }
     });
@@ -366,8 +366,8 @@ document.addEventListener("DOMContentLoaded", () => {
         };
       }
 
-      mrPerformance[mrName].totalTarget += Number(t.salesTarget || t.qty) || 0;
-      mrPerformance[mrName].totalAchievement += Number(t.salesAchievement || t.achieved) || 0;
+      mrPerformance[mrName].totalTarget += Number(t.targetUnits || t.salesTarget || t.qty) || 0;
+      mrPerformance[mrName].totalAchievement += Number(t.achievedUnits || t.salesAchievement || t.achieved) || 0;
       mrPerformance[mrName].count++;
     });
 

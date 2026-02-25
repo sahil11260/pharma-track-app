@@ -253,6 +253,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const allocateForm = document.getElementById("allocateForm");
   const allocateModalTitle = document.getElementById("allocateModalTitle");
   const editingIndexInput = document.getElementById("editingIndex");
+  const editingProductIdInput = document.getElementById("editingProductId");
+  const editingStockValueInput = document.getElementById("editingStockValue");
+  const addProductModalTitle = document.getElementById("addProductModalTitle");
   const refreshBtn = document.getElementById("refreshBtn");
 
   // Elements for Add Product
@@ -278,11 +281,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const newDescription = document.getElementById("newDescription");
   const productSuggestions = document.getElementById("productSuggestions");
 
-  // \u2705 Add Product form submission
+  // ✅ Add Product form submission (supports both Add and Edit modes)
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const price = parseFloat(newPrice.value || "0");
-    const stock = parseInt(newStock.value || "0", 10);
+    let stock = parseInt(newStock.value || "0", 10);
+    const editingProductId = editingProductIdInput ? editingProductIdInput.value : "-1";
+
+    // Fix: If we are in editing mode, the input value is "Stock to Add"
+    // So we add it to the existing stock value
+    if (editingProductId !== "-1" && editingProductId !== "" && editingStockValueInput) {
+      const currentStock = parseInt(editingStockValueInput.value || "0", 10);
+      stock = currentStock + stock;
+    }
 
     if (price < 0) {
       alert("Product price cannot be negative.");
@@ -299,12 +310,19 @@ document.addEventListener("DOMContentLoaded", () => {
       price: String(price).trim(),
       stock: stock,
       description: (newDescription.value || "").trim(),
-      expiryDate: (document.getElementById("newExpiryDate").value || "").trim()
+      expiryDate: (document.getElementById("newExpiryDate") ? document.getElementById("newExpiryDate").value : "").trim()
     };
 
     (async function () {
       try {
-        await apiJson(PRODUCTS_API_BASE, { method: "POST", body: JSON.stringify(payload) });
+        if (editingProductId !== "-1" && editingProductId !== "") {
+          await apiJson(`${PRODUCTS_API_BASE}/${editingProductId}`, { method: "PUT", body: JSON.stringify(payload) });
+          if (editingProductIdInput) editingProductIdInput.value = "-1";
+          if (addProductModalTitle) addProductModalTitle.textContent = "Add New Product";
+        } else {
+          // Point 1: Handle duplicate check via backend rejection
+          await apiJson(PRODUCTS_API_BASE, { method: "POST", body: JSON.stringify(payload) });
+        }
         await refreshStockFromApiOrFallback();
         populateProductSelect();
         renderSummary();
@@ -312,7 +330,12 @@ document.addEventListener("DOMContentLoaded", () => {
         addProductForm.reset();
         bootstrap.Modal.getOrCreateInstance(document.getElementById("addProductModal")).hide();
       } catch (err) {
-        alert("Failed to add product: " + err.message);
+        // Point 1: Specific popup message for already added products
+        if (err.message.includes("already added")) {
+          alert("Product cannot be created as its been already added as per the project standards");
+        } else {
+          alert("Failed to save product: " + err.message);
+        }
       }
     })();
   });
@@ -322,6 +345,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (addProductModal) {
     addProductModal.addEventListener('hidden.bs.modal', function () {
       if (addProductForm) addProductForm.reset();
+      if (editingProductIdInput) editingProductIdInput.value = "-1";
+      if (addProductModalTitle) addProductModalTitle.textContent = "Add New Product";
 
       // Reset the dynamic label ("Stock to Add" -> "Stock Quantity")
       const labels = addProductModal.querySelectorAll("label");
@@ -513,7 +538,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div>
                   <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
-                  <div class="text-muted small">${p.category} | \u20B9${p.price}/unit</div>
+                  <div class="text-muted small">${p.category} | ₹${p.price}/unit</div>
+                </div>
+                <div class="d-flex justify-content-end mt-2 gap-1">
+                  <button class="btn btn-sm btn-outline-primary" onclick="prod_edit(${p.id})" title="Edit Product"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})" title="Delete Product"><i class="bi bi-trash"></i></button>
                 </div>
               </div>
             </div>
@@ -534,10 +563,14 @@ document.addEventListener("DOMContentLoaded", () => {
           <td><span class="text-muted small">${p.id}</span></td>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
-          <td class="text-end">\u20B9${p.price}</td>
+          <td class="text-end">₹${p.price}</td>
           <td class="text-end fw-bold ${isLow ? 'text-danger' : 'text-primary'}">${p.available}</td>
           <td class="text-center">
             <span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span>
+          </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="prod_edit(${p.id})" title="Edit Product"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})" title="Delete Product"><i class="bi bi-trash"></i></button>
           </td>
         </tr>`;
       })
@@ -671,7 +704,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-            if (status === "Completed") {
+      if (status === "Completed") {
         product.available -= qty;
         if (productsApiMode) {
           try {
@@ -802,6 +835,55 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   };
 
+  // ✅ Product Edit Function — opens Add Product modal in edit mode
+  window.prod_edit = function (id) {
+    const product = receivedStock.find(p => p.id === id);
+    if (!product) return alert("Product not found.");
+
+    if (editingProductIdInput) editingProductIdInput.value = id;
+    if (editingStockValueInput) editingStockValueInput.value = product.available;
+    if (addProductModalTitle) addProductModalTitle.textContent = "Edit Product";
+
+    if (newProductName) newProductName.value = product.name;
+    if (newCategory) newCategory.value = product.category || "General";
+    if (newPrice) newPrice.value = product.price;
+
+    // Fix: Fill with 0 and change label to "Stock to Add" for clarity
+    if (newStock) newStock.value = 0;
+    if (newDescription) newDescription.value = product.description || "";
+
+    const expiryDateEl = document.getElementById("newExpiryDate");
+    if (expiryDateEl) expiryDateEl.value = product.expiryDate || "";
+
+    const labels = document.getElementById("addProductModal").querySelectorAll("label");
+    labels.forEach(l => {
+      if (l.textContent.includes("Stock Quantity") || l.textContent.includes("Stock to Add")) {
+        l.textContent = "Stock to Add (Current: " + product.available + ")";
+        l.classList.add("text-success", "fw-bold");
+      }
+    });
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("addProductModal")).show();
+  };
+
+  // ✅ Product Delete Function — fully API-backed
+  window.prod_delete = function (id) {
+    const product = receivedStock.find(p => p.id === id);
+    if (!product) return;
+    if (!confirm(`Delete product "${product.name}"? This cannot be undone.`)) return;
+    (async function () {
+      try {
+        await apiJson(`${PRODUCTS_API_BASE}/${id}`, { method: "DELETE" });
+        await refreshStockFromApiOrFallback();
+        populateProductSelect();
+        renderSummary();
+        renderTable();
+      } catch (err) {
+        alert("Failed to delete product: " + err.message);
+      }
+    })();
+  };
+
   window.pd_changePage = function (page) {
     const totalPages = Math.max(1, Math.ceil(allocations.length / itemsPerPage));
     if (page < 1) page = 1;
@@ -832,11 +914,15 @@ document.addEventListener("DOMContentLoaded", () => {
   newProductName && newProductName.addEventListener("change", () => {
     const name = newProductName.value.trim();
     const existing = receivedStock.find(p => p.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
+    if (existing && (editingProductIdInput && editingProductIdInput.value === "-1")) {
+      // If we are in ADD mode and product exists, warn them
+      alert("Product cannot be created as its been already added as per the project standards");
+      newProductName.value = "";
+    } else if (existing) {
       newCategory.value = existing.category || "";
       newPrice.value = existing.price || "";
       newDescription.value = existing.description || "";
-      // Find the actual label for newStock (might be tricky due to structure)
+
       const labels = document.getElementById("addProductModal").querySelectorAll("label");
       labels.forEach(l => {
         if (l.textContent.includes("Stock Quantity") || l.textContent.includes("Stock to Add")) {

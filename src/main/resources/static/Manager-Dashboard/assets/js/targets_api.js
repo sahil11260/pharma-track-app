@@ -87,11 +87,19 @@ async function loadDashboard() {
         });
 
         targetsData = allTargets; // Keep global for filtering if needed
+        targetsData = data.targets || [];
+        console.log('[TARGETS] Loaded', targetsData.length, 'targets from backend summary');
 
         renderSummaryCards(data);
         renderMyTargetsTable(myTargets);
         renderMrTargetsTable(mrTargets);
         renderTopPerformers(data.topPerformers);
+
+        // Debug: Log top performer value
+        console.log('[TARGETS] Top performer from backend:', data.topPerformer);
+        console.log('[TARGETS] Top performers data:', data.topPerformers);
+
+        // Wire edit buttons after table is rendered
 
         // Debug: Log info
         console.log('[TARGETS] My Targets:', myTargets.length, 'MR Targets:', mrTargets.length);
@@ -147,15 +155,33 @@ function renderSummaryCards(data) {
             </div>
           </div>
           <div class="col-md-3">
-            <div class="card summary-card summary-top-performer">
-              <div class="card-body">
-                <div class="card-content">
-                  <h3>${escapeHtml(data.topPerformer || 'N/A')}</h3>
-                  <h5>Top Performer</h5>
+            ${(() => {
+            const totalAchievement = data.totalAchievement || 0;
+            const rawPerformer = data.topPerformer || 'N/A';
+            const isNoPerformer = totalAchievement === 0 ||
+                rawPerformer === 'N/A' ||
+                rawPerformer === 'No Top Performer';
+            if (isNoPerformer) {
+                return `<div class="card summary-card" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                  <div class="card-body">
+                    <div class="card-content">
+                      <h5 style="color:white; margin-top:10px;">No Top Performer</h5>
+                      <p style="color:rgba(255,255,255,0.7); font-size:0.8rem;">No achievements recorded</p>
+                    </div>
+                    <div class="card-icon"><i class="bi bi-star" style="color:rgba(255,255,255,0.4);"></i></div>
+                  </div>
+                </div>`;
+            }
+            return `<div class="card summary-card summary-top-performer">
+                <div class="card-body">
+                  <div class="card-content">
+                    <h3>${escapeHtml(rawPerformer)}</h3>
+                    <h5>Top Performer</h5>
+                  </div>
+                  <div class="card-icon"><i class="bi bi-star"></i></div>
                 </div>
-                <div class="card-icon"><i class="bi bi-star"></i></div>
-              </div>
-            </div>
+              </div>`;
+        })()}
           </div>
     `;
 }
@@ -245,12 +271,11 @@ function renderTopPerformers(performers) {
 
     // Check if all performers have 0 achievement
     const allZeroAchievement = performers.every(p =>
-        (p.achievement === 0 || p.achievement === null) &&
-        (p.achievementPercentage === 0 || p.achievementPercentage === null)
+        (p.achievement === 0 || p.achievement === null || p.achievementPercentage === 0 || p.achievementPercentage === null)
     );
 
-    if (allZeroAchievement && performers.length > 1) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No clear top performer - all achievements are 0</td></tr>';
+    if (allZeroAchievement) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="bi bi-slash-circle me-2"></i>No achievements recorded yet for this period.</td></tr>';
         return;
     }
 
@@ -694,6 +719,7 @@ function editTarget(targetId) {
     console.log('[EDIT] Edit function called with targetId:', targetId);
     console.log('[EDIT] targetsData available:', targetsData ? targetsData.length : 'undefined');
 
+
     if (!targetId) {
         console.error('[EDIT] No targetId provided');
         alert('Error: No target ID provided');
@@ -706,6 +732,7 @@ function editTarget(targetId) {
 
     if (!target) {
         console.error('[EDIT] Target not found in local data. ID:', targetId);
+        console.error('[EDIT] Available targets:', targetsData.map(t => ({ id: t.id, name: t.mrName })));
         console.error('[EDIT] Available targets:', targetsData.map(t => ({ id: t.id, name: t.mrName })));
         alert('Target not found in local list. Try refreshing the page.');
         return;
@@ -754,6 +781,7 @@ function editTarget(targetId) {
         });
         modal.show();
         console.log('[EDIT] Modal show() called successfully');
+
 
     } catch (error) {
         console.error('[EDIT] Error showing modal:', error);
@@ -874,6 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOMContentLoaded initialization can be dealt
 
     // wireEditTarget() is now called after data is loaded in loadDashboard()
+
 
     // Test: Make editTarget globally accessible
     window.editTarget = editTarget;

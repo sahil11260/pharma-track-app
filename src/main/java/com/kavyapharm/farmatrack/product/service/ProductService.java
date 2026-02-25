@@ -31,28 +31,21 @@ public class ProductService {
     }
 
     public ProductResponse create(CreateProductRequest request) {
-        System.out.println("DEBUG: Creating/Updating product: " + request.name());
-        return productRepository.findByName(request.name())
-                .map(existingProduct -> {
-                    // If product exists, increment stock and update other fields
-                    existingProduct.setStock(existingProduct.getStock() + request.stock());
-                    existingProduct.setCategory(request.category());
-                    existingProduct.setPrice(request.price());
-                    existingProduct.setDescription(request.description());
-                    existingProduct.setExpiryDate(request.expiryDate());
-                    return toResponse(productRepository.save(existingProduct));
-                })
-                .orElseGet(() -> {
-                    // Otherwise, create new product
-                    Product product = new Product();
-                    product.setName(request.name());
-                    product.setCategory(request.category());
-                    product.setPrice(request.price());
-                    product.setStock(request.stock());
-                    product.setDescription(request.description());
-                    product.setExpiryDate(request.expiryDate());
-                    return toResponse(productRepository.save(product));
-                });
+        System.out.println("DEBUG: Creating product: " + request.name());
+        if (productRepository.findByName(request.name()).isPresent()) {
+            throw new RuntimeException(
+                    "Product cannot be created as its been already added as per the project standards");
+        }
+
+        // Create new product
+        Product product = new Product();
+        product.setName(request.name());
+        product.setCategory(request.category());
+        product.setPrice(request.price());
+        product.setStock(request.stock());
+        product.setDescription(request.description());
+        product.setExpiryDate(request.expiryDate());
+        return toResponse(productRepository.save(product));
     }
 
     public ProductResponse update(Long id, UpdateProductRequest request) {
@@ -62,6 +55,7 @@ public class ProductService {
         product.setName(request.name());
         product.setCategory(request.category());
         product.setPrice(request.price());
+        // Standard absolute update (Frontend handles calculation for addition)
         product.setStock(request.stock());
         product.setDescription(request.description());
         product.setExpiryDate(request.expiryDate());

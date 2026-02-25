@@ -57,12 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
       mrId: t.mrId,
       mrName: t.mrName,
       period: t.productName || t.period || "Sales Target",
-      salesTarget: Number(t.targetUnits) || 0,
-      salesAchievement: Number(t.achievedUnits) || 0,
+      salesTarget: Number(t.targetUnits || t.salesTarget || 0),
+      salesAchievement: Number(t.achievedUnits || t.salesAchievement || 0),
       achievementPercentage: Math.round(Number(t.achievementPercentage) || 0),
-      startDate: t.assignedDate || "",
-      endDate: t.endDate || "",
-      status: t.progressStatus || mapApiStatusToUi(t)
+      startDate: t.startDate || t.assignedDate || "",
+      endDate: t.endDate || t.deadline || t.endDate || "",
+      status: t.progressStatus || t.status || mapApiStatusToUi(t)
     };
   }
 

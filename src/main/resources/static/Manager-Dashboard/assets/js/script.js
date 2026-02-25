@@ -121,9 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const stats = await res.json();
       dashboardData.totalMRs = stats.totalMRs;
-      dashboardData.totalVisits = stats.totalVisits;
-      dashboardData.totalSales = stats.totalSales;
-      dashboardData.pendingTasks = stats.pendingTasks;
+      dashboardData.totalVisits = stats.totalVisits || 0;
+      dashboardData.totalSales = stats.totalSales || 0;
+      dashboardData.pendingTasks = stats.pendingTasks || 0;
 
       // Persist to localStorage
       localStorage.setItem("mgr_dashboard_stats", JSON.stringify(dashboardData));

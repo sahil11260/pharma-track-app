@@ -10,6 +10,13 @@ import com.kavyapharm.farmatrack.dcr.repository.DcrRepository;
 import com.kavyapharm.farmatrack.task.repository.TaskRepository;
 import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
 import com.kavyapharm.farmatrack.product.repository.ProductRepository;
+import com.kavyapharm.farmatrack.doctor.service.DoctorService;
+import com.kavyapharm.farmatrack.user.model.User;
+import com.kavyapharm.farmatrack.user.model.UserRole;
+import com.kavyapharm.farmatrack.user.dto.UserResponse;
+import com.kavyapharm.farmatrack.expense.model.Expense;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,284 +28,195 @@ public class DashboardService {
 
     private final UserService userService;
     private final MrStockRepository mrStockRepository;
-    private final SalesAchievementRepository salesAchievementRepository;
     private final SalesTargetRepository salesTargetRepository;
+    private final SalesAchievementRepository salesAchievementRepository;
     private final DcrRepository dcrRepository;
-    private final TaskRepository taskRepository;
     private final ExpenseRepository expenseRepository;
+    private final TaskRepository taskRepository;
     private final ProductRepository productRepository;
+    private final DoctorService doctorService;
 
-    public DashboardService(UserService userService, MrStockRepository mrStockRepository,
-            SalesAchievementRepository salesAchievementRepository, SalesTargetRepository salesTargetRepository,
-            DcrRepository dcrRepository, TaskRepository taskRepository, ExpenseRepository expenseRepository,
-            ProductRepository productRepository) {
+    public DashboardService(UserService userService,
+            MrStockRepository mrStockRepository,
+            SalesTargetRepository salesTargetRepository,
+            SalesAchievementRepository salesAchievementRepository,
+            DcrRepository dcrRepository,
+            ExpenseRepository expenseRepository,
+            TaskRepository taskRepository,
+            ProductRepository productRepository,
+            DoctorService doctorService) {
         this.userService = userService;
         this.mrStockRepository = mrStockRepository;
-        this.salesAchievementRepository = salesAchievementRepository;
         this.salesTargetRepository = salesTargetRepository;
+        this.salesAchievementRepository = salesAchievementRepository;
         this.dcrRepository = dcrRepository;
-        this.taskRepository = taskRepository;
         this.expenseRepository = expenseRepository;
+        this.taskRepository = taskRepository;
         this.productRepository = productRepository;
+        this.doctorService = doctorService;
     }
 
-    public DashboardStatsResponse getStats() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String currentEmail = auth != null ? auth.getName() : null;
+    private static class TrackedInfo {
+        List<String> mrNames = new ArrayList<>();
+        List<Long> mrIds = new ArrayList<>();
+        User currentUser;
+    }
 
-        com.kavyapharm.farmatrack.user.model.User currentUser = null;
+    private TrackedInfo getTrackedInfo() {
+        TrackedInfo info = new TrackedInfo();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = (auth != null && auth.isAuthenticated()) ? auth.getName() : null;
+
         if (currentEmail != null && !"anonymousUser".equals(currentEmail)) {
             try {
-                currentUser = userService.getByEmailOrThrow(currentEmail);
+                info.currentUser = userService.getByEmailOrThrow(currentEmail);
             } catch (Exception ignored) {
             }
         }
 
-        List<com.kavyapharm.farmatrack.user.dto.UserResponse> allUsers = userService.list();
-        List<com.kavyapharm.farmatrack.user.dto.UserResponse> myMRs = new ArrayList<>();
-        long totalMRs = 0;
-        double totalSales = 0;
-        long totalVisits = 0;
-        long pendingTasks = 0;
+        if (info.currentUser != null && info.currentUser.getRole() == UserRole.MANAGER) {
+            String managerName = info.currentUser.getName();
+            String managerEmail = info.currentUser.getEmail();
+            userService.list().stream()
+                    .filter(u -> UserRole.MR.equals(u.role()) &&
+                            (Objects.equals(managerName, u.assignedManager()) ||
+                                    Objects.equals(managerEmail, u.assignedManager())))
+                    .forEach(u -> {
+                        info.mrNames.add(u.name());
+                        info.mrIds.add(u.id());
+                    });
+            // Managers also track themselves if they have achievements/tasks
+            info.mrNames.add(info.currentUser.getName());
+            info.mrIds.add(info.currentUser.getId());
+        }
+        return info;
+    }
 
-        if (currentUser != null && currentUser.getRole() == com.kavyapharm.farmatrack.user.model.UserRole.MANAGER) {
-            String managerName = currentUser.getName();
-            String managerEmail = currentUser.getEmail();
-            myMRs = allUsers.stream()
-                    .filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()) &&
-                            (Objects.equals(managerName, u.assignedManager())
-                                    || Objects.equals(managerEmail, u.assignedManager())))
-                    .toList();
-            totalMRs = myMRs.size();
+    public DashboardStatsResponse getStats() {
+        TrackedInfo info = getTrackedInfo();
+        List<UserResponse> allUsers = userService.list();
 
-            LocalDate now = LocalDate.now();
-            int currentMonth = now.getMonthValue();
-            int currentYear = now.getYear();
+        long totalMRs;
+        long totalDoctors;
 
-            Map<Long, Double> productPrices = getProductPriceMap();
-            Map<String, Double> productPricesByName = getProductPriceByNameMap();
-
-            for (com.kavyapharm.farmatrack.user.dto.UserResponse mr : myMRs) {
-                // Total Sales for MR in current month
-                totalSales += salesAchievementRepository
-                        .findByMrIdAndPeriodMonthAndPeriodYear(mr.id(), currentMonth, currentYear)
-                        .stream()
-                        .mapToDouble(sa -> sa.getAchievedUnits()
-                                * getPrice(sa.getProductId(), sa.getProductName(), productPrices, productPricesByName))
-                        .sum();
-
-                // Also include DCR Reported Samples in Sales
-                totalSales += dcrRepository.findByMrNameIgnoreCase(mr.name()).stream()
-                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), currentMonth, currentYear))
-                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
-                        .mapToDouble(
-                                item -> item.getQuantity() * getPriceByName(item.getProductName(), productPricesByName))
-                        .sum();
-
-                // Doctor Visits for MR in current month (proxied by DcrReports)
-                totalVisits += dcrRepository.findByMrNameIgnoreCase(mr.name()).stream()
-                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), currentMonth, currentYear))
-                        .count();
-
-                // Pending Tasks for MR (check both name and email)
-                pendingTasks += taskRepository.findByAssignedToIgnoreCase(mr.name()).stream()
-                        .filter(t -> "pending".equalsIgnoreCase(t.getStatus()))
-                        .count();
-                if (mr.email() != null && !mr.email().equalsIgnoreCase(mr.name())) {
-                    pendingTasks += taskRepository.findByAssignedToIgnoreCase(mr.email()).stream()
-                            .filter(t -> "pending".equalsIgnoreCase(t.getStatus()))
-                            .count();
-                }
-            }
+        if (info.currentUser != null && info.currentUser.getRole() == UserRole.MANAGER) {
+            // totalMRs for manager is the count of assigned MRs (excluding manager
+            // themselves)
+            totalMRs = Math.max(0, info.mrIds.size() - 1);
+            totalDoctors = doctorService.list().stream()
+                    .filter(d -> Objects.equals(info.currentUser.getEmail(), d.managerEmail()))
+                    .count();
+        } else {
+            totalMRs = allUsers.stream().filter(u -> UserRole.MR.equals(u.role())).count();
+            totalDoctors = doctorService.list().size();
         }
 
         long totalUsers = allUsers.size();
         long totalStock = mrStockRepository.findAll().stream()
                 .mapToLong(item -> item.getStock() == null ? 0 : item.getStock()).sum();
 
-        return new DashboardStatsResponse(totalMRs, totalSales, totalVisits, pendingTasks, totalUsers, totalStock);
-    }
+        LocalDate now = LocalDate.now();
+        int month = now.getMonthValue();
+        int year = now.getYear();
 
-    private Map<Long, Double> getProductPriceMap() {
-        return productRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        com.kavyapharm.farmatrack.product.model.Product::getId,
-                        p -> parsePrice(p.getPrice()),
-                        (v1, v2) -> v1));
-    }
+        long totalSalesUnits = salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
+                .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
+                .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                .sum();
 
-    private Map<String, Double> getProductPriceByNameMap() {
-        return productRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        p -> p.getName().toLowerCase().trim(),
-                        p -> parsePrice(p.getPrice()),
-                        (v1, v2) -> v1));
-    }
+        long totalVisits = dcrRepository.findAll().stream()
+                .filter(dcr -> info.mrNames.isEmpty() || info.mrNames.contains(dcr.getMrName()))
+                .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                .count();
 
-    private double parsePrice(String priceStr) {
-        if (priceStr == null)
-            return 0.0;
-        try {
-            return Double.parseDouble(priceStr.replace("₹", "").replace(",", "").trim());
-        } catch (Exception e) {
-            return 0.0;
-        }
-    }
+        long pendingTasks = taskRepository.findAll().stream()
+                .filter(tk -> info.mrNames.isEmpty() || info.mrNames.contains(tk.getAssignedTo()))
+                .filter(tk -> "Pending".equalsIgnoreCase(tk.getStatus())
+                        || "In Progress".equalsIgnoreCase(tk.getStatus()))
+                .count();
 
-    private double getPrice(Long id, String name, Map<Long, Double> pricesById, Map<String, Double> pricesByName) {
-        if (id != null && pricesById.containsKey(id))
-            return pricesById.get(id);
-        return getPriceByName(name, pricesByName);
-    }
-
-    private double getPriceByName(String name, Map<String, Double> pricesByName) {
-        if (name == null)
-            return 0.0;
-        return pricesByName.getOrDefault(name.toLowerCase().trim(), 0.0);
-    }
-
-    private boolean isDateInMonth(LocalDate date, int month, int year) {
-        if (date == null)
-            return false;
-        return date.getMonthValue() == month && date.getYear() == year;
-    }
-
-    private boolean isDateInMonth(String dateStr, int month, int year) {
-        if (dateStr == null || dateStr.isEmpty())
-            return false;
-        try {
-            // DateTime from DCR is "yyyy-MM-dd HH:mm"
-            LocalDate date = LocalDate.parse(dateStr.substring(0, 10));
-            return isDateInMonth(date, month, year);
-        } catch (Exception e) {
-            return false;
-        }
+        return new DashboardStatsResponse(totalMRs, totalDoctors, totalUsers, totalStock, totalSalesUnits,
+                totalVisits, pendingTasks);
     }
 
     public DashboardChartsResponse getChartsData() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String currentEmail = auth != null ? auth.getName() : null;
-
-        com.kavyapharm.farmatrack.user.model.User currentUser = null;
-        if (currentEmail != null && !"anonymousUser".equals(currentEmail)) {
-            try {
-                currentUser = userService.getByEmailOrThrow(currentEmail);
-            } catch (Exception ignored) {
-            }
-        }
-
+        TrackedInfo info = getTrackedInfo();
         List<String> monthLabels = getLastSixMonthLabels();
         List<Double> salesByMonth = new ArrayList<>();
         List<Long> visitsByMonth = new ArrayList<>();
         List<Double> targetsByMonth = new ArrayList<>();
-        Map<String, Double> expenseByCategory = new HashMap<>();
-        Map<String, List<Double>> productSalesByMonth = new HashMap<>();
 
         LocalDate now = LocalDate.now();
+        for (int i = 5; i >= 0; i--) {
+            LocalDate date = now.minusMonths(i);
+            int month = date.getMonthValue();
+            int year = date.getYear();
 
-        if (currentUser != null && currentUser.getRole() == com.kavyapharm.farmatrack.user.model.UserRole.MANAGER) {
-            String managerName = currentUser.getName();
-            String managerEmail = currentUser.getEmail();
-            List<com.kavyapharm.farmatrack.user.dto.UserResponse> myMRs = userService.list().stream()
-                    .filter(u -> com.kavyapharm.farmatrack.user.model.UserRole.MR.equals(u.role()) &&
-                            (Objects.equals(managerName, u.assignedManager())
-                                    || Objects.equals(managerEmail, u.assignedManager())))
-                    .toList();
+            // Aggregate Targets
+            long monthTargetUnits = salesTargetRepository.findAllByPeriod(month, year).stream()
+                    .filter(t -> info.mrIds.isEmpty() || info.mrIds.contains(t.getMrId()))
+                    .mapToLong(t -> t.getTargetUnits() != null ? t.getTargetUnits() : 0)
+                    .sum();
+            targetsByMonth.add((double) monthTargetUnits);
 
-            Map<Long, Double> productPrices = getProductPriceMap();
-            Map<String, Double> productPricesByName = getProductPriceByNameMap();
+            // Aggregate Sales Achievement
+            long monthSalesUnits = salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
+                    .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
+                    .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                    .sum();
+            salesByMonth.add((double) monthSalesUnits);
 
-            // Populate historical data for the last 6 months
-            for (int i = 5; i >= 0; i--) {
-                LocalDate targetDate = now.minusMonths(i);
-                int m = targetDate.getMonthValue();
-                int y = targetDate.getYear();
+            // Aggregate Visits (DCRs)
+            long monthVisits = dcrRepository.findAll().stream()
+                    .filter(dcr -> info.mrNames.isEmpty() || info.mrNames.contains(dcr.getMrName()))
+                    .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                    .count();
+            visitsByMonth.add(monthVisits);
+        }
 
-                double monthSales = 0;
-                long monthVisits = 0;
-                double monthTargets = 0;
+        // Expense Breakdown
+        Map<String, Double> expenseByCategory = new HashMap<>();
+        expenseRepository.findByStatus(Expense.ExpenseStatus.APPROVED).stream()
+                .filter(e -> info.mrNames.isEmpty() || info.mrNames.contains(e.getMrName()))
+                .forEach(e -> {
+                    String cat = e.getCategory() != null ? e.getCategory() : "Other";
+                    double amount = (e.getAmount() != null) ? e.getAmount() : 0.0;
+                    expenseByCategory.put(cat, expenseByCategory.getOrDefault(cat, 0.0) + amount);
+                });
 
-                for (com.kavyapharm.farmatrack.user.dto.UserResponse mr : myMRs) {
-                    // Sales from Achievements
-                    List<com.kavyapharm.farmatrack.sales.model.SalesAchievement> sas = salesAchievementRepository
-                            .findByMrIdAndPeriodMonthAndPeriodYear(mr.id(), m, y);
-                    for (com.kavyapharm.farmatrack.sales.model.SalesAchievement sa : sas) {
-                        double val = sa.getAchievedUnits()
-                                * getPrice(sa.getProductId(), sa.getProductName(), productPrices, productPricesByName);
-                        monthSales += val;
+        Map<String, List<Double>> productSalesByMonth = new LinkedHashMap<>();
+        // Product-wise sales breakdown for charts
+        for (int i = 5; i >= 0; i--) {
+            LocalDate date = now.minusMonths(i);
+            int month = date.getMonthValue();
+            int year = date.getYear();
 
+            final int index = 5 - i;
+            salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
+                    .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
+                    .forEach(sa -> {
                         String pName = sa.getProductName();
-                        productSalesByMonth.putIfAbsent(pName, generateZeroDoubleSeries(6));
-                        productSalesByMonth.get(pName).set(5 - i, productSalesByMonth.get(pName).get(5 - i) + val);
-                    }
-
-                    // Sales from DCR Samples
-                    List<com.kavyapharm.farmatrack.dcr.model.DcrReport> dcrs = dcrRepository
-                            .findByMrNameIgnoreCase(mr.name()).stream()
-                            .filter(dcr -> isDateInMonth(dcr.getDateTime(), m, y))
-                            .toList();
-                    for (com.kavyapharm.farmatrack.dcr.model.DcrReport dcr : dcrs) {
-                        for (com.kavyapharm.farmatrack.dcr.model.DcrSampleItem item : dcr.getSamplesGiven()) {
-                            double val = item.getQuantity()
-                                    * getPriceByName(item.getProductName(), productPricesByName);
-                            monthSales += val;
-
-                            String pName = item.getProductName();
-                            productSalesByMonth.putIfAbsent(pName, generateZeroDoubleSeries(6));
-                            productSalesByMonth.get(pName).set(5 - i, productSalesByMonth.get(pName).get(5 - i) + val);
-                        }
-                        monthVisits++;
-                    }
-
-                    // Targets
-                    monthTargets += salesTargetRepository
-                            .findByMrIdAndPeriodMonthAndPeriodYear(mr.id(), m, y)
-                            .stream()
-                            .mapToDouble(st -> st.getTargetUnits()
-                                    * getPrice(st.getProductId(), st.getProductName(), productPrices,
-                                            productPricesByName))
-                            .sum();
-                }
-                salesByMonth.add(monthSales);
-                visitsByMonth.add(monthVisits);
-                targetsByMonth.add(monthTargets);
-            }
-
-            // Expenses Breakdown (Current month)
-            for (com.kavyapharm.farmatrack.user.dto.UserResponse mr : myMRs) {
-                expenseRepository.findByMrNameIgnoreCase(mr.name())
-                        .stream()
-                        .filter(exp -> isDateInMonth(exp.getExpenseDate(), now.getMonthValue(), now.getYear()))
-                        .forEach(exp -> {
-                            expenseByCategory.put(exp.getCategory(),
-                                    expenseByCategory.getOrDefault(exp.getCategory(), 0.0) + exp.getAmount());
-                        });
-            }
-        } else {
-            // Default empty series for non-managers (or global stats if needed later)
-            salesByMonth = generateZeroDoubleSeries(6);
-            visitsByMonth = generateZeroLongSeries(6);
-            targetsByMonth = generateZeroDoubleSeries(6);
+                        productSalesByMonth.putIfAbsent(pName, new ArrayList<>(Collections.nCopies(6, 0.0)));
+                        double currentVal = productSalesByMonth.get(pName).get(index);
+                        productSalesByMonth.get(pName).set(index,
+                                currentVal + (sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0));
+                    });
         }
 
         return new DashboardChartsResponse(salesByMonth, visitsByMonth, targetsByMonth, monthLabels, expenseByCategory,
                 productSalesByMonth);
     }
 
-    private List<Double> generateZeroDoubleSeries(int size) {
-        List<Double> zeros = new ArrayList<>(size);
-        for (int i = 0; i < size; i++)
-            zeros.add(0.0);
-        return zeros;
-    }
-
-    private List<Long> generateZeroLongSeries(int size) {
-        List<Long> zeros = new ArrayList<>(size);
-        for (int i = 0; i < size; i++)
-            zeros.add(0L);
-        return zeros;
+    private boolean isDateInMonth(String dateStr, int month, int year) {
+        if (dateStr == null || dateStr.isEmpty())
+            return false;
+        try {
+            // DateTime from DCR is typically "yyyy-MM-dd HH:mm" or "yyyy-MM-dd"
+            LocalDate date = LocalDate.parse(dateStr.substring(0, 10));
+            return date.getMonthValue() == month && date.getYear() == year;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private List<String> getLastSixMonthLabels() {
@@ -310,5 +228,4 @@ public class DashboardService {
         }
         return labels;
     }
-
 }
