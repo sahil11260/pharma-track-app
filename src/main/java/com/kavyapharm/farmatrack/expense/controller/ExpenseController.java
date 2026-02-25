@@ -39,12 +39,16 @@ public class ExpenseController {
      */
     @PostMapping(value = "/with-receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ExpenseResponse> createExpenseWithReceipt(
-            @RequestParam("mrName") String mrName,
-            @RequestParam("category") String category,
-            @RequestParam("amount") Double amount,
+            @RequestParam(value = "mrName") String mrName,
+            @RequestParam(value = "category") String category,
+            @RequestParam(value = "amount") Double amount,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam("expenseDate") String expenseDate,
-            @RequestParam(value = "receipt", required = false) MultipartFile receipt) throws IOException {
+            @RequestParam(value = "expenseDate") String expenseDate,
+            @RequestParam(value = "receipt", required = true) MultipartFile receipt) throws IOException {
+
+        if (receipt == null || receipt.isEmpty()) {
+            throw new IllegalArgumentException("Proof attachment is mandatory for expense submission.");
+        }
 
         CreateExpenseRequest request = new CreateExpenseRequest(
                 mrName,
@@ -77,7 +81,7 @@ public class ExpenseController {
      * Get expenses by MR name
      */
     @GetMapping("/mr/{mrName}")
-    public ResponseEntity<List<ExpenseResponse>> getExpensesByMr(@PathVariable String mrName) {
+    public ResponseEntity<List<ExpenseResponse>> getExpensesByMr(@PathVariable(value = "mrName") String mrName) {
         List<ExpenseResponse> expenses = expenseService.getExpensesByMr(mrName);
         return ResponseEntity.ok(expenses);
     }
@@ -86,7 +90,7 @@ public class ExpenseController {
      * Get single expense by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable Long id) {
+    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable(value = "id") Long id) {
         ExpenseResponse expense = expenseService.getExpenseById(id);
         return ResponseEntity.ok(expense);
     }
@@ -96,7 +100,7 @@ public class ExpenseController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseResponse> updateExpense(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @Valid @RequestBody UpdateExpenseRequest request) {
         ExpenseResponse response = expenseService.updateExpense(id, request);
         return ResponseEntity.ok(response);
@@ -107,11 +111,11 @@ public class ExpenseController {
      */
     @PutMapping(value = "/{id}/with-receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ExpenseResponse> updateExpenseWithReceipt(
-            @PathVariable Long id,
-            @RequestParam("category") String category,
-            @RequestParam("amount") Double amount,
+            @PathVariable(value = "id") Long id,
+            @RequestParam(value = "category") String category,
+            @RequestParam(value = "amount") Double amount,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam("expenseDate") String expenseDate,
+            @RequestParam(value = "expenseDate") String expenseDate,
             @RequestParam(value = "receipt", required = false) MultipartFile receipt,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "rejectionReason", required = false) String rejectionReason) throws IOException {
@@ -140,7 +144,7 @@ public class ExpenseController {
      */
     @PutMapping("/{id}/approve")
     public ResponseEntity<ExpenseResponse> approveExpense(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody(required = false) Map<String, String> body) {
         String approvedBy = body != null ? body.get("approvedBy") : "Manager";
         ExpenseResponse response = expenseService.approveExpense(id, approvedBy);
@@ -152,7 +156,7 @@ public class ExpenseController {
      */
     @PutMapping("/{id}/reject")
     public ResponseEntity<ExpenseResponse> rejectExpense(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody Map<String, String> body) {
         String rejectedBy = body.getOrDefault("rejectedBy", "Manager");
         String reason = body.getOrDefault("reason", "Not specified");
@@ -164,7 +168,7 @@ public class ExpenseController {
      * Delete expense
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteExpense(@PathVariable(value = "id") Long id) {
         expenseService.deleteExpense(id);
         return ResponseEntity.noContent().build();
     }
@@ -173,7 +177,7 @@ public class ExpenseController {
      * Upload receipt file separately
      */
     @PostMapping("/upload-receipt")
-    public ResponseEntity<Map<String, String>> uploadReceipt(@RequestParam("file") MultipartFile file)
+    public ResponseEntity<Map<String, String>> uploadReceipt(@RequestParam(value = "file") MultipartFile file)
             throws IOException {
         String filePath = expenseService.uploadReceipt(file);
         return ResponseEntity.ok(Map.of("filePath", filePath, "filename", file.getOriginalFilename()));

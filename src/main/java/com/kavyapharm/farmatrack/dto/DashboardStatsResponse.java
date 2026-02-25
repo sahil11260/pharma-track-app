@@ -1,9 +1,10 @@
 package com.kavyapharm.farmatrack.dto;
 
 public record DashboardStatsResponse(
-        long totalMRs,
-        long totalDoctors,
-        long totalUsers,
-        long totalStock
-) {
+                long totalMRs,
+                double totalSales,
+                long totalVisits,
+                long pendingTasks,
+                long totalUsers,
+                long totalStock) {
 }

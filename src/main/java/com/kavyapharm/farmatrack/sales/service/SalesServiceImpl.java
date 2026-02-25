@@ -37,7 +37,8 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     public SalesTarget assignTarget(CreateTargetRequest request) {
-        if (request.startDate() != null && request.endDate() != null && request.endDate().isBefore(request.startDate())) {
+        if (request.startDate() != null && request.endDate() != null
+                && request.endDate().isBefore(request.startDate())) {
             throw new IllegalArgumentException("End Date cannot be earlier than Start Date");
         }
 
@@ -82,6 +83,8 @@ public class SalesServiceImpl implements SalesService {
         target.setTargetUnits(request.targetUnits());
         target.setPeriodMonth(request.periodMonth());
         target.setPeriodYear(request.periodYear());
+        target.setStartDate(request.startDate());
+        target.setEndDate(request.endDate());
         target.setAssignedBy(request.assignedBy());
         target.setAssignedDate(LocalDate.now());
         target.setTargetType(SalesTarget.TargetType.MONTHLY);
@@ -156,11 +159,11 @@ public class SalesServiceImpl implements SalesService {
         String topPerformer = "No Top Performer";
         if (!topPerformers.isEmpty()) {
             ManagerDashboardSummary.TopPerformerData best = topPerformers.get(0);
-            System.out.println("[DEBUG] Best performer: " + best.mrName() + 
-                ", achievement: " + best.achievement() + 
-                ", percentage: " + best.achievementPercentage() + 
-                ", total MRs: " + mrPerformanceMap.size());
-            
+            System.out.println("[DEBUG] Best performer: " + best.mrName() +
+                    ", achievement: " + best.achievement() +
+                    ", percentage: " + best.achievementPercentage() +
+                    ", total MRs: " + mrPerformanceMap.size());
+
             // Only show a top performer if they have some achievement (> 0% or > 0 units)
             if (best.achievementPercentage() > 0 || (best.achievement() != null && best.achievement() > 0)) {
                 topPerformer = best.mrName();
@@ -177,34 +180,64 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private TargetWithAchievementResponse calculateTargetAchievement(SalesTarget target, Integer month, Integer year) {
-        Integer achieved;
-        if ("Visit".equalsIgnoreCase(target.getCategory())) {
-            achieved = (int) dcrRepository.findAll().stream()
-                    .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                    .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
-                    .count();
-        } else {
-            // Sum from two sources:
-            // 1. DCR Reported Samples
-            int dcrSum = dcrRepository.findAll().stream()
-                    .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                    .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
-                    .flatMap(dcr -> dcr.getSamplesGiven().stream())
-                    .filter(item -> isProductMatch(target, item))
-                    .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
-                    .sum();
+        // Find all subordinates recursively to rollup their achievements
+        Set<com.kavyapharm.farmatrack.user.model.User> subordinates = new HashSet<>();
+        // 1. Get the user for this target
+        userRepository.findById(target.getMrId()).ifPresent(user -> {
+            subordinates.add(user);
+            subordinates.addAll(getSubordinatesRecursively(user));
+        });
 
-            // 2. Manual entry achievements
-            int manualSum = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                    target.getMrId(), target.getProductId(), month, year);
+        int totalAchieved = 0;
+        for (com.kavyapharm.farmatrack.user.model.User sub : subordinates) {
+            String subName = sub.getName();
+            Long subId = sub.getId();
 
-            achieved = dcrSum + manualSum;
+            if ("Visit".equalsIgnoreCase(target.getCategory())) {
+                totalAchieved += (int) dcrRepository.findByMrNameIgnoreCase(subName).stream()
+                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                        .count();
+            } else {
+                // Sum DCR Reported Samples for this subordinate
+                int dcrSum = dcrRepository.findByMrNameIgnoreCase(subName).stream()
+                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                        .filter(item -> isProductMatch(target, item))
+                        .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
+                        .sum();
+
+                // Sum Manual entry achievements for this subordinate
+                int manualSum = achievementRepository.sumAchievedUnitsByMrAndProduct(
+                        subId, target.getProductId(), month, year);
+
+                totalAchieved += (dcrSum + manualSum);
+            }
         }
 
         return TargetWithAchievementResponse.from(
                 target.getId(), target.getMrId(), target.getMrName(), target.getProductName(),
                 target.getCategory(), target.getTargetType().name(), target.getTargetUnits(),
-                achieved, target.getAssignedDate(), target.getPeriodMonth(), target.getPeriodYear());
+                totalAchieved, target.getAssignedDate(), target.getStartDate(), target.getEndDate(),
+                target.getPeriodMonth(), target.getPeriodYear());
+    }
+
+    private Set<com.kavyapharm.farmatrack.user.model.User> getSubordinatesRecursively(
+            com.kavyapharm.farmatrack.user.model.User manager) {
+        Set<com.kavyapharm.farmatrack.user.model.User> allSubordinates = new HashSet<>();
+        // Find by manager identifier (email or name)
+        List<com.kavyapharm.farmatrack.user.model.User> directSubordinates = userRepository
+                .findByAssignedManagerIgnoreCase(manager.getEmail());
+        if (directSubordinates.isEmpty()) {
+            directSubordinates = userRepository.findByAssignedManagerIgnoreCase(manager.getName());
+        }
+
+        for (com.kavyapharm.farmatrack.user.model.User sub : directSubordinates) {
+            if (!allSubordinates.contains(sub)) {
+                allSubordinates.add(sub);
+                allSubordinates.addAll(getSubordinatesRecursively(sub));
+            }
+        }
+        return allSubordinates;
     }
 
     private boolean isWithinPeriod(String dateTimeStr, Integer month, Integer year) {

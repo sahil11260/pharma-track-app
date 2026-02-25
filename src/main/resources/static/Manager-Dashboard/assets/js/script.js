@@ -121,9 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const stats = await res.json();
       dashboardData.totalMRs = stats.totalMRs;
-      dashboardData.totalVisits = stats.totalDoctors; // Using doctors count as visits proxy for now
-      dashboardData.totalSales = 0; // No sales endpoint yet
-      dashboardData.pendingTasks = 0; // No tasks endpoint yet
+      dashboardData.totalVisits = stats.totalVisits;
+      dashboardData.totalSales = stats.totalSales;
+      dashboardData.pendingTasks = stats.pendingTasks;
 
       // Persist to localStorage
       localStorage.setItem("mgr_dashboard_stats", JSON.stringify(dashboardData));
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
         visitsByMonth: [0, 0, 0, 0, 0, 0],
         targetsByMonth: [0, 0, 0, 0, 0, 0],
         expenseByCategory: { Travel: 0, Meals: 0, Samples: 0, Marketing: 0, Other: 0 },
-        productSalesByMonth: { "Product A": [0, 0, 0, 0, 0, 0], "Product B": [0, 0, 0, 0, 0, 0], "Product C": [0, 0, 0, 0, 0, 0], "Product D": [0, 0, 0, 0, 0, 0] }
+        productSalesByMonth: { "Product A": [0, 0, 0, 0, 0, 0], "Product B": [0, 0, 0, 0, 0, 0] }
       };
     }
   }
@@ -200,52 +200,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const togglesContainer = document.getElementById("productToggles");
     if (!canvas) return;
 
-    // Fetch top 6 products from /api/products
-    let products = [];
-    try {
-      const res = await fetch(`${API_BASE}/api/products`, {
-        headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeader())
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          // Sort by stock descending, take top 6
-          products = data
-            .filter(p => p.name)
-            .sort((a, b) => (Number(b.stock) || 0) - (Number(a.stock) || 0))
-            .slice(0, 6)
-            .map((p, i) => ({
-              name: p.name,
-              value: Number(p.stock) || 0,
-              price: parseFloat(String(p.price || "0").replace(/[^0-9.]/g, "")) || 0,
-              colorFill: getPaletteColor(i, 0.85),
-              colorBorder: getPaletteColor(i, 1),
-            }));
-        }
-      }
-    } catch (e) {
-      console.warn("Products API unavailable for chart, using fallback.", e);
-    }
+    const labels = chartsData.monthLabels;
+    const productMap = chartsData.productSalesByMonth || {};
 
-    // Fallback: use productSalesByMonth totals if API failed
-    if (products.length === 0) {
-      const fallbackMap = chartsData.productSalesByMonth || {};
-      products = Object.entries(fallbackMap)
-        .map(([name, months], i) => ({
-          name,
-          value: months.reduce((s, v) => s + (Number(v) || 0), 0),
-          price: 0,
-          colorFill: getPaletteColor(i, 0.85),
-          colorBorder: getPaletteColor(i, 1),
-        }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 6);
-    }
+    // Get top 6 products by total sales in this period
+    const topProducts = Object.entries(productMap)
+      .map(([name, data]) => ({
+        name,
+        data,
+        total: data.reduce((a, b) => a + b, 0)
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
 
-    const labels = products.map(p => p.name);
-    const values = products.map(p => p.value);
-    const bgColors = products.map(p => p.colorFill);
-    const borderColors = products.map(p => p.colorBorder);
+    const datasets = topProducts.map((p, i) => ({
+      label: p.name,
+      data: p.data,
+      backgroundColor: getPaletteColor(i, 0.7),
+      borderColor: getPaletteColor(i, 1),
+      borderWidth: 1,
+      stack: 'combined'
+    }));
 
     if (productSalesChartInstance) {
       try { productSalesChartInstance.destroy(); } catch (e) { }
@@ -256,15 +231,8 @@ document.addEventListener("DOMContentLoaded", () => {
     productSalesChartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels,
-        datasets: [{
-          label: 'Stock Quantity',
-          data: values,
-          backgroundColor: bgColors,
-          borderColor: borderColors,
-          borderWidth: 1,
-          borderRadius: 4,
-        }]
+        labels: labels,
+        datasets: datasets
       },
       options: {
         responsive: true,
@@ -274,60 +242,38 @@ document.addEventListener("DOMContentLoaded", () => {
           tooltip: {
             callbacks: {
               label: function (context) {
-                const idx = context.dataIndex;
-                const p = products[idx];
-                const qty = context.parsed.y;
-                let tip = `Stock: ${qty} units`;
-                if (p && p.price > 0) {
-                  const total = qty * p.price;
-                  if (total >= 100000) tip += ` | ₹${(total / 100000).toFixed(1)}L`;
-                  else if (total >= 1000) tip += ` | ₹${(total / 1000).toFixed(0)}K`;
-                  else tip += ` | ₹${total}`;
-                }
-                return tip;
+                const val = context.parsed.y;
+                let formatted = val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : (val >= 1000 ? `₹${(val / 1000).toFixed(1)}K` : `₹${val.toFixed(0)}`);
+                return `${context.dataset.label}: ${formatted}`;
               }
             }
           }
         },
         scales: {
-          x: {
-            title: { display: true, text: 'Product Name' },
-            ticks: {
-              maxRotation: 30,
-              minRotation: 0,
-              autoSkip: false,
-              callback: function (value, index) {
-                // Truncate long product names
-                const name = labels[index] || '';
-                return name.length > 12 ? name.substring(0, 12) + '…' : name;
-              }
-            }
-          },
+          x: { stacked: true },
           y: {
+            stacked: true,
             beginAtZero: true,
-            suggestedMax: 5000,
-            title: { display: true, text: 'Stock Quantity' },
             ticks: {
-              stepSize: 500,
               callback: function (value) {
-                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                return (value / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+                if (value >= 100000) return "₹" + (value / 100000).toFixed(1) + "L";
+                if (value >= 1000) return "₹" + (value / 1000).toFixed(0) + "K";
+                return "₹" + value;
               }
             }
           }
-        },
-        layout: { padding: { top: 6, bottom: 6, left: 6, right: 6 } }
+        }
       }
     });
 
     // Render product legend/toggles
     if (togglesContainer) {
       togglesContainer.innerHTML = '';
-      products.forEach((p, i) => {
+      topProducts.forEach((p, i) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'd-flex align-items-center me-3 mb-1';
         wrapper.innerHTML = `
-          <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${p.colorBorder};margin-right:5px;"></span>
+          <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${getPaletteColor(i, 1)};margin-right:5px;"></span>
           <span class="small text-muted">${p.name}</span>
         `;
         togglesContainer.appendChild(wrapper);
@@ -351,7 +297,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const elPendingTasks = document.getElementById("pendingTasks");
 
     if (elTotalMRs) elTotalMRs.textContent = dashboardData.totalMRs;
-    if (elTotalSales) elTotalSales.textContent = `\u20B9${(dashboardData.totalSales / 100000).toFixed(1)}L`;
+    if (elTotalSales) {
+      const sales = dashboardData.totalSales;
+      if (sales >= 100000) elTotalSales.textContent = `\u20B9${(sales / 100000).toFixed(1)}L`;
+      else if (sales >= 1000) elTotalSales.textContent = `\u20B9${(sales / 1000).toFixed(1)}K`;
+      else elTotalSales.textContent = `\u20B9${sales.toFixed(0)}`;
+    }
     if (elTotalVisits) elTotalVisits.textContent = dashboardData.totalVisits;
     if (elPendingTasks) elPendingTasks.textContent = dashboardData.pendingTasks;
   }
@@ -596,8 +547,18 @@ document.addEventListener("DOMContentLoaded", () => {
       window._expenseChartInstance = null;
     }
 
-    const labels = Object.keys(chartsData.expenseByCategory);
-    const values = Object.values(chartsData.expenseByCategory);
+    const labels = Object.keys(chartsData.expenseByCategory || {});
+    const values = Object.values(chartsData.expenseByCategory || {});
+    const hasData = values.some(v => v > 0);
+
+    if (!hasData) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#888";
+      ctx.textAlign = "center";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("No expense data for this month", canvas.width / 2, canvas.height / 2);
+      return;
+    }
 
     window._expenseChartInstance = new Chart(ctx, {
       type: "pie",

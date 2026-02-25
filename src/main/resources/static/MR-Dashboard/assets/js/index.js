@@ -25,11 +25,12 @@
   const API = {
     DASHBOARD: "/api/mr-dashboard",
     TASKS: "/api/tasks",
-    NOTIFICATIONS: "/api/notifications"
+    NOTIFICATIONS: "/api/notifications",
+    MY_TARGETS: "/api/mr/me/sales-targets"
   };
 
   function getAuthHeader() {
-    const token = localStorage.getItem("kavya_auth_token");
+    const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
     if (!token) return {};
     return { Authorization: `Bearer ${token}` };
   }
@@ -57,6 +58,10 @@
     return "\u20B9" + n.toLocaleString("en-IN");
   }
 
+  function formatUnits(n) {
+    return Number(n || 0).toLocaleString("en-IN");
+  }
+
   function loadDashboardFromLocalStorage() {
     try {
       const raw = localStorage.getItem(LS.DASH);
@@ -78,16 +83,29 @@
 
   async function loadDashboard() {
     try {
-      const data = await apiJson(API.DASHBOARD);
-      return Object.assign({}, DEFAULTS, data || {});
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const [summary, targets] = await Promise.all([
+        apiJson(API.DASHBOARD).catch(() => null),
+        apiJson(`${API.MY_TARGETS}?month=${month}&year=${year}`).catch(() => [])
+      ]);
+      return {
+        summary: Object.assign({}, DEFAULTS, summary || {}),
+        targets: Array.isArray(targets) ? targets : []
+      };
     } catch (e) {
       warn("loadDashboard API error:", e);
-      return loadDashboardFromLocalStorage();
+      return { summary: loadDashboardFromLocalStorage(), targets: [] };
     }
   }
 
-  function renderSummary(data) {
-    console.log("[MR-DASH] renderSummary called with data:", data);
+  function renderSummary(dataContainer) {
+    const data = dataContainer.summary || dataContainer;
+    const targets = dataContainer.targets || [];
+
+    log("renderSummary called with data:", data, "targets count:", targets.length);
 
     const elSales = $id("dashSales");
     const elTarget = $id("dashTarget");
@@ -96,37 +114,59 @@
     const elExpPending = $id("dashExpensesPending");
     const elExpApproved = $id("dashExpensesApproved");
 
-    console.log("[MR-DASH] Element check:");
-    console.log("  - elVisits:", elVisits ? "found" : "NOT FOUND");
-    console.log("  - elExpPending:", elExpPending ? "found" : "NOT FOUND");
-    console.log("  - elExpApproved:", elExpApproved ? "found" : "NOT FOUND");
+    const salesBreakdownEl = $id("salesBreakdownHome");
+    const targetBreakdownEl = $id("targetBreakdownHome");
 
-    if (elSales) elSales.textContent = formatINR(Number(data.sales) || 0);
+    // Unified Data Calculation: Use targets for Sales and Achievement %
+    let computedTotalAchieved = 0;
+    let salesLines = [];
+    let achievementLines = [];
+
+    const salesTargets = targets.filter(t => t.category && t.category.toLowerCase() !== 'visit');
+
+    salesTargets.forEach(t => {
+      const aUnits = t.achievedUnits || 0;
+      computedTotalAchieved += aUnits;
+      const pName = t.productName || "Unknown";
+      salesLines.push(`<div>${pName}: <strong>${aUnits}</strong></div>`);
+      achievementLines.push(`<div>${pName}: <strong>${(t.achievementPercentage || 0).toFixed(1)}%</strong></div>`);
+    });
+
+    const avgAchievement = salesTargets.length > 0
+      ? (salesTargets.reduce((sum, t) => sum + (t.achievementPercentage || 0), 0) / salesTargets.length)
+      : 0;
+
+    if (elSales) {
+      elSales.textContent = formatUnits(computedTotalAchieved);
+      if (salesBreakdownEl && salesLines.length > 0) {
+        salesBreakdownEl.innerHTML = salesLines.join('');
+        salesBreakdownEl.style.display = "block";
+      }
+    }
+
     if (elTarget) {
-      const pct = Math.min(100, Math.max(0, Number(data.targetPercent || 0)));
-      elTarget.textContent = `${pct}%`;
+      const pct = Math.min(100, Math.max(0, avgAchievement));
+      elTarget.textContent = `${pct.toFixed(1)}%`;
       if (elTargetBar) {
         elTargetBar.style.width = `${pct}%`;
         elTargetBar.setAttribute("aria-valuenow", String(pct));
       }
+      if (targetBreakdownEl && achievementLines.length > 0) {
+        targetBreakdownEl.innerHTML = achievementLines.join('');
+        targetBreakdownEl.style.display = "block";
+      }
     }
 
     if (elVisits) {
-      const visitsValue = String(Number(data.visits) || 0);
-      elVisits.textContent = visitsValue;
-      console.log("[MR-DASH] Set visits to:", visitsValue);
+      elVisits.textContent = String(Number(data.visits) || 0);
     }
 
     if (elExpPending) {
-      const pendingValue = formatINR(Number(data.expensesPending) || 0);
-      elExpPending.textContent = pendingValue;
-      console.log("[MR-DASH] Set expensesPending to:", pendingValue, "(raw:", data.expensesPending, ")");
+      elExpPending.textContent = formatINR(Number(data.expensesPending) || 0);
     }
 
     if (elExpApproved) {
-      const approvedValue = formatINR(Number(data.expensesApproved) || 0);
-      elExpApproved.textContent = approvedValue;
-      console.log("[MR-DASH] Set expensesApproved to:", approvedValue, "(raw:", data.expensesApproved, ")");
+      elExpApproved.textContent = formatINR(Number(data.expensesApproved) || 0);
     }
   }
 

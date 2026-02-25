@@ -37,8 +37,8 @@ public class SalesController {
      */
     @GetMapping("/manager/sales-targets/summary")
     public ResponseEntity<ManagerDashboardSummary> getManagerDashboard(
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(value = "month", required = false) Integer month,
+            @RequestParam(value = "year", required = false) Integer year) {
 
         // Default to current month/year if not provided
         LocalDate now = LocalDate.now();
@@ -54,8 +54,8 @@ public class SalesController {
      */
     @GetMapping("/manager/sales-targets")
     public ResponseEntity<List<TargetWithAchievementResponse>> getAllTargets(
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(value = "month", required = false) Integer month,
+            @RequestParam(value = "year", required = false) Integer year) {
 
         LocalDate now = LocalDate.now();
         int targetMonth = month != null ? month : now.getMonthValue();
@@ -70,7 +70,7 @@ public class SalesController {
      * Manager: Delete a target
      */
     @DeleteMapping("/manager/sales-targets/{id}")
-    public ResponseEntity<Void> deleteTarget(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTarget(@PathVariable(value = "id") Long id) {
         salesService.deleteTarget(id);
         return ResponseEntity.noContent().build();
     }
@@ -80,9 +80,9 @@ public class SalesController {
      */
     @GetMapping("/mr/{mrId}/sales-targets")
     public ResponseEntity<List<TargetWithAchievementResponse>> getMrTargets(
-            @PathVariable Long mrId,
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @PathVariable(value = "mrId") Long mrId,
+            @RequestParam(value = "month", required = false) Integer month,
+            @RequestParam(value = "year", required = false) Integer year) {
 
         LocalDate now = LocalDate.now();
         int targetMonth = month != null ? month : now.getMonthValue();
@@ -97,8 +97,8 @@ public class SalesController {
      */
     @GetMapping("/mr/me/sales-targets")
     public ResponseEntity<List<TargetWithAchievementResponse>> getMyTargets(
-            @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(value = "month", required = false) Integer month,
+            @RequestParam(value = "year", required = false) Integer year) {
 
         // Get user from SecurityContext
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -135,7 +135,7 @@ public class SalesController {
     }
 
     @GetMapping("/sales-targets/{id}")
-    public ResponseEntity<SalesTarget> getTargetById(@PathVariable Long id) {
+    public ResponseEntity<SalesTarget> getTargetById(@PathVariable(value = "id") Long id) {
         SalesTarget target = salesService.getTargetById(id);
         return ResponseEntity.ok(target);
     }
@@ -145,7 +145,7 @@ public class SalesController {
      */
     @PutMapping("/manager/sales-targets/{id}/achievement")
     public ResponseEntity<SalesTarget> updateTargetAndAchievement(
-            @PathVariable Long id,
+            @PathVariable(value = "id") Long id,
             @RequestBody UpdateAchievementRequest request) {
         return ResponseEntity.ok(salesService.updateTargetAndAchievement(id, request));
     }

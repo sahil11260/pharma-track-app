@@ -243,20 +243,23 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        // Only show MR-assigned products (mrStock) with available stock (>0)
-        const displayList = Array.isArray(mrStock) ? mrStock : [];
+        // Combine systemProducts and mrStock for better coverage
+        // We use systemProducts as the primary list of what SHOULD exist
+        const displayList = systemProducts.length > 0 ? systemProducts : mrStock;
 
-        displayList
-            .filter(p => (Number(p.stock) || 0) > 0)
-            .forEach(product => {
-                const effectiveStock = getProductStock(product.id);
-                if (effectiveStock <= 0) return;
+        displayList.forEach(product => {
+            const effectiveStock = getProductStock(product.id);
 
-                const option = document.createElement('option');
-                option.value = product.id;
-                option.textContent = `${product.name} (Stock: ${effectiveStock})`;
-                selectElement.appendChild(option);
-            });
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.name} (Stock: ${effectiveStock})`;
+
+            if (effectiveStock <= 0) {
+                // option.disabled = true; // Don't disable, let them select it but they might see error on submit if stock check is active
+            }
+
+            selectElement.appendChild(option);
+        });
     }
 
     // --- TEMPORARY SAMPLES TABLE MANAGEMENT (for the form) ---

@@ -149,26 +149,55 @@
         </div>
       </div>
 
-      <!-- TARGETS LIST -->
-      <div class="table-responsive">
-        <table class="table table-striped table-hover" id="targetsTable">
-          <thead style="background-color: #343a40; color: white">
-            <tr>
-              <th style="width: 5%;">Sr.No.</th>
-              <th style="width: 10%;">Assigned Date</th>
-              <th style="width: 15%;">MR Name</th>
-              <th style="width: 15%;">Product Name</th>
-              <th style="width: 10%;">Target Type</th>
-              <th style="width: 10%;">Target (Units)</th>
-              <th style="width: 10%;">Achieved (Units)</th>
-              <th style="width: 10%;">Achievement %</th>
-              <th style="width: 15%;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="targetsList">
-            <!-- Target rows will be populated here -->
-          </tbody>
-        </table>
+      <!-- MY TARGETS LIST -->
+      <div class="mb-4">
+        <h4 class="fw-bold mb-3">MY TARGET</h4>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover" id="myTargetsTable">
+            <thead style="background-color: #343a40; color: white">
+              <tr>
+                <th style="width: 5%;">Sr.No.</th>
+                <th style="width: 15%;">Assigned Date</th>
+                <th style="width: 20%;">Product Name</th>
+                <th style="width: 15%;">Target Type</th>
+                <th style="width: 10%;">Target (Units)</th>
+                <th style="width: 10%;">Achieved (Units)</th>
+                <th style="width: 10%;">Achievement %</th>
+                <th style="width: 15%;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="myTargetsList">
+              <!-- My target rows will be populated here -->
+              <tr><td colspan="8" class="text-center text-muted">No personal targets assigned</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MY MR'S TARGETS LIST -->
+      <div class="mb-5">
+        <h4 class="fw-bold mb-3">MY MR's Target</h4>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover" id="mrTargetsTable">
+            <thead style="background-color: #343a40; color: white">
+              <tr>
+                <th style="width: 5%;">Sr.No.</th>
+                <th style="width: 10%;">Assigned Date</th>
+                <th style="width: 15%;">MR Name</th>
+                <th style="width: 15%;">Product Name</th>
+                <th style="width: 10%;">Target Type</th>
+                <th style="width: 10%;">Target (Units)</th>
+                <th style="width: 10%;">Achieved (Units)</th>
+                <th style="width: 10%;">Achievement %</th>
+                <th style="width: 15%;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mrTargetsList">
+              <!-- MR target rows will be populated here -->
+              <tr><td colspan="9" class="text-center text-muted">No MR targets assigned</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
 

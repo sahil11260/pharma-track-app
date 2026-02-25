@@ -63,24 +63,40 @@ async function loadDashboard() {
         const data = await response.json();
         const allTargets = data.targets || [];
 
-        // Filter targets so only those belonging to manager's MRs are shown
+        // Identify current manager ID/email
+        const userObj = JSON.parse(localStorage.getItem('kavya_user') || '{}');
+        const managerId = String(userObj.id || '');
+        const managerEmail = String(userObj.email || '').toLowerCase();
+        const managerName = String(userObj.name || '').toLowerCase();
+
+        // 1. "MY TARGET" - Targets assigned TO the manager (usually by Admin)
+        const myTargets = allTargets.filter(t =>
+            String(t.mrId) === managerId ||
+            (t.mrName && t.mrName.toLowerCase() === managerName) ||
+            (t.mrEmail && t.mrEmail.toLowerCase() === managerEmail)
+        );
+
+        // 2. "MY MR's Target" - Targets assigned to MRs who report to this manager
         const managerMrIds = window.managerMrIds || [];
-        if (managerMrIds.length > 0) {
-            targetsData = allTargets.filter(t => managerMrIds.includes(String(t.mrId)));
-            console.log('[TARGETS] Filtered targets from', allTargets.length, 'to', targetsData.length);
-        } else {
-            targetsData = allTargets;
-        }
+        const mrTargets = allTargets.filter(t => {
+            const isMyTarget = String(t.mrId) === managerId ||
+                (t.mrName && t.mrName.toLowerCase() === managerName) ||
+                (t.mrEmail && t.mrEmail.toLowerCase() === managerEmail);
+
+            return managerMrIds.includes(String(t.mrId)) && !isMyTarget;
+        });
+
+        targetsData = allTargets; // Keep global for filtering if needed
 
         renderSummaryCards(data);
-        renderTargetsTable(targetsData);
+        renderMyTargetsTable(myTargets);
+        renderMrTargetsTable(mrTargets);
         renderTopPerformers(data.topPerformers);
-        
-        // Debug: Log top performer value
-        console.log('[TARGETS] Top performer from backend:', data.topPerformer);
-        console.log('[TARGETS] Top performers data:', data.topPerformers);
-        
-        // Wire edit buttons after table is rendered
+
+        // Debug: Log info
+        console.log('[TARGETS] My Targets:', myTargets.length, 'MR Targets:', mrTargets.length);
+
+        // Wire edit buttons after tables are rendered
         wireEditTarget();
 
         showLoading(false);
@@ -144,13 +160,49 @@ function renderSummaryCards(data) {
     `;
 }
 
-// Render targets table with Actions column
-function renderTargetsTable(targets) {
-    const tbody = document.getElementById('targetsList');
+// Render "MY TARGET" table
+function renderMyTargetsTable(targets) {
+    const tbody = document.getElementById('myTargetsList');
     if (!tbody) return;
 
     if (!targets || targets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No targets assigned for this period</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No personal targets assigned for this period</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = targets.map((target, index) => {
+        const achievement = target.achievementPercentage || 0;
+        const targetId = target.id || '';
+
+        return `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${formatDate(target.assignedDate)}</td>
+            <td>${escapeHtml(target.productName)}</td>
+            <td><span class="badge bg-secondary">${target.targetType || 'MONTHLY'}</span></td>
+            <td>${target.targetUnits || 0}</td>
+            <td>${target.achievedUnits || 0}</td>
+            <td><strong>${achievement.toFixed(1)}%</strong></td>
+            <td>
+                <button class="btn btn-sm btn-primary me-1" onclick="editTarget('${targetId}')" title="Edit Achievement">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteTarget('${targetId}')" title="Delete Target">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    }).join('');
+}
+
+// Render "MY MR's Target" table
+function renderMrTargetsTable(targets) {
+    const tbody = document.getElementById('mrTargetsList');
+    if (!tbody) return;
+
+    if (!targets || targets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No MR targets assigned for this period</td></tr>';
         return;
     }
 
@@ -192,8 +244,8 @@ function renderTopPerformers(performers) {
     }
 
     // Check if all performers have 0 achievement
-    const allZeroAchievement = performers.every(p => 
-        (p.achievement === 0 || p.achievement === null) && 
+    const allZeroAchievement = performers.every(p =>
+        (p.achievement === 0 || p.achievement === null) &&
         (p.achievementPercentage === 0 || p.achievementPercentage === null)
     );
 
@@ -562,9 +614,15 @@ function wireFilters() {
         const query = searchInput ? searchInput.value.toLowerCase() : "";
         const achievement = achievementFilter ? achievementFilter.value.toLowerCase() : "";
 
+        const userObj = JSON.parse(localStorage.getItem('kavya_user') || '{}');
+        const managerId = String(userObj.id || '');
+        const managerEmail = String(userObj.email || '').toLowerCase();
+        const managerName = String(userObj.name || '').toLowerCase();
+        const managerMrIds = window.managerMrIds || [];
+
         let filtered = targetsData.filter(t =>
-            t.mrName.toLowerCase().includes(query) ||
-            t.productName.toLowerCase().includes(query)
+            (t.mrName && t.mrName.toLowerCase().includes(query)) ||
+            (t.productName && t.productName.toLowerCase().includes(query))
         );
 
         if (achievement) {
@@ -574,7 +632,22 @@ function wireFilters() {
             });
         }
 
-        renderTargetsTable(filtered);
+        const myTargets = filtered.filter(t =>
+            String(t.mrId) === managerId ||
+            (t.mrName && t.mrName.toLowerCase() === managerName) ||
+            (t.mrEmail && t.mrEmail.toLowerCase() === managerEmail)
+        );
+
+        const mrTargets = filtered.filter(t => {
+            const isMyTarget = String(t.mrId) === managerId ||
+                (t.mrName && t.mrName.toLowerCase() === managerName) ||
+                (t.mrEmail && t.mrEmail.toLowerCase() === managerEmail);
+
+            return managerMrIds.includes(String(t.mrId)) && !isMyTarget;
+        });
+
+        renderMyTargetsTable(myTargets);
+        renderMrTargetsTable(mrTargets);
     };
 
     if (searchInput) searchInput.addEventListener('input', applyFilters);
@@ -620,7 +693,7 @@ function showToast(message, type = 'success') {
 function editTarget(targetId) {
     console.log('[EDIT] Edit function called with targetId:', targetId);
     console.log('[EDIT] targetsData available:', targetsData ? targetsData.length : 'undefined');
-    
+
     if (!targetId) {
         console.error('[EDIT] No targetId provided');
         alert('Error: No target ID provided');
@@ -633,7 +706,7 @@ function editTarget(targetId) {
 
     if (!target) {
         console.error('[EDIT] Target not found in local data. ID:', targetId);
-        console.error('[EDIT] Available targets:', targetsData.map(t => ({id: t.id, name: t.mrName})));
+        console.error('[EDIT] Available targets:', targetsData.map(t => ({ id: t.id, name: t.mrName })));
         alert('Target not found in local list. Try refreshing the page.');
         return;
     }
@@ -681,7 +754,7 @@ function editTarget(targetId) {
         });
         modal.show();
         console.log('[EDIT] Modal show() called successfully');
-        
+
     } catch (error) {
         console.error('[EDIT] Error showing modal:', error);
         alert('Error opening edit modal: ' + error.message);
@@ -801,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOMContentLoaded initialization can be dealt
 
     // wireEditTarget() is now called after data is loaded in loadDashboard()
-    
+
     // Test: Make editTarget globally accessible
     window.editTarget = editTarget;
     console.log('[EDIT] editTarget function made globally available');

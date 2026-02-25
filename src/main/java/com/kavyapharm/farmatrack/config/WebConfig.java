@@ -14,4 +14,11 @@ public class WebConfig implements WebMvcConfigurer {
                                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                                 .allowedHeaders("*");
         }
+
+        @Override
+        public void addResourceHandlers(
+                        @org.springframework.lang.NonNull org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
+                registry.addResourceHandler("/uploads/**")
+                                .addResourceLocations("file:uploads/");
+        }
 }
