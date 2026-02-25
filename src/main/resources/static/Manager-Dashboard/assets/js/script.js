@@ -254,8 +254,11 @@ document.addEventListener("DOMContentLoaded", () => {
           y: {
             stacked: true,
             beginAtZero: true,
+            suggestedMax: 5000,
             ticks: {
+              precision: 0,
               callback: function (value) {
+                if (value % 1 !== 0) return null; // Avoid fractional values
                 if (value >= 100000) return "₹" + (value / 100000).toFixed(1) + "L";
                 if (value >= 1000) return "₹" + (value / 1000).toFixed(0) + "K";
                 return "₹" + value;
@@ -384,6 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Smart tick formatter: shows actual numbers for small values, K/L for large
     const makeSmartTick = function (prefix) {
       return function (value) {
+        if (value % 1 !== 0) return null; // Show only whole numbers
         if (value === 0) return prefix ? prefix + "0" : "0";
         if (Math.abs(value) >= 100000) return (prefix || "") + (value / 100000).toFixed(1) + "L";
         if (Math.abs(value) >= 1000) return (prefix || "") + (value / 1000).toFixed(0) + "K";
