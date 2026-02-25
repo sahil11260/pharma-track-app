@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const achievementPercentEl = document.getElementById("achievementPercent");
     const salesListBody = document.getElementById("salesListBody");
 
-    function formatINR(amount) {
-        return "₹" + Number(amount || 0).toLocaleString('en-IN');
+    function formatUnits(amount) {
+        return Number(amount || 0).toLocaleString('en-IN');
     }
 
     function formatDate(dateStr) {
@@ -90,26 +90,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateTopCards(summary, targets) {
-        // Main Sales figure from summary record
-        const totalSales = summary.sales || 0;
-
-        // Sum targets from the detailed list (excluding visits)
+        // We unify data source: use 'targets' list for EVERYTHING to ensure consistency with the table
         let totalTarget = 0;
+        let totalAchieved = 0;
+        let targetLines = [];
+        let achievedLines = [];
+        let gapLines = [];
+        let achievementLines = [];
+
         if (Array.isArray(targets)) {
             targets.forEach(t => {
+                // Sum target and achieved units (excluding purely visit-based targets if any)
                 if (t.category && t.category.toLowerCase() !== 'visit') {
-                    totalTarget += (t.targetUnits || 0);
+                    const tUnits = t.targetUnits || 0;
+                    const aUnits = t.achievedUnits || 0;
+                    const gap = Math.max(0, tUnits - aUnits);
+                    const pct = t.achievementPercentage || 0;
+
+                    totalTarget += tUnits;
+                    totalAchieved += aUnits;
+
+                    // Product-wise lines
+                    const pName = t.productName || "Unknown";
+                    targetLines.push(`<div>${pName}: <strong>${tUnits}</strong></div>`);
+                    achievedLines.push(`<div>${pName}: <strong>${aUnits}</strong></div>`);
+                    gapLines.push(`<div>${pName}: <strong>${gap}</strong></div>`);
+                    achievementLines.push(`<div>${pName}: <strong>${pct.toFixed(1)}%</strong></div>`);
                 }
             });
         }
 
-        const targetGap = Math.max(0, totalTarget - totalSales);
-        const achievementPct = totalTarget > 0 ? (totalSales / totalTarget) * 100 : 0;
+        const totalGap = Math.max(0, totalTarget - totalAchieved);
 
-        if (totalSalesEl) totalSalesEl.textContent = formatINR(totalSales);
-        if (monthlyTargetEl) monthlyTargetEl.textContent = formatINR(totalTarget);
-        if (targetGapEl) targetGapEl.textContent = formatINR(targetGap);
+        // Revised Calculation: Use the average of individual product achievement percentages
+        // This ensures the summary represents "Product-wise" performance accurately
+        const salesTargets = targets.filter(t => t.category && t.category.toLowerCase() !== 'visit');
+        const achievementPct = salesTargets.length > 0
+            ? (salesTargets.reduce((sum, t) => sum + (t.achievementPercentage || 0), 0) / salesTargets.length)
+            : 0;
+
+        // Populate Cards and Breakdowns
+        // Card 1: Total Target
+        if (totalSalesEl) totalSalesEl.textContent = formatUnits(totalTarget);
+        const targetBreakdownEl = document.getElementById("targetBreakdown");
+        if (targetBreakdownEl && targetLines.length > 0) {
+            targetBreakdownEl.innerHTML = targetLines.join('');
+            targetBreakdownEl.style.display = "block";
+        }
+
+        // Card 2: Total Achieved
+        if (monthlyTargetEl) monthlyTargetEl.textContent = formatUnits(totalAchieved);
+        const achievedBreakdownEl = document.getElementById("achievedBreakdown");
+        if (achievedBreakdownEl && achievedLines.length > 0) {
+            achievedBreakdownEl.innerHTML = achievedLines.join('');
+            achievedBreakdownEl.style.display = "block";
+        }
+
+        // Card 3: Target Gap
+        if (targetGapEl) targetGapEl.textContent = formatUnits(totalGap);
+        const gapBreakdownEl = document.getElementById("gapBreakdown");
+        if (gapBreakdownEl && gapLines.length > 0) {
+            gapBreakdownEl.innerHTML = gapLines.join('');
+            gapBreakdownEl.style.display = "block";
+        }
+
+        // Card 4: Achievement %
         if (achievementPercentEl) achievementPercentEl.textContent = `${achievementPct.toFixed(1)}%`;
+        const achievementBreakdownEl = document.getElementById("achievementBreakdown");
+        if (achievementBreakdownEl && achievementLines.length > 0) {
+            achievementBreakdownEl.innerHTML = achievementLines.join('');
+            achievementBreakdownEl.style.display = "block";
+        }
     }
 
     function renderTargetsList(targets) {
