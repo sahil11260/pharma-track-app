@@ -78,7 +78,7 @@ async function loadNotifications() {
                             <div class="flex-grow-1 ms-3">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="fw-bold small">${notification.type || 'Notification'}</span>
-                                    <span class="text-muted" style="font-size: 0.7rem;">${formatDate(notification.date)}</span>
+                                    <span class="text-muted" style="font-size: 0.7rem;">${formatNotificationDate(notification.date)}</span>
                                 </div>
                                 <div class="small text-dark">${notification.message}</div>
                                 ${isUnread ? '<span class="badge bg-primary mt-1" style="font-size:0.6rem;">New</span>' : ''}
@@ -103,17 +103,16 @@ async function loadNotifications() {
 }
 
 // Helper to format date
-function formatDate(dateStr) {
+function formatNotificationDate(dateStr) {
     if (!dateStr) return '';
     try {
-        const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
         const date = new Date(dateStr);
         const now = new Date();
         const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
         if (diffInDays === 0) return 'Today';
         if (diffInDays === 1) return 'Yesterday';
-        if (diffInDays < 7) return `${diffInDays} days ago`;
+        if (diffInDays > 1 && diffInDays < 7) return `${diffInDays} days ago`;
 
         return date.toLocaleDateString();
     } catch (e) {

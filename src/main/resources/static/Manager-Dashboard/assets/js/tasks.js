@@ -277,10 +277,12 @@ function formatDate(dateString) {
   const diffDays = Math.round((dueStart - todayStart) / msPerDay);
 
   if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
   if (diffDays === 1) return "Tomorrow";
-  if (diffDays > 1) return `${diffDays} days to go`;
-  return `${Math.abs(diffDays)} days ago`;
+  if (diffDays > 1) return `${diffDays} Days Remaining`;
+
+  // For past dates, show the actual date instead of negative relative text
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${due.getDate()} ${months[due.getMonth()]} ${due.getFullYear()}`;
 }
 function escapeHtml(s) {
   if (s === null || s === undefined) return "";
