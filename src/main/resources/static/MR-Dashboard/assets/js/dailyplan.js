@@ -30,6 +30,22 @@ document.addEventListener("DOMContentLoaded", () => {
         return token ? { "Authorization": `Bearer ${token}` } : {};
     }
 
+    function getCurrentUserIdentifier() {
+        try {
+            const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
+            if (email) return email.toLowerCase();
+            const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
+            if (name) return name.toLowerCase();
+        } catch (e) {
+        }
+        return "anonymous";
+    }
+
+    function getDailyPlanStorageKey() {
+        return `dailyPlanTasks:${getCurrentUserIdentifier()}`;
+    }
+
     async function apiJson(url, options = {}) {
         const headers = { "Content-Type": "application/json", ...getAuthHeader(), ...(options.headers || {}) };
         const response = await fetch(url, { ...options, headers });
@@ -58,8 +74,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Prioritize specific fields
-        const clinic = backendTask.clinicName || (backendTask.type === 'meeting' ? (backendTask.location || 'Office/Field') : (backendTask.location || 'N/A'));
-        const doctor = backendTask.doctorName || backendTask.title || 'N/A';
+        // For doctor visits, the clinic/doctor columns must come from clinicName/doctorName.
+        // Falling back to location/title causes wrong values like city/location in Clinic Name and generic titles (e.g. "Visit") in Doctor Name.
+        const isDoctorVisit = String(backendTask.type || "").toLowerCase() === "doctor-visit";
+        const clinic = isDoctorVisit
+            ? (backendTask.clinicName || "")
+            : (backendTask.location || 'N/A');
+        const doctor = isDoctorVisit
+            ? (backendTask.doctorName || "")
+            : (backendTask.title || 'N/A');
 
         const capitalizeFirst = (str) => {
             if (!str) return "";
@@ -98,13 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
     async function refreshTasksFromApi() {
         try {
             console.log("[DAILYPLAN] Fetching tasks from API...");
+            const data = await apiJson(TASKS_API_BASE);
+            console.log("[DAILYPLAN] API response received:", Array.isArray(data) ? data.length : 0, "tasks");
 
-            const allTasks = await apiJson(TASKS_API_BASE);
-            console.log("[DAILYPLAN] API response received:", Array.isArray(allTasks) ? allTasks.length : 0, "tasks");
-
-            if (Array.isArray(allTasks)) {
+            if (Array.isArray(data)) {
                 // Trusting backend filtering - removing redundant frontend identity check
-                const myTasks = allTasks;
+                const myTasks = data;
 
                 // Map to UI format
                 tasks = myTasks.map(mapBackendTaskToUI);
@@ -125,6 +147,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function normalizeTaskStatus(status) {
+        if (status == null) return status;
+        return String(status)
+            .trim()
+            .toLowerCase()
+            .replace(/[_\s]+/g, "-");
+    }
+
     async function updateTaskStatusApi(taskId, newStatus) {
         try {
             console.log("[DAILYPLAN] Updating task status:", taskId, "->", newStatus);
@@ -138,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Update the status
             const updatedTask = {
                 ...backendTask,
-                status: newStatus.toLowerCase()
+                status: normalizeTaskStatus(newStatus)
             };
 
             const result = await apiJson(`${TASKS_API_BASE}/${taskId}`, {
@@ -199,22 +229,35 @@ document.addEventListener("DOMContentLoaded", () => {
     let backendTasks = []; // Store original backend task format for updates
 
     function saveTasks() {
-        localStorage.setItem("dailyPlanTasks", JSON.stringify(tasks));
+        localStorage.setItem(getDailyPlanStorageKey(), JSON.stringify(tasks));
     }
 
     function loadTasksFromStorage() {
-        const storedTasksRaw = localStorage.getItem("dailyPlanTasks");
-        return storedTasksRaw ? JSON.parse(storedTasksRaw) : [];
+        const scopedKey = getDailyPlanStorageKey();
+        const storedTasksRaw = localStorage.getItem(scopedKey);
+        if (storedTasksRaw) {
+            return JSON.parse(storedTasksRaw);
+        }
+
+        // Backward compatibility: migrate from legacy shared key once.
+        const legacyRaw = localStorage.getItem("dailyPlanTasks");
+        if (legacyRaw) {
+            localStorage.setItem(scopedKey, legacyRaw);
+            localStorage.removeItem("dailyPlanTasks");
+            return JSON.parse(legacyRaw);
+        }
+
+        return [];
     }
 
     // --- CORE LOGIC ---
     function updateSummary() {
         const total = tasks.length;
-        const pendingOrInProgress = tasks.filter(task => task.status !== "Completed").length;
-        const completed = total - pendingOrInProgress;
+        const pendingOrInProgress = tasks.filter(task => normalizeTaskStatus(task.status) !== "completed").length;
+        const upcomingOverall = tasks.filter(task => task.date > todayKey && normalizeTaskStatus(task.status) !== "completed").length;
 
         if (totalCountEl) totalCountEl.textContent = total;
-        if (completedCountEl) completedCountEl.textContent = completed;
+        if (completedCountEl) completedCountEl.textContent = upcomingOverall;
         if (pendingCountEl) pendingCountEl.textContent = pendingOrInProgress;
     }
 
@@ -232,6 +275,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("[DAILYPLAN] Rendering all tasks. Today is:", todayKey);
         console.log("[DAILYPLAN] Current tasks state:", tasks);
 
+        const isCompleted = (task) => normalizeTaskStatus(task.status) === "completed";
+
         // Strictly only today's tasks
         const todayTasks = tasks.filter(task => task.date === todayKey);
         console.log("[DAILYPLAN] Today's tasks count:", todayTasks.length);
@@ -239,13 +284,14 @@ document.addEventListener("DOMContentLoaded", () => {
         // Past Due list: only tasks due BEFORE today that are not completed
         const pastDueTasks = tasks.filter(task =>
             task.date < todayKey &&
-            task.status.toLowerCase() !== "completed"
+            !isCompleted(task)
         ).sort((a, b) => new Date(a.date) - new Date(b.date));
         console.log("[DAILYPLAN] Past due tasks count:", pastDueTasks.length);
 
-        // Upcoming tasks: tasks due AFTER today
+        // Upcoming tasks: tasks due AFTER today and not completed
         const upcomingTasks = tasks.filter(task =>
-            task.date > todayKey
+            task.date > todayKey &&
+            !isCompleted(task)
         ).sort((a, b) => new Date(a.date) - new Date(b.date));
         console.log("[DAILYPLAN] Upcoming tasks count:", upcomingTasks.length);
 
@@ -282,6 +328,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const row = document.createElement('tr');
             row.dataset.taskId = task.id;
 
+            const completed = normalizeTaskStatus(task.status) === 'completed';
+
             // Show date if not today
             const firstColContent = (task.date !== todayKey) ? task.date : (index + 1);
 
@@ -297,8 +345,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         data-task-id="${task.id}"
                         data-bs-toggle="modal" 
                         data-bs-target="#statusUpdateModal"
-                        ${task.status.toLowerCase() === 'completed' ? 'disabled' : ''}>
-                        ${task.status.toLowerCase() === 'completed' ? 'Done' : 'Update'}
+                        ${completed ? 'disabled' : ''}>
+                        ${completed ? 'Done' : 'Update'}
                     </button>
                 </td>
             `;

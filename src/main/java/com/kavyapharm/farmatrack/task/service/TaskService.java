@@ -5,7 +5,6 @@ import com.kavyapharm.farmatrack.task.dto.TaskResponse;
 import com.kavyapharm.farmatrack.task.dto.UpdateTaskRequest;
 import com.kavyapharm.farmatrack.task.model.Task;
 import com.kavyapharm.farmatrack.task.repository.TaskRepository;
-import com.kavyapharm.farmatrack.user.model.User;
 import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;

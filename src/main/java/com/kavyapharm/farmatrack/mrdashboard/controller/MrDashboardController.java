@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class MrDashboardController {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MrDashboardController.class);
-
     private final MrDashboardService mrDashboardService;
 
     public MrDashboardController(MrDashboardService mrDashboardService) {

@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -205,10 +204,6 @@ public class UserService {
         }
 
         return List.of(); // Regular users shouldn't be listing others
-    }
-
-    private boolean isEmail(String str) {
-        return str != null && str.contains("@");
     }
 
     public UserResponse get(Long id) {

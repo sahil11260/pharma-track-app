@@ -5,7 +5,6 @@ import com.kavyapharm.farmatrack.doctor.dto.DoctorResponse;
 import com.kavyapharm.farmatrack.doctor.dto.UpdateDoctorRequest;
 import com.kavyapharm.farmatrack.doctor.model.Doctor;
 import com.kavyapharm.farmatrack.doctor.repository.DoctorRepository;
-import com.kavyapharm.farmatrack.user.model.User;
 import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class DoctorService {
