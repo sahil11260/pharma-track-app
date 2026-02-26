@@ -19,10 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function getCurrentUserIdentifier() {
         try {
             const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
-            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
-            if (email) return email;
+            // Prioritize name over email for DCR mrName field consistency
             const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
             if (name) return name;
+            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
+            if (email) return email;
         } catch (e) {
         }
         return "";
@@ -718,7 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
         (async function () {
             if (apiMode) {
                 try {
-                    const currentUserName = localStorage.getItem('signup_name') || '';
+                    const currentUserName = getCurrentUserIdentifier();
                     const payload = {
                         visitTitle: newReportData.visitTitle,
                         visitType: newReportData.visitType,

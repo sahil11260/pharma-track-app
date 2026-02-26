@@ -432,7 +432,6 @@
 
     // wire buttons
     container.querySelectorAll(".btn-view").forEach(b => b.addEventListener("click", onViewClick));
-    container.querySelectorAll(".btn-download").forEach(b => b.addEventListener("click", onDownloadClick));
     container.querySelectorAll(".btn-delete").forEach(b => b.addEventListener("click", onDeleteClick));
 
     renderPagination(totalItems, totalPages);
@@ -442,7 +441,6 @@
     return `
       <div class="d-flex gap-1">
         <button class="btn btn-outline-info btn-sm btn-view" data-id="${id}" title="View"><i class="bi bi-eye"></i></button>
-        <button class="btn btn-outline-primary btn-sm btn-download" data-id="${id}" title="Download"><i class="bi bi-download"></i></button>
         <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${id}" title="Delete"><i class="bi bi-trash"></i></button>
       </div>
     `;
@@ -558,14 +556,6 @@
   function onViewClick(e) {
     openReportDetails(Number(e.currentTarget.dataset.id));
   }
-  function onDownloadClick(e) {
-    const id = Number(e.currentTarget.dataset.id);
-    const r = window.reportsData.find((x) => x.id === id);
-    if (!r) return alert("Report not found");
-    const file = (r.attachments || [])[0];
-    if (!file) return alert("No attachment available to download.");
-    downloadAttachment(file);
-  }
   function onDeleteClick(e) {
     const id = Number(e.currentTarget.dataset.id);
     deleteReport(id);
@@ -588,9 +578,6 @@
           <h6>Attachment</h6>
           <div class="mb-2">
             <span class="me-2">${escapeHtml(single)}</span>
-            <button class="btn btn-sm btn-outline-primary" data-file="${encodeURIComponent(single)}" onclick="(function(el){ const file=decodeURIComponent(el.dataset.file); window.__downloadAttachment(file); })(this)">
-              <i class="bi bi-download"></i> Download
-            </button>
           </div>
         </div>
       `;
@@ -621,21 +608,6 @@
     }
   }
 
-  // helper for inline download
-  window.__downloadAttachment = function (filename) {
-    downloadAttachment(filename);
-  };
-
-  function downloadAttachment(filename) {
-    if (!filename) return alert("No file specified.");
-    const url = `assets/attachments/${encodeURIComponent(filename)}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
 
   function deleteReport(reportId) {
     if (!confirm(`Are you sure you want to delete report #${reportId}?`)) return;
@@ -719,7 +691,5 @@
     });
   });
 
-  // expose download helper if needed
-  window.downloadAttachment = downloadAttachment;
 })();
 

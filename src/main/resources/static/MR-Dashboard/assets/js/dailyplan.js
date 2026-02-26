@@ -252,7 +252,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- CORE LOGIC ---
     function updateSummary() {
-        const total = tasks.length;
+        const total = tasks.filter(task =>
+            task.date === todayKey || normalizeTaskStatus(task.status) !== "completed"
+        ).length;
         const pendingOrInProgress = tasks.filter(task => normalizeTaskStatus(task.status) !== "completed").length;
         const upcomingOverall = tasks.filter(task => task.date > todayKey && normalizeTaskStatus(task.status) !== "completed").length;
 

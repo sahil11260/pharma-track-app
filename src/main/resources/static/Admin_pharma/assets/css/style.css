@@ -6,7 +6,7 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1100;
   background: #f8f9fa;
 }
 
@@ -19,7 +19,7 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 999;
+  z-index: 1050;
   overflow-y: auto;
 }
 
@@ -123,12 +123,15 @@
 .card-primary {
   background: linear-gradient(45deg, #512da8, #7e57c2);
 }
+
 .card-success {
   background: linear-gradient(45deg, #2e7d32, #66bb6a);
 }
+
 .card-info {
   background: linear-gradient(45deg, #0288d1, #4fc3f7);
 }
+
 .card-warning {
   background: linear-gradient(45deg, #ef6c00, #ffb74d);
 }
@@ -218,10 +221,12 @@ body.dark-mode .dark-logo {
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 3px;
 }
+
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
@@ -252,6 +257,7 @@ body.dark-mode .dark-logo {
     font-size: 0.9rem;
   }
 }
+
 /* ============================
 🎯 Target Cards Hover Enhanced
 ============================ */
@@ -313,7 +319,8 @@ body.dark-mode .expense-card:hover {
 
 .chart-box {
   position: relative;
-  height: 320px;   /* 🔹 Same height for both charts */
+  height: 320px;
+  /* 🔹 Same height for both charts */
   width: 100%;
 }
 
