@@ -121,7 +121,45 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderPagination() {
     paginationEl.innerHTML = "";
     const totalPages = Math.ceil(filteredManagers.length / rowsPerPage);
-    if (totalPages <= 1) return;
+    // Always render pagination for consistency; hide only if no items
+    if (totalPages === 0) {
+      paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
+    if (totalPages <= 1) {
+      // Show Previous/Next and a single disabled page button for consistency
+      const prevLi = document.createElement("li");
+      prevLi.className = "page-item disabled";
+      prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+      paginationEl.appendChild(prevLi);
+
+      const li = document.createElement("li");
+      li.className = "page-item active disabled";
+      const span = document.createElement("span");
+      span.className = "page-link";
+      span.textContent = "1";
+      li.appendChild(span);
+      paginationEl.appendChild(li);
+
+      const nextLi = document.createElement("li");
+      nextLi.className = "page-item disabled";
+      nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
+      paginationEl.appendChild(nextLi);
+      return;
+    }
+
+    // Previous button
+    const prevLi = document.createElement("li");
+    prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+    prevLi.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+    paginationEl.appendChild(prevLi);
 
     for (let i = 1; i <= totalPages; i++) {
       const li = document.createElement("li");
@@ -134,6 +172,19 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       paginationEl.appendChild(li);
     }
+
+    // Next button
+    const nextLi = document.createElement("li");
+    nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
+    nextLi.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
+    });
+    paginationEl.appendChild(nextLi);
   }
 
   // --- Actions ---

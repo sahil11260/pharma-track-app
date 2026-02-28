@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let allUsers = [];
   let filteredUsers = [];
   let currentPage = 1;
-  const ROWS_PER_PAGE = 10;
+  const ROWS_PER_PAGE = 5;
   let activeFilterRole = "All";
   let editingUserId = null;
   let allManagers = []; // To store list of managers for dropdowns
@@ -188,7 +188,45 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderPagination() {
     paginationNav.innerHTML = "";
     const totalPages = Math.ceil(filteredUsers.length / ROWS_PER_PAGE);
-    if (totalPages <= 1) return;
+    // Always render pagination container for consistency; hide only if no items
+    if (totalPages === 0) {
+      paginationNav.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
+    if (totalPages <= 1) {
+      // Show Previous/Next and a single disabled page button for consistency
+      const prevLi = document.createElement("li");
+      prevLi.className = "page-item disabled";
+      prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+      paginationNav.appendChild(prevLi);
+
+      const li = document.createElement("li");
+      li.className = "page-item active disabled";
+      const span = document.createElement("span");
+      span.className = "page-link";
+      span.textContent = "1";
+      li.appendChild(span);
+      paginationNav.appendChild(li);
+
+      const nextLi = document.createElement("li");
+      nextLi.className = "page-item disabled";
+      nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
+      paginationNav.appendChild(nextLi);
+      return;
+    }
+
+    // Previous button
+    const prevLi = document.createElement("li");
+    prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+    prevLi.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+    paginationNav.appendChild(prevLi);
 
     for (let i = 1; i <= totalPages; i++) {
       const li = document.createElement("li");
@@ -201,6 +239,19 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       paginationNav.appendChild(li);
     }
+
+    // Next button
+    const nextLi = document.createElement("li");
+    nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
+    nextLi.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
+    });
+    paginationNav.appendChild(nextLi);
   }
 
   // --- Actions ---
@@ -342,9 +393,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const phone = document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "";
 
+    if (!editingUserId && (!phone || !phone.trim())) {
+      alert("Phone number is required.");
+      return;
+    }
+
     // Phone validation: Must be exactly 10 digits
     if (phone && phone.length !== 10) {
       alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
+    const territoryEl = document.getElementById(`${prefix}Territory`);
+    const territory = territoryEl ? territoryEl.value : "";
+    if (!editingUserId && (!territory || !territory.trim())) {
+      alert("Territory is required.");
       return;
     }
 
@@ -363,7 +426,12 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const password = document.getElementById(`${prefix}Password`).value;
-    if (password) {
+    if (!editingUserId && (!password || !password.trim())) {
+      alert("Password is required.");
+      return;
+    }
+
+    if (password && password.trim()) {
       const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
       if (!passRegex.test(password)) {
         alert("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");

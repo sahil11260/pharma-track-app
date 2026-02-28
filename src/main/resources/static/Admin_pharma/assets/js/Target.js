@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let targets = [];
 
   let currentPage = 1;
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
   let editIndex = null;
 
   function formatDate(dateStr) {
@@ -332,7 +332,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------------------------------------
   function renderPagination(totalPages, filtered) {
     pagination.innerHTML = "";
-    if (totalPages <= 1) return;
+    // Always render pagination for consistency; hide only if no items
+    if (totalPages === 0) {
+      pagination.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
+    if (totalPages <= 1) {
+      // Show Previous/Next and a single disabled page button for consistency
+      const prevLi = document.createElement("li");
+      prevLi.className = "page-item disabled";
+      prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+      pagination.appendChild(prevLi);
+
+      const li = document.createElement("li");
+      li.className = "page-item active disabled";
+      const span = document.createElement("span");
+      span.className = "page-link";
+      span.textContent = "1";
+      li.appendChild(span);
+      pagination.appendChild(li);
+
+      const nextLi = document.createElement("li");
+      nextLi.className = "page-item disabled";
+      nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
+      pagination.appendChild(nextLi);
+      return;
+    }
 
     let html = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
