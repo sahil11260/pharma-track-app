@@ -189,7 +189,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const paginationEl = document.getElementById("pagination");
     if (!paginationEl) return;
     paginationEl.innerHTML = "";
-    if (totalPages <= 1) return;
+
+    if (totalPages === 0) {
+      paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
 
     let html = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">

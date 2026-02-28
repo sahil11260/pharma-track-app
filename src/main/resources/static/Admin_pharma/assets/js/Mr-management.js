@@ -129,40 +129,6 @@ document.addEventListener("DOMContentLoaded", function () {
       paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
       return;
     }
-    if (totalPages <= 1) {
-      // Show Previous/Next and a single disabled page button for consistency
-      const prevLi = document.createElement("li");
-      prevLi.className = "page-item disabled";
-      prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
-      paginationEl.appendChild(prevLi);
-
-      const li = document.createElement("li");
-      li.className = "page-item active disabled";
-      const span = document.createElement("span");
-      span.className = "page-link";
-      span.textContent = "1";
-      li.appendChild(span);
-      paginationEl.appendChild(li);
-
-      const nextLi = document.createElement("li");
-      nextLi.className = "page-item disabled";
-      nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
-      paginationEl.appendChild(nextLi);
-      return;
-    }
-
-    // Previous button
-    const prevLi = document.createElement("li");
-    prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
-    prevLi.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (currentPage > 1) {
-        currentPage--;
-        renderTable();
-      }
-    });
-    paginationEl.appendChild(prevLi);
 
     let html = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">

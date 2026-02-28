@@ -136,7 +136,11 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderPagination() {
     paginationEl.innerHTML = "";
     const totalPages = Math.ceil(filteredDoctors.length / rowsPerPage);
-    if (totalPages <= 1) return;
+
+    if (totalPages === 0) {
+      paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
 
     let html = `
       <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
