@@ -192,7 +192,6 @@ document.addEventListener("DOMContentLoaded", function () {
     currentEditId = id;
     modalTitle.textContent = "Edit Doctor";
     document.getElementById("doctorName").value = doc.name;
-
     const specialtySelect = document.getElementById("doctorSpecialty");
     let specialtyVal = doc.specialty === "\u2014" ? "" : doc.specialty;
 

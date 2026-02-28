@@ -109,6 +109,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const itemsPerPage = 8;
   let currentFilteredData = [];
 
+  function formatVisitDateTime(value) {
+    if (value === null || value === undefined || value === "") return "-";
+
+    let d;
+    if (typeof value === "number") {
+      d = new Date(value);
+    } else {
+      const v = String(value).trim();
+      if (/^\d+$/.test(v)) {
+        d = new Date(Number(v));
+      } else {
+        d = new Date(v);
+      }
+    }
+
+    if (Number.isNaN(d.getTime())) return String(value);
+
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  }
+
   function renderTable(data, doctorIdMap = {}) {
     currentFilteredData = data;
     const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -144,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           return `
       <tr>
-        <td>${r.dateTime || '-'}</td>
+        <td>${formatVisitDateTime(r.dateTime)}</td>
         <td>${r.mrName || '-'}</td>
         <td>${r.doctorName || '-'}</td>
         <td>${region}</td>

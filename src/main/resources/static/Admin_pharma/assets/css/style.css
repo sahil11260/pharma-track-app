@@ -10,6 +10,17 @@
   background: #f8f9fa;
 }
 
+/* Ensure modals and backdrop appear above navbar and sidebar */
+.modal-backdrop {
+  z-index: 1055 !important;
+}
+.modal {
+  z-index: 1060 !important;
+}
+.modal-dialog {
+  z-index: 1060 !important;
+}
+
 /* Sidebar */
 .sidebar {
   position: fixed;
@@ -146,6 +157,26 @@
 
 .insight-card:hover {
   transform: translateY(-5px);
+}
+
+/* Pagination */
+.pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.pagination .page-link {
+  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.pagination .page-link:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
 /* Footer */
