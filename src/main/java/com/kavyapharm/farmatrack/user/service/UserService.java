@@ -264,6 +264,7 @@ public class UserService {
         return toResponse(saved);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public UserResponse update(Long id, UpdateUserRequest request) {
         User user = getEntity(id);
 
@@ -276,18 +277,28 @@ public class UserService {
 
         if (request.password() != null && !request.password().isBlank()) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String actorEmail = (auth != null) ? auth.getName() : "anonymous";
+
+            System.out
+                    .println("[PASSWORD_DEBUG] Attempting update for: " + user.getEmail() + " by actor: " + actorEmail);
+
             boolean isAdmin = auth != null && auth.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
-            if (isAdmin) {
+            // Simplified check: Does the logged-in email match the profile being updated?
+            boolean isSelfUpdate = actorEmail.equalsIgnoreCase(user.getEmail());
+
+            System.out.println("[PASSWORD_DEBUG] isAdmin: " + isAdmin + ", isSelfUpdate: " + isSelfUpdate);
+
+            if (isAdmin || isSelfUpdate) {
                 user.setPasswordHash(passwordEncoder.encode(request.password()));
+                System.out.println("[PASSWORD_DEBUG] SUCCESS: Password hash updated for " + user.getEmail());
             } else {
-                System.out.println("[SECURITY] Non-admin user " + (auth != null ? auth.getName() : "anonymous")
-                        + " attempted to update password for user " + user.getEmail());
+                System.err.println("[PASSWORD_DEBUG] DENIED: Security check failed for " + actorEmail);
             }
         }
 
-        User saved = userRepository.save(user);
+        User saved = userRepository.saveAndFlush(user);
 
         // If updated user is a Doctor, ensure Doctor entity is created/updated to keep
         // dashboard in sync
