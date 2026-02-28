@@ -129,65 +129,42 @@ document.addEventListener("DOMContentLoaded", function () {
       paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
       return;
     }
-    if (totalPages <= 1) {
-      // Show Previous/Next and a single disabled page button for consistency
-      const prevLi = document.createElement("li");
-      prevLi.className = "page-item disabled";
-      prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
-      paginationEl.appendChild(prevLi);
 
-      const li = document.createElement("li");
-      li.className = "page-item active disabled";
-      const span = document.createElement("span");
-      span.className = "page-link";
-      span.textContent = "1";
-      li.appendChild(span);
-      paginationEl.appendChild(li);
-
-      const nextLi = document.createElement("li");
-      nextLi.className = "page-item disabled";
-      nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
-      paginationEl.appendChild(nextLi);
-      return;
-    }
-
-    // Previous button
-    const prevLi = document.createElement("li");
-    prevLi.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
-    prevLi.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (currentPage > 1) {
-        currentPage--;
-        renderTable();
-      }
-    });
-    paginationEl.appendChild(prevLi);
+    let html = `
+      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
 
     for (let i = 1; i <= totalPages; i++) {
-      const li = document.createElement("li");
-      li.className = `page-item ${i === currentPage ? "active" : ""}`;
-      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      li.addEventListener("click", (e) => {
-        e.preventDefault();
-        currentPage = i;
-        renderTable();
-      });
-      paginationEl.appendChild(li);
+      html += `
+        <li class="page-item ${i === currentPage ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
     }
 
-    // Next button
-    const nextLi = document.createElement("li");
-    nextLi.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="next">Next</a>`;
-    nextLi.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (currentPage < totalPages) {
-        currentPage++;
+    html += `
+      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    paginationEl.innerHTML = html;
+
+    paginationEl.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
         renderTable();
-      }
-    });
-    paginationEl.appendChild(nextLi);
+      })
+    );
   }
 
   // --- Actions ---

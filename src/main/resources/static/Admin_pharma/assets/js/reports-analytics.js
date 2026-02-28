@@ -105,6 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
     salesAchievedEl.textContent = `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
 
+  let currentPage = 1;
+  const itemsPerPage = 8;
+  let currentFilteredData = [];
+
   function formatVisitDateTime(value) {
     if (value === null || value === undefined || value === "") return "-";
 
@@ -133,7 +137,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTable(data, doctorIdMap = {}) {
-    reportTableBody.innerHTML = data
+    currentFilteredData = data;
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages || 1;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const paginated = data.slice(start, start + itemsPerPage);
+
+    reportTableBody.innerHTML = paginated
       .map(
         (r) => {
           // Lookup region robustly
@@ -170,9 +181,59 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       )
       .join("") || '<tr><td colspan="6" class="text-center text-muted">No visit records found</td></tr>';
+
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    const paginationEl = document.getElementById("pagination");
+    if (!paginationEl) return;
+    paginationEl.innerHTML = "";
+
+    if (totalPages === 0) {
+      paginationEl.innerHTML = '<li class="page-item disabled"><span class="page-link">No pages</span></li>';
+      return;
+    }
+
+    let html = `
+      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      html += `
+        <li class="page-item ${i === currentPage ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
+    }
+
+    html += `
+      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    paginationEl.innerHTML = html;
+
+    paginationEl.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
+        renderTable(currentFilteredData, lastDoctorIdMap);
+      })
+    );
   }
 
   tableSearch.addEventListener("input", (e) => {
+    currentPage = 1;
     const term = e.target.value.toLowerCase();
     const filtered = allDcrs.filter(
       (r) =>
