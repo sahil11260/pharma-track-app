@@ -35,6 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number.isFinite(n) ? n : 0;
   }
 
+  function formatPrice(value) {
+    const n = parsePrice(value);
+    return n.toFixed(2);
+  }
+
   function saveStockToStorage() {
     try {
       localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(receivedStock));
@@ -259,8 +264,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const newCategory = document.getElementById("newCategory");
   const newPrice = document.getElementById("newPrice");
   const newStock = document.getElementById("newStock");
+  const newExpiryDate = document.getElementById("newExpiryDate");
   const newDescription = document.getElementById("newDescription");
   const productSuggestions = document.getElementById("productSuggestions");
+
+  if (newPrice) {
+    newPrice.min = "0";
+    newPrice.addEventListener("input", () => {
+      if (newPrice.value === "") return;
+      const v = Number(newPrice.value);
+      if (!Number.isNaN(v) && v < 0) newPrice.value = "0";
+    });
+  }
+
+  if (newStock) {
+    newStock.min = "0";
+    newStock.step = "1";
+    newStock.addEventListener("input", () => {
+      if (newStock.value === "") return;
+      const v = Number(newStock.value);
+      if (!Number.isNaN(v) && v < 0) newStock.value = "0";
+    });
+  }
+
+  if (newExpiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yyyy = String(today.getFullYear());
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    newExpiryDate.min = `${yyyy}-${mm}-${dd}`;
+  }
 
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -271,6 +305,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (price < 0) return alert("Product price cannot be negative.");
     if (stockToAdd < 0) return alert("Stock quantity cannot be negative.");
 
+    const expiryVal = (newExpiryDate ? newExpiryDate.value : "").trim();
+    if (expiryVal) {
+      const expiry = new Date(expiryVal);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (Number.isNaN(expiry.getTime())) return alert("Invalid expiry date.");
+      if (expiry < today) return alert("Expiry date cannot be in the past.");
+    }
+
     const existingProduct = receivedStock.find(p => String(p.id) === String(editingProductId));
     const finalStock = existingProduct ? (existingProduct.available + stockToAdd) : stockToAdd;
 
@@ -280,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
       price: String(price).trim(),
       stock: finalStock,
       description: (newDescription.value || "").trim(),
-      expiryDate: (document.getElementById("newExpiryDate") ? document.getElementById("newExpiryDate").value : "").trim()
+      expiryDate: (newExpiryDate ? newExpiryDate.value : "").trim()
     };
 
     (async function () {
@@ -474,7 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
               </div>
               <div>
                 <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
-                <div class="text-muted small">${p.category} | ₹${p.price}/unit</div>
+                <div class="text-muted small">${p.category} | ₹${formatPrice(p.price)}/unit</div>
               </div>
               <div class="d-flex justify-content-end mt-2 gap-1">
                 <button class="btn btn-sm btn-outline-primary" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
@@ -495,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td><span class="text-muted small">${p.id}</span></td>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
-          <td class="text-end">₹${p.price}</td>
+          <td class="text-end">₹${formatPrice(p.price)}</td>
           <td class="text-end fw-bold ${isLow ? 'text-danger' : 'text-primary'}">${p.available}</td>
           <td class="text-center"><span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span></td>
           <td class="text-center">
@@ -650,7 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addProductModalTitle.textContent = "Edit Product";
     newProductName.value = product.name;
     newCategory.value = product.category || "General";
-    newPrice.value = product.price;
+    newPrice.value = String(parsePrice(product.price));
     newStock.value = 0;
     newDescription.value = product.description || "";
     const expiryDateEl = document.getElementById("newExpiryDate");

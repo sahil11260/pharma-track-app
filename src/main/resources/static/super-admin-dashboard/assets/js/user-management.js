@@ -285,7 +285,12 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const password = document.getElementById(`${prefix}Password`).value;
-    if (password) {
+    if (!editingUserId && (!password || !password.trim())) {
+      alert("Password is required.");
+      return;
+    }
+
+    if (password && password.trim()) {
       const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
       if (!passRegex.test(password)) {
         alert("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
