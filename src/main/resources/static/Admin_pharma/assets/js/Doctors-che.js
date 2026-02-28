@@ -137,17 +137,42 @@ document.addEventListener("DOMContentLoaded", function () {
     paginationEl.innerHTML = "";
     const totalPages = Math.ceil(filteredDoctors.length / rowsPerPage);
     if (totalPages <= 1) return;
+
+    let html = `
+      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
+
     for (let i = 1; i <= totalPages; i++) {
-      const li = document.createElement("li");
-      li.className = `page-item ${i === currentPage ? "active" : ""}`;
-      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      li.addEventListener("click", (e) => {
-        e.preventDefault();
-        currentPage = i;
-        renderTable();
-      });
-      paginationEl.appendChild(li);
+      html += `
+        <li class="page-item ${i === currentPage ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
     }
+
+    html += `
+      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    paginationEl.innerHTML = html;
+
+    paginationEl.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
+        renderTable();
+      })
+    );
   }
 
   // --- Actions ---
@@ -167,7 +192,24 @@ document.addEventListener("DOMContentLoaded", function () {
     currentEditId = id;
     modalTitle.textContent = "Edit Doctor";
     document.getElementById("doctorName").value = doc.name;
-    document.getElementById("doctorSpecialty").value = doc.specialty === "\u2014" ? "" : doc.specialty;
+
+    const specialtySelect = document.getElementById("doctorSpecialty");
+    let specialtyVal = doc.specialty === "\u2014" ? "" : doc.specialty;
+
+    // Check if the specialty value from the database exists in our new dropdown options
+    let optionExists = false;
+    for (let opt of specialtySelect.options) {
+      if (opt.value === specialtyVal) {
+        optionExists = true;
+        break;
+      }
+    }
+
+    if (specialtyVal && !optionExists) {
+      specialtySelect.value = "Other"; // Fallback for old custom entries
+    } else {
+      specialtySelect.value = specialtyVal;
+    }
     document.getElementById("doctorCity").value = doc.city === "\u2014" ? "" : doc.city;
     document.getElementById("doctorPhone").value = doc.phone || "";
     document.getElementById("doctorContact").value = doc.contact === "\u2014" ? "" : doc.contact;

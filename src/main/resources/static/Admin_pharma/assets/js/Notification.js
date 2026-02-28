@@ -98,30 +98,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderPagination(totalPages) {
     if (!pagination) return;
+    pagination.innerHTML = "";
+    if (totalPages <= 1) return;
+
     let html = `
-            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
-            </li>`;
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>`;
 
     for (let i = 1; i <= totalPages; i++) {
       html += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
-                </li>`;
+        <li class="page-item ${i === currentPage ? 'active' : ''}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
     }
 
     html += `
-            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
-            </li>`;
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>`;
 
     pagination.innerHTML = html;
+
+    pagination.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
+        renderTable();
+      })
+    );
   }
 
-  window.changePage = (page) => {
-    currentPage = page;
-    renderTable();
-  };
 
   window.deleteNotification = async (id) => {
     if (!confirm("Are you sure you want to delete this notification?")) return;

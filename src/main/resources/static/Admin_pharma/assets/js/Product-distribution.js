@@ -261,15 +261,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const newStock = document.getElementById("newStock");
   const newDescription = document.getElementById("newDescription");
   const productSuggestions = document.getElementById("productSuggestions");
+  const newExpiryDate = document.getElementById("newExpiryDate");
+
+  if (newExpiryDate) {
+    const today = new Date().toISOString().split('T')[0];
+    newExpiryDate.setAttribute('min', today);
+  }
 
   addProductForm && addProductForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const price = parseFloat(newPrice.value || "0");
     let stockToAdd = parseInt(newStock.value || "0", 10);
     const editingProductId = editingProductIdInput ? editingProductIdInput.value : "-1";
+    const expiryDateVal = newExpiryDate ? newExpiryDate.value : "";
 
     if (price < 0) return alert("Product price cannot be negative.");
     if (stockToAdd < 0) return alert("Stock quantity cannot be negative.");
+
+    if (expiryDateVal) {
+      const selectedDate = new Date(expiryDateVal);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        return alert("Expiry date cannot be in the past.");
+      }
+    }
 
     const existingProduct = receivedStock.find(p => String(p.id) === String(editingProductId));
     const finalStock = existingProduct ? (existingProduct.available + stockToAdd) : stockToAdd;
@@ -537,22 +553,43 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPagination(totalPages) {
     if (!pagination) return;
     pagination.innerHTML = "";
-    const prev = document.createElement("li");
-    prev.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
-    prev.innerHTML = `<a class="page-link" href="#" onclick="pd_changePage(${currentPage - 1})">Previous</a>`;
-    pagination.appendChild(prev);
+    if (totalPages <= 1) return;
 
-    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-      const li = document.createElement("li");
-      li.className = `page-item ${i === currentPage ? "active" : ""}`;
-      li.innerHTML = `<a class="page-link" href="#" onclick="pd_changePage(${i})">${i}</a>`;
-      pagination.appendChild(li);
+    let html = `
+      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      html += `
+        <li class="page-item ${i === currentPage ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
     }
 
-    const next = document.createElement("li");
-    next.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
-    next.innerHTML = `<a class="page-link" href="#" onclick="pd_changePage(${currentPage + 1})">Next</a>`;
-    pagination.appendChild(next);
+    html += `
+      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    pagination.innerHTML = html;
+
+    pagination.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
+        renderTable();
+      })
+    );
   }
 
   allocateForm && allocateForm.addEventListener("submit", (e) => {

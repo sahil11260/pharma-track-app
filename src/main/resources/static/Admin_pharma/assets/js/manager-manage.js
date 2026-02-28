@@ -123,17 +123,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const totalPages = Math.ceil(filteredManagers.length / rowsPerPage);
     if (totalPages <= 1) return;
 
+    let html = `
+      <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
+
     for (let i = 1; i <= totalPages; i++) {
-      const li = document.createElement("li");
-      li.className = `page-item ${i === currentPage ? "active" : ""}`;
-      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-      li.addEventListener("click", (e) => {
-        e.preventDefault();
-        currentPage = i;
-        renderTable();
-      });
-      paginationEl.appendChild(li);
+      html += `
+        <li class="page-item ${i === currentPage ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
     }
+
+    html += `
+      <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    paginationEl.innerHTML = html;
+
+    paginationEl.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentPage > 1) {
+          currentPage--;
+        } else if (value === "next" && currentPage < totalPages) {
+          currentPage++;
+        } else if (!isNaN(value)) {
+          currentPage = parseInt(value);
+        }
+        renderTable();
+      })
+    );
   }
 
   // --- Actions ---
