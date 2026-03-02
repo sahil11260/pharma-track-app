@@ -1,5 +1,25 @@
 
 
+// Global sidebar toggle function
+window.toggleSidebar = function() {
+  const sidebar = document.getElementById("sidebar");
+  const mainContent = document.getElementById("mainContent");
+  
+  if (sidebar && mainContent) {
+    sidebar.classList.toggle("collapsed");
+    mainContent.classList.toggle("expanded");
+    
+    // Handle sidebar visibility for better UX
+    if (sidebar.classList.contains("collapsed")) {
+      sidebar.style.display = "none";
+      mainContent.style.marginLeft = "0";
+    } else {
+      sidebar.style.display = "block";
+      mainContent.style.marginLeft = "250px";
+    }
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const sidebarToggle = document.getElementById("sidebarToggle");
@@ -7,9 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const mainContent = document.getElementById("mainContent");
 
   if (sidebarToggle && sidebar && mainContent) {
-    sidebarToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
-      mainContent.classList.toggle("expanded");
+    sidebarToggle.addEventListener("click", toggleSidebar);
+  } else {
+    console.warn("Sidebar elements not found:", {
+      sidebarToggle: !!sidebarToggle,
+      sidebar: !!sidebar,
+      mainContent: !!mainContent
     });
   }
 
