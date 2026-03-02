@@ -376,74 +376,41 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!validateForm()) return;
 
     const billFile = form.expenseBill.files[0];
-    let uploadedFilename = "";
-    if (billFile) {
-      uploadedFilename = await uploadFile(billFile);
-    }
-    let billUrl = uploadedFilename ? `/uploads/receipts/${uploadedFilename}` : "";
-
-    if (editIndex !== null && !billFile) {
-      const existing = expenses.find((x) => Number(x.id) === Number(editIndex));
-      billUrl = existing ? existing.bill : "";
-    }
-
-    const data = {
-      id: editIndex !== null ? Number(editIndex) : ((expenses.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) || 0) + 1),
-      person: form.expensePerson.value.trim(),
-      type: form.expenseType.value.trim(),
-      amount: Number(form.expenseAmount.value) || 0,
-      date: form.expenseDate.value,
-      status: form.expenseStatus.value,
-      bill: billUrl,
-      attachments: uploadedFilename ? [uploadedFilename] : [],
-    };
+    const category = form.expenseType.value.trim();
+    const amount = Number(form.expenseAmount.value) || 0;
+    const expenseDate = form.expenseDate.value;
+    const mrName = form.expensePerson.value.trim();
+    const description = "";
+    const status = toApiStatus(form.expenseStatus.value);
 
     (async function () {
       if (expensesApiMode) {
         try {
-          if (editIndex !== null) {
-            const existing = expenses.find((x) => Number(x.id) === Number(editIndex));
-            const mergedAttachments = uploadedFilename
-              ? (existing && Array.isArray(existing.attachments) ? existing.attachments.concat([uploadedFilename]) : [uploadedFilename])
-              : (existing && Array.isArray(existing.attachments) ? existing.attachments : []);
+          const formData = new FormData();
+          formData.append("category", category);
+          formData.append("amount", amount);
+          formData.append("expenseDate", expenseDate);
+          formData.append("description", description);
+          formData.append("status", status);
+          if (billFile) {
+            formData.append("receipt", billFile);
+          }
 
-            await updateExpenseApi(editIndex, {
-              mrName: data.person,
-              category: data.type,
-              amount: Number(data.amount) || 0,
-              status: toApiStatus(data.status),
-              expenseDate: data.date || null,
-              description: "",
-              attachments: mergedAttachments,
-              approvedBy: toApiStatus(data.status) === "approved" || toApiStatus(data.status) === "rejected" ? (localStorage.getItem("signup_name") || "Admin") : null,
-              approvedDate: toApiStatus(data.status) === "approved" || toApiStatus(data.status) === "rejected" ? new Date().toISOString().split("T")[0] : null,
-              rejectionReason: toApiStatus(data.status) === "rejected" ? "Rejected" : null,
+          if (editIndex !== null) {
+            // Update
+            await fetch(`${EXPENSES_API}/${editIndex}/with-receipt`, {
+              method: "PUT",
+              headers: getAuthHeader(),
+              body: formData
             });
           } else {
-            const created = await createExpenseApi({
-              mrName: data.person,
-              category: data.type,
-              amount: Number(data.amount) || 0,
-              expenseDate: data.date || null,
-              description: "",
-              attachments: data.attachments || [],
+            // Create
+            formData.append("mrName", mrName);
+            await fetch(`${EXPENSES_API}/with-receipt`, {
+              method: "POST",
+              headers: getAuthHeader(),
+              body: formData
             });
-
-            const desired = toApiStatus(data.status);
-            if (created && created.id && desired !== "pending") {
-              await updateExpenseApi(created.id, {
-                mrName: data.person,
-                category: data.type,
-                amount: Number(data.amount) || 0,
-                status: desired,
-                expenseDate: data.date || null,
-                description: "",
-                attachments: data.attachments || [],
-                approvedBy: localStorage.getItem("signup_name") || "Admin",
-                approvedDate: new Date().toISOString().split("T")[0],
-                rejectionReason: desired === "rejected" ? "Rejected" : null,
-              });
-            }
           }
 
           await refreshExpensesFromApiOrFallback();
@@ -458,15 +425,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
+      // Fallback for localStorage (offline mode)
+      const data = {
+        id: editIndex !== null ? Number(editIndex) : Date.now(),
+        person: mrName,
+        type: category,
+        amount: amount,
+        date: expenseDate,
+        status: form.expenseStatus.value,
+        bill: billFile ? URL.createObjectURL(billFile) : "",
+        attachments: billFile ? [billFile.name] : [],
+      };
+
       if (editIndex !== null) {
         const idx = expenses.findIndex((x) => Number(x.id) === Number(editIndex));
-        if (idx !== -1) {
-          const existing = expenses[idx];
-          data.attachments = billFile
-            ? (existing && Array.isArray(existing.attachments) ? existing.attachments.concat([billFile.name]) : [billFile.name])
-            : (existing && Array.isArray(existing.attachments) ? existing.attachments : []);
-          expenses[idx] = data;
-        }
+        if (idx !== -1) expenses[idx] = data;
         editIndex = null;
       } else {
         expenses.push(data);

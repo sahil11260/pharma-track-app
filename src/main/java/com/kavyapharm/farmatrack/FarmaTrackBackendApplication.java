@@ -10,3 +10,4 @@ public class FarmaTrackBackendApplication {
         SpringApplication.run(FarmaTrackBackendApplication.class, args);
     }
 }
+

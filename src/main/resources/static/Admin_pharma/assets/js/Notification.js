@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // const API_BASE = window.location.port === "5500" ? "http://localhost:8080" : "";
   const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
 
   const NOTIFICATIONS_API_BASE = `${API_BASE}/api/notifications`;
@@ -15,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let allNotifications = [];
   let allUsers = [];
-  const perPage = 10;
+  const perPage = 5;
   let currentPage = 1;
 
   // Clear old problematic local storage data once
@@ -99,22 +98,25 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderPagination(totalPages) {
     if (!pagination) return;
     pagination.innerHTML = "";
-    if (totalPages <= 1) return;
+
+    // Create pagination even if only 1 page, so UI remains consistent
+    const isPrevDisabled = currentPage === 1;
+    const isNextDisabled = currentPage === totalPages || totalPages === 0;
 
     let html = `
-      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+      <li class="page-item ${isPrevDisabled ? 'disabled' : ''}">
         <a class="page-link" href="#" data-page="prev">Previous</a>
       </li>`;
 
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = 1; i <= Math.max(1, totalPages); i++) {
       html += `
-        <li class="page-item ${i === currentPage ? 'active' : ''}">
+        <li class="page-item ${i === currentPage ? 'active' : ''} ${totalPages <= 1 ? 'disabled' : ''}">
           <a class="page-link" href="#" data-page="${i}">${i}</a>
         </li>`;
     }
 
     html += `
-      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+      <li class="page-item ${isNextDisabled ? 'disabled' : ''}">
         <a class="page-link" href="#" data-page="next">Next</a>
       </li>`;
 
@@ -123,6 +125,8 @@ document.addEventListener("DOMContentLoaded", () => {
     pagination.querySelectorAll(".page-link").forEach((btn) =>
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        if (btn.parentElement.classList.contains('disabled')) return;
+
         const value = btn.dataset.page;
         if (value === "prev" && currentPage > 1) {
           currentPage--;
@@ -135,7 +139,6 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     );
   }
-
 
   window.deleteNotification = async (id) => {
     if (!confirm("Are you sure you want to delete this notification?")) return;
@@ -208,5 +211,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
   fetchData();
 });
-
-

@@ -19,12 +19,19 @@ public class WebConfig implements WebMvcConfigurer {
         public void addResourceHandlers(
                         @org.springframework.lang.NonNull org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry registry) {
 
-                String uploadPath = new java.io.File("uploads").getAbsolutePath();
-                if (!uploadPath.endsWith(java.io.File.separator)) {
-                        uploadPath += java.io.File.separator;
+                String uploadPath = new java.io.File("uploads").getAbsolutePath().replace("\\", "/");
+                if (!uploadPath.endsWith("/")) {
+                        uploadPath += "/";
                 }
 
+                // Use file:/// for Windows compatibility with absolute paths
                 registry.addResourceHandler("/uploads/**")
-                                .addResourceLocations("file:" + uploadPath);
+                                .addResourceLocations("file:///" + uploadPath)
+                                .setCachePeriod(3600);
+
+                // Specifically for receipts if needed, though the above covers it
+                registry.addResourceHandler("/uploads/receipts/**")
+                                .addResourceLocations("file:///" + uploadPath + "receipts/")
+                                .setCachePeriod(3600);
         }
 }

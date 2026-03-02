@@ -226,9 +226,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
   let currentPage = 1;
+  const summaryItemsPerPage = 8;
+  let currentSummaryPage = 1;
   let currentSearch = "";
+
+  const paginationSummary = document.getElementById("paginationSummary");
+  const summaryPaginationContainer = document.getElementById("summaryPaginationContainer");
 
   const receivedSummaryRow = document.getElementById("receivedSummaryRow");
   const summaryTableBody = document.getElementById("receivedSummaryTableBody");
@@ -397,6 +402,8 @@ document.addEventListener("DOMContentLoaded", () => {
   searchInput && searchInput.addEventListener("input", (e) => {
     currentSearch = e.target.value.trim().toLowerCase();
     currentPage = 1;
+    currentSummaryPage = 1;
+    renderSummary();
     renderTable();
   });
 
@@ -500,9 +507,70 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!uniqueMap.has(name)) uniqueMap.set(name, { ...p });
       else uniqueMap.get(name).available += p.available;
     });
-    const displayStock = Array.from(uniqueMap.values()).sort((a, b) => a.id - b.id);
-    if (summaryViewMode === "Cards") renderSummaryCards(displayStock);
-    else renderSummaryTable(displayStock);
+
+    const displayStockFiltered = Array.from(uniqueMap.values()).filter(p => {
+      if (!currentSearch) return true;
+      return (p.name || "").toLowerCase().includes(currentSearch) ||
+        (p.category || "").toLowerCase().includes(currentSearch);
+    }).sort((a, b) => a.id - b.id);
+
+    const totalPages = Math.ceil(displayStockFiltered.length / summaryItemsPerPage) || 1;
+    if (currentSummaryPage > totalPages) currentSummaryPage = totalPages;
+
+    const start = (currentSummaryPage - 1) * summaryItemsPerPage;
+    const paginated = displayStockFiltered.slice(start, start + summaryItemsPerPage);
+
+    if (summaryViewMode === "Cards") renderSummaryCards(paginated);
+    else renderSummaryTable(paginated);
+
+    renderSummaryPagination(totalPages);
+  }
+
+  function renderSummaryPagination(totalPages) {
+    if (!paginationSummary || !summaryPaginationContainer) return;
+    paginationSummary.innerHTML = "";
+
+    if (totalPages <= 1) {
+      summaryPaginationContainer.style.display = "none";
+      return;
+    }
+    summaryPaginationContainer.style.display = "block";
+
+    let html = `
+      <li class="page-item ${currentSummaryPage === 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+      </li>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+        html += `
+          <li class="page-item ${i === currentSummaryPage ? "active" : ""}">
+            <a class="page-link" href="#" data-page="${i}">${i}</a>
+          </li>`;
+    }
+
+    html += `
+      <li class="page-item ${currentSummaryPage === totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+      </li>
+    `;
+
+    paginationSummary.innerHTML = html;
+
+    paginationSummary.querySelectorAll(".page-link").forEach((btn) =>
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = btn.dataset.page;
+        if (value === "prev" && currentSummaryPage > 1) {
+          currentSummaryPage--;
+        } else if (value === "next" && currentSummaryPage < totalPages) {
+          currentSummaryPage++;
+        } else if (!isNaN(value)) {
+          currentSummaryPage = parseInt(value);
+        }
+        renderSummary();
+      })
+    );
   }
 
   function renderSummaryCards(displayStock) {
