@@ -6,8 +6,15 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1100;
+  position: fixed;
+  z-index: 2100 !important;
   background: #f8f9fa;
+}
+
+#sidebarToggle {
+  position: relative !important;
+  z-index: 2200 !important;
+  pointer-events: auto !important;
 }
 
 /* Sidebar */
@@ -19,8 +26,12 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 1050;
+  z-index: 2000 !important;
   overflow-y: auto;
+}
+
+.sidebar.sidebar-hidden {
+  transform: translateX(-250px);
 }
 
 .sidebar.collapsed {
@@ -81,6 +92,10 @@
 
 .main-content.expanded {
   margin-left: 0;
+}
+
+.main-content.main-content-expanded {
+  margin-left: 0 !important;
 }
 
 /* Cards Common Style */
@@ -237,6 +252,26 @@
   opacity: 0.8;
   display: block;
   margin-top: 3px;
+}
+
+@media (max-width: 991.98px) {
+  #summaryCards > .col-md-3 {
+    flex: 0 0 auto;
+    width: 50%;
+    display: flex;
+  }
+
+  .stats-card,
+  .summary-card {
+    height: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  #summaryCards > .col-md-3 {
+    width: 100%;
+    display: flex;
+  }
 }
 
 /* Summary card content styles */

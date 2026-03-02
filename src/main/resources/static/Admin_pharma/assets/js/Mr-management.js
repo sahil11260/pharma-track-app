@@ -321,5 +321,13 @@ document.addEventListener("DOMContentLoaded", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
     });
   }
+
+  // Fix for MR Name: only accept letters and spaces
+  const nameInput = document.getElementById("mrName");
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z\s]/g, "");
+    });
+  }
 });
 
