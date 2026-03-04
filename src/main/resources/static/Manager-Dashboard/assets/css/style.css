@@ -800,11 +800,11 @@ body.dark-mode .password-hint {
    Global Modal Fixes
    ============================ */
 .modal {
-  z-index: 1060 !important;
+  z-index: 11000 !important;
 }
 
 .modal-backdrop {
-  z-index: 1050 !important;
+  z-index: 10900 !important;
 }
 
 .modal-content {

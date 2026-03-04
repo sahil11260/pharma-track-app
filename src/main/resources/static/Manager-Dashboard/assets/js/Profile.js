@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const fullNameInput = document.getElementById('fullName');
+    if (fullNameInput) {
+        fullNameInput.addEventListener('input', function (e) {
+            // Allow only alphabets and spaces
+            this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
+        });
+    }
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
