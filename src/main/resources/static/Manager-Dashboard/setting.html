@@ -119,8 +119,8 @@
                       <select class="form-select" id="currency">
                         <option value="INR" selected>Indian Rupee (&#8377;)</option>
                         <option value="USD">US Dollar ($)</option>
-                        <option value="EUR">Euro (€)</option>
-                        <option value="GBP">British Pound (£)</option>
+                        <option value="EUR">Euro (&euro;)</option>
+                        <option value="GBP">British Pound (&pound;)</option>
                       </select>
                     </div>
                   </div>
@@ -211,9 +211,15 @@
   <!-- Optional: any other page scripts (do NOT include an older Notification.js) -->
   <!-- <script src="assets/js/old-Notification.js"></script> --> <!-- removed on purpose -->
 
-  <!-- CSS class-based sidebar toggle - most reliable method -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Profile fallback
+      const profileName = document.getElementById('profileName');
+      const profileEmail = document.getElementById('profileEmail');
+      if (profileName) profileName.textContent = localStorage.getItem('signup_name') || 'Admin User';
+      if (profileEmail) profileEmail.textContent = localStorage.getItem('signup_email') || 'admin@kavyapharm.com';
+
+      // Sidebar Toggle Logic
       const toggleBtn = document.getElementById('sidebarToggle');
       const sidebar = document.getElementById('sidebar');
       const mainContent = document.getElementById('mainContent');
@@ -223,32 +229,34 @@
           e.preventDefault();
           e.stopPropagation();
           
-          // Toggle CSS classes
           sidebar.classList.toggle('sidebar-hidden');
           mainContent.classList.toggle('main-content-expanded');
           
-          // Also set inline styles as backup to ensure no white space
+          // Sync with original script.js classes if they exist
+          sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('expanded');
+          
+          // Inline style backup
           if (sidebar.classList.contains('sidebar-hidden')) {
             mainContent.style.marginLeft = '0px';
-            console.log('Sidebar hidden, content expanded');
           } else {
             mainContent.style.marginLeft = '250px';
-            console.log('Sidebar shown, content normal');
+          }
+        });
+      }
+
+      // Mobile Number Validation & Form Submit
+      const mobileInput = document.getElementById('mobileNumber');
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          if (mobileInput && mobileInput.value.length > 0 && mobileInput.value.length !== 10) {
+            e.preventDefault();
+            alert('Please enter a valid 10-digit mobile number.');
           }
         });
       }
     });
   </script>
-
-  <script>
-    // small profile fallback
-    document.addEventListener('DOMContentLoaded', () => {
-      const profileName = document.getElementById('profileName');
-      const profileEmail = document.getElementById('profileEmail');
-      if (profileName) profileName.textContent = localStorage.getItem('signup_name') || 'Admin User';
-      if (profileEmail) profileEmail.textContent = localStorage.getItem('signup_email') || 'admin@kavyapharm.com';
-    });
-  </script>
 </body>
-
 </html>
