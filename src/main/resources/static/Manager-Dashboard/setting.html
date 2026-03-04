@@ -211,6 +211,35 @@
   <!-- Optional: any other page scripts (do NOT include an older Notification.js) -->
   <!-- <script src="assets/js/old-Notification.js"></script> --> <!-- removed on purpose -->
 
+  <!-- CSS class-based sidebar toggle - most reliable method -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      
+      if (toggleBtn && sidebar && mainContent) {
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Toggle CSS classes
+          sidebar.classList.toggle('sidebar-hidden');
+          mainContent.classList.toggle('main-content-expanded');
+          
+          // Also set inline styles as backup to ensure no white space
+          if (sidebar.classList.contains('sidebar-hidden')) {
+            mainContent.style.marginLeft = '0px';
+            console.log('Sidebar hidden, content expanded');
+          } else {
+            mainContent.style.marginLeft = '250px';
+            console.log('Sidebar shown, content normal');
+          }
+        });
+      }
+    });
+  </script>
+
   <script>
     // small profile fallback
     document.addEventListener('DOMContentLoaded', () => {

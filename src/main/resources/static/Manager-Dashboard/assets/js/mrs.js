@@ -179,6 +179,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputName = document.getElementById("mrName");
   const inputEmail = document.getElementById("mrEmail");
   const inputPhone = document.getElementById("mrPhone");
+  
+  // Restrict MR name field to letters and spaces only
+  if (inputName) {
+    inputName.addEventListener("input", function (e) {
+      // Remove any characters that are not letters or spaces
+      this.value = this.value.replace(/[^A-Za-z\s]/g, "");
+    });
+  }
+  
   if (inputPhone) {
     inputPhone.addEventListener("input", function (e) {
       this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10);
@@ -251,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      Paging / rendering config
      ========================= */
-  const itemsPerPage = 5;
+  const itemsPerPage = 2;
   let currentPage = 1;
   let editId = null; // null => add mode; number => edit mode
   let currentFilter = null; // store filtered array when searching
@@ -363,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     pagination.innerHTML = "";
 
-    if (totalPages <= 1) return;
+    // Always show pagination for better UX
 
     // Previous
     const prevLi = document.createElement("li");

@@ -4,19 +4,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="/assets/js/auth-check.js"></script>
+  <script src="../assets/js/auth-check.js"></script>
   <link rel="icon" type="image/png" href="assets/images/fevicon-icon.png" />
-  <title>Doctors List | Manager</title>
+  <title>KavyaPharm Manager - Doctors</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
   <script src="/config.js"></script>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/config.js"></script>
   <link href="assets/css/doctors.css" rel="stylesheet" />
   <link href="assets/css/style.css" rel="stylesheet" />
+  <link href="../assets/css/pagination.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -150,7 +151,7 @@
       </div>
 
       <!-- Pagination controls (kept centered) -->
-      <nav aria-label="Doctors pagination">
+      <nav class="pagination-wrapper" aria-label="Doctors pagination">
         <ul class="pagination justify-content-center" id="paginationContainer"></ul>
       </nav>
     </div>
@@ -348,6 +349,35 @@
   <script src="assets/js/doctors.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
+  <!-- Simple sidebar toggle script -->
+  <script>
+    // CSS class-based sidebar toggle - most reliable method
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      
+      if (toggleBtn && sidebar && mainContent) {
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Toggle CSS classes
+          sidebar.classList.toggle('sidebar-hidden');
+          mainContent.classList.toggle('main-content-expanded');
+          
+          // Also set inline styles as backup to ensure no white space
+          if (sidebar.classList.contains('sidebar-hidden')) {
+            mainContent.style.marginLeft = '0px';
+            console.log('Sidebar hidden, content expanded');
+          } else {
+            mainContent.style.marginLeft = '250px';
+            console.log('Sidebar shown, content normal');
+          }
+        });
+      }
+    });
+  </script>
 </body>
 
 </html>

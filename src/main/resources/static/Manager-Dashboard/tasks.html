@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="../assets/js/auth-check.js"></script>
+  <script src="../../assets/js/auth-check.js"></script>
   <link rel="icon" type="image/png" href="assets/images/fevicon-icon.png" />
   <title>KavyaPharm Manager - Tasks / Assignments</title>
 
@@ -13,9 +13,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="../config.js"></script>
+  <script src="../../config.js"></script>
   <link href="assets/css/tasks.css" rel="stylesheet" />
   <link href="assets/css/style.css" rel="stylesheet" />
+  <link href="../../assets/css/pagination.css" rel="stylesheet" />
   <style>
     /* small inline adjustments to make table aligned and responsive */
     .main-content .table-responsive {
@@ -217,7 +218,11 @@
 
   <!-- CREATE TASK MODAL -->
   <div class="modal fade" id="createTaskModal" tabindex="-1">
+<<<<<<< HEAD
     <div class="modal-dialog modal-lg modal-dialog-centered">
+=======
+    <div class="modal-dialog modal-lg" style="margin-top: 80px;">
+>>>>>>> origin/main
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -390,6 +395,35 @@
   <script src="assets/js/tasks.js?v=20260225"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
+  
+  <!-- CSS class-based sidebar toggle - most reliable method -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      
+      if (toggleBtn && sidebar && mainContent) {
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Toggle CSS classes
+          sidebar.classList.toggle('sidebar-hidden');
+          mainContent.classList.toggle('main-content-expanded');
+          
+          // Also set inline styles as backup to ensure no white space
+          if (sidebar.classList.contains('sidebar-hidden')) {
+            mainContent.style.marginLeft = '0px';
+            console.log('Sidebar hidden, content expanded');
+          } else {
+            mainContent.style.marginLeft = '250px';
+            console.log('Sidebar shown, content normal');
+          }
+        });
+      }
+    });
+  </script>
 </body>
 
 </html>

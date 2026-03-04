@@ -141,7 +141,14 @@ function toUpdatePayload(task) {
 
 async function refreshTasksFromApiOrFallback() {
   try {
-    const data = await apiJson(TASKS_API_BASE);
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('API timeout')), 3000)
+    );
+    
+    const dataPromise = apiJson(TASKS_API_BASE);
+    const data = await Promise.race([dataPromise, timeoutPromise]);
+    
     if (Array.isArray(data)) {
       tasksData = data.map((t) => ({
         id: Number(t.id),
@@ -166,7 +173,7 @@ async function refreshTasksFromApiOrFallback() {
     }
     tasksApiMode = false;
   } catch (e) {
-    console.warn("Tasks API unavailable, using localStorage.", e);
+    console.warn("Tasks API unavailable or slow, using localStorage.", e);
     tasksApiMode = false;
     try { showTasksApiRetryBanner(); } catch (err) { }
   }
@@ -526,6 +533,36 @@ function ensureStatusModalExists() {
         ).hide();
       })();
     });
+}
+
+/* ---------------------------
+   Auto-update overdue tasks
+   --------------------------- */
+function updateOverdueTasks() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+  
+  let updatedCount = 0;
+  
+  tasksData.forEach(task => {
+    if (task.dueDate && task.status !== 'completed' && task.status !== 'overdue') {
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      
+      if (dueDate < today) {
+        task.status = 'overdue';
+        updatedCount++;
+      }
+    }
+  });
+  
+  if (updatedCount > 0) {
+    saveTasksData();
+    // Update filtered tasks and re-render
+    filteredTasks = tasksData.slice();
+    applyFilters();
+    console.log(`Updated ${updatedCount} tasks to overdue status`);
+  }
 }
 
 /* ---------------------------
@@ -1164,9 +1201,18 @@ function initCreateTaskHandler() {
   // Event listener for the "Create Task" button
   saveTaskBtn.addEventListener("click", () => {
     const locationEl = document.getElementById("taskLocation");
+    const dueDateEl = document.getElementById("dueDate");
+    const assignedToEl = document.getElementById("assignedTo");
+    
     if (locationEl) locationEl.classList.remove("is-invalid");
+    if (dueDateEl) dueDateEl.classList.remove("is-invalid");
+    if (assignedToEl) assignedToEl.classList.remove("is-invalid");
 
     const locationVal = (locationEl ? locationEl.value : "").trim();
+    const dueDateVal = (dueDateEl ? dueDateEl.value : "").trim();
+    const assignedToVal = (assignedToEl ? assignedToEl.value : "").trim();
+    
+    // Validate location
     if (!locationVal) {
       if (locationEl) {
         locationEl.classList.add("is-invalid");
@@ -1174,6 +1220,41 @@ function initCreateTaskHandler() {
       }
       showToast("Validation", "Location is required.");
       return;
+    }
+    
+    // Validate due date (no past dates)
+    if (dueDateVal) {
+      const selectedDate = new Date(dueDateVal);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+      
+      if (selectedDate < today) {
+        if (dueDateEl) {
+          dueDateEl.classList.add("is-invalid");
+          dueDateEl.focus();
+        }
+        showToast("Validation", "Due date cannot be in the past.");
+        return;
+      }
+    }
+    
+    // Validate territory restriction
+    if (assignedToVal && locationVal) {
+      const selectedMR = mrData.find(mr => mr.email === assignedToVal || mr.name === assignedToVal);
+      if (selectedMR && selectedMR.territory) {
+        const mrTerritory = selectedMR.territory.toLowerCase();
+        const taskLocation = locationVal.toLowerCase();
+        
+        // Check if task location contains MR's territory or vice versa
+        if (!taskLocation.includes(mrTerritory) && !mrTerritory.includes(taskLocation)) {
+          if (locationEl) {
+            locationEl.classList.add("is-invalid");
+            locationEl.focus();
+          }
+          showToast("Validation", `Task location must be within ${selectedMR.name}'s territory: ${selectedMR.territory}`);
+          return;
+        }
+      }
     }
 
     // Prevent double submission
@@ -1353,27 +1434,23 @@ function applyFilters() {
    Init: wire up everything & initial render
    --------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
+  // Set minimum date for due date input to today
+  const dueDateInput = document.getElementById("dueDate");
+  if (dueDateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dueDateInput.min = today;
+  }
+
   // load persisted data
   loadTasksData();
+  
+  // Auto-update overdue tasks
+  updateOverdueTasks();
+  
+  // Set up periodic overdue check (every 5 minutes)
+  setInterval(updateOverdueTasks, 5 * 60 * 1000);
 
-  // sidebar & theme toggles (safe-guard if elements exist)
-  const sidebarToggle = document.getElementById("sidebarToggle");
-  const sidebar = document.getElementById("sidebar");
-  const mainContent = document.getElementById("mainContent");
-  if (sidebarToggle && sidebar && mainContent) {
-    sidebarToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
-      mainContent.classList.toggle("expanded");
-      // small responsive behavior: hide/show sidebar
-      if (sidebar.classList.contains("collapsed")) {
-        sidebar.style.display = "none";
-        document.querySelector(".main-content").style.marginLeft = "0";
-      } else {
-        sidebar.style.display = "";
-        document.querySelector(".main-content").style.marginLeft = "240px";
-      }
-    });
-  }
+  // sidebar & theme toggles are handled in script.js
 
 
   // populate MR dropdown in create form (if present) - prefer API

@@ -6,7 +6,8 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1030;
+  position: fixed;
+  z-index: 2100 !important;
   background: #f8f9fa;
 }
 
@@ -19,7 +20,7 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 1020;
+  z-index: 2000 !important;
   overflow-y: auto;
 }
 
@@ -42,6 +43,33 @@
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+/* Modal positioning fixes */
+.modal {
+  z-index: 1060 !important;
+}
+
+.modal-dialog {
+  max-width: 500px;
+}
+
+.modal-content {
+  border: none;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure modal backdrop is below modal */
+.modal-backdrop {
+  z-index: 1055 !important;
+}
+
+/* Fix for mobile devices */
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 80px 15px 1.75rem 15px !important;
+    max-width: calc(100% - 30px);
+  }
 }
 
 .sidebar-menu li {
