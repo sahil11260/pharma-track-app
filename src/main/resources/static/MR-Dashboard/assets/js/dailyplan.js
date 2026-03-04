@@ -33,10 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function getCurrentUserIdentifier() {
         try {
             const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
-            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
-            if (email) return email.toLowerCase();
             const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
             if (name) return name.toLowerCase();
+            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
+            if (email) return email.toLowerCase();
         } catch (e) {
         }
         return "anonymous";
@@ -340,16 +340,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td><span class="fw-bold">${task.type}</span></td>
                 <td>${task.clinic}</td>
                 <td>${task.doctor}</td>
-                <td><span class="badge ${statusClass} task-status-badge">${task.status}</span></td>
-                <td>
-                    <button 
-                        class="btn btn-sm btn-outline-primary btn-update-status" 
-                        data-task-id="${task.id}"
-                        data-bs-toggle="modal" 
-                        data-bs-target="#statusUpdateModal"
-                        ${completed ? 'disabled' : ''}>
-                        ${completed ? 'Done' : 'Update'}
-                    </button>
+                <td class="text-center"><span class="badge ${statusClass} task-status-badge">${task.status}</span></td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                        <button 
+                            class="btn btn-outline-primary btn-update-status" 
+                            data-task-id="${task.id}"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#statusUpdateModal"
+                            ${completed ? 'disabled' : ''}>
+                            <i class="bi bi-pencil-square"></i> ${completed ? 'Done' : 'Update'}
+                        </button>
+                    </div>
                 </td>
             `;
 

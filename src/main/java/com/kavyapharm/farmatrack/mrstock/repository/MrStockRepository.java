@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MrStockRepository extends JpaRepository<MrStockItem, Long> {
-    List<MrStockItem> findAllByUserName(String userName);
+    java.util.List<com.kavyapharm.farmatrack.mrstock.model.MrStockItem> findAllByUserNameIgnoreCase(String userName);
 
-    Optional<MrStockItem> findByIdAndUserName(String productId, String userName);
+    java.util.Optional<com.kavyapharm.farmatrack.mrstock.model.MrStockItem> findByIdAndUserNameIgnoreCase(String id,
+            String userName);
 }

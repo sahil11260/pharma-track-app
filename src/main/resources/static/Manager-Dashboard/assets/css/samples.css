@@ -145,6 +145,7 @@
   background: linear-gradient(45deg, #0d6efd, #4dabf7);
   color: white;
 }
+
 .doctor-card.chemist-type .card-header {
   background: linear-gradient(45deg, #28a745, #20c997);
   color: white;
@@ -324,6 +325,7 @@ body.dark-mode .doctor-card {
 body.dark-mode .doctor-card.doctor-type .card-header {
   background: linear-gradient(45deg, #0056b3, #007bff);
 }
+
 body.dark-mode .doctor-card.chemist-type .card-header {
   background: linear-gradient(45deg, #1e7e34, #218838);
 }
@@ -375,32 +377,43 @@ body.dark-mode .text-muted {
 
 /* Fix: Dark Mode Modals (Ensures content contrast and header text visibility) */
 body.dark-mode .modal-content {
-  background-color: #ffffff; /* Modal background stays white in dark mode */
+  background-color: #ffffff;
+  /* Modal background stays white in dark mode */
 }
 
 body.dark-mode .modal-body,
 body.dark-mode .modal-header .modal-title {
-  color: #212529 !important; /* Forces dark text inside the modal body/title for contrast */
+  color: #212529 !important;
+  /* Forces dark text inside the modal body/title for contrast */
 }
 
 /* Specific fix for Edit/Add modal header (which uses btn-primary color) */
 body.dark-mode #addDoctorModal .modal-header {
-  background-color: #0d6efd !important; /* Ensure primary blue background for header */
+  background-color: #0d6efd !important;
+  /* Ensure primary blue background for header */
 }
+
 body.dark-mode #addDoctorModal .modal-header .modal-title {
-  color: white !important; /* Ensure white title text on blue background */
+  color: white !important;
+  /* Ensure white title text on blue background */
 }
+
 body.dark-mode #addDoctorModal .btn-close {
-  filter: invert(1); /* Makes the close button visible (white on dark) */
+  filter: invert(1);
+  /* Makes the close button visible (white on dark) */
 }
 
 /* Specific fix for View modal header (which uses bg-info color) */
 body.dark-mode #viewDoctorModal .modal-header {
-  background-color: #0dcaf0 !important; /* Ensure info blue background for header */
+  background-color: #0dcaf0 !important;
+  /* Ensure info blue background for header */
 }
+
 body.dark-mode #viewDoctorModal .modal-header .modal-title {
-  color: white !important; /* Ensure white title text on blue background */
+  color: white !important;
+  /* Ensure white title text on blue background */
 }
+
 body.dark-mode #viewDoctorModal .btn-close {
   filter: invert(1);
 }
@@ -426,10 +439,12 @@ body.dark-mode .dark-logo {
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 3px;
 }
+
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #666;
 }

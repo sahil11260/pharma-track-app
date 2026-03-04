@@ -11,6 +11,21 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <script src="/config.js"></script>
+  <style>
+    /* Ensure modals are above the navbar (z-index 1100) */
+    .modal {
+      z-index: 1200 !important;
+    }
+
+    .modal-backdrop {
+      z-index: 1150 !important;
+    }
+
+    .error-msg {
+      font-size: 0.8rem;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 
 <body>
@@ -104,16 +119,16 @@
       <div class="card shadow-sm">
         <div class="card-body p-0">
           <table class="table table-hover mb-0">
-            <thead class="table-light">
+            <thead class="table-primary">
               <tr>
                 <th style="width: 5%;">Sr. No</th>
                 <th style="width: 10%;">Date</th>
                 <th style="width: 10%;">Category</th>
                 <th style="width: 10%;">Amount</th>
                 <th style="width: 10%;">File</th>
-                <th style="width: 35%;">Description</th>
-                <th style="width: 10%;">Status</th>
-                <th style="width: 10%;">Actions</th>
+                <th style="width: 30%;" class="text-center">Description</th>
+                <th style="width: 15%;">Status</th>
+                <th style="width: 10%;" class="text-center">Actions</th>
               </tr>
             </thead>
             <tbody id="expenseTableBody"></tbody>
@@ -132,7 +147,7 @@
 
   <!-- ADD EXPENSE MODAL -->
   <div class="modal fade" id="addExpenseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
 
         <div class="modal-header">
@@ -157,6 +172,7 @@
             <div class="col-md-6">
               <label class="form-label">Amount</label>
               <input type="number" id="expAmount" class="form-control" />
+              <div id="expAmountError" class="text-danger error-msg"></div>
             </div>
 
             <div class="col-md-6">
@@ -187,7 +203,7 @@
   </div>
   <!-- Edit Expense Modal-->
   <div class="modal fade" id="editExpenseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
 
         <div class="modal-header">
@@ -213,6 +229,7 @@
             <div class="col-md-6">
               <label class="form-label">Amount</label>
               <input type="number" id="editAmount" class="form-control" />
+              <div id="editAmountError" class="text-danger error-msg"></div>
             </div>
 
             <div class="col-md-6">
@@ -277,6 +294,34 @@
   <script src="assets/js/expenses_api.js"></script>
   <script src="assets/js/layout.js"></script>
   <script src="assets/js/notifications.js"></script>
+  <script>
+    // Restrict expense date to today or earlier
+    const today = new Date().toISOString().split('T')[0];
+    const addDateInput = document.getElementById('expDate');
+    const editDateInput = document.getElementById('editDate');
+    if (addDateInput) addDateInput.setAttribute('max', today);
+    if (editDateInput) editDateInput.setAttribute('max', today);
+
+    // Auto-reset forms on modal close
+    document.addEventListener('DOMContentLoaded', () => {
+      ['addExpenseModal', 'editExpenseModal'].forEach(id => {
+        const modalEl = document.getElementById(id);
+        if (modalEl) {
+          modalEl.addEventListener('hidden.bs.modal', () => {
+            const formInputs = modalEl.querySelectorAll('input, select, textarea');
+            formInputs.forEach(input => {
+              if (input.type === 'file') input.value = '';
+              else if (input.tagName === 'SELECT') input.selectedIndex = 0;
+              else input.value = '';
+            });
+            // Clear errors
+            const errorDivs = modalEl.querySelectorAll('.error-msg');
+            errorDivs.forEach(div => div.textContent = '');
+          });
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>

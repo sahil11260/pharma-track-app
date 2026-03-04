@@ -6,7 +6,7 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1030;
   background: #f8f9fa;
 }
 
@@ -19,7 +19,7 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 999;
+  z-index: 1020;
   overflow-y: auto;
 }
 
@@ -387,10 +387,12 @@ body.dark-mode .text-muted {
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 3px;
 }
+
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
@@ -473,13 +475,18 @@ body.dark-mode .text-muted {
 
 /* Priority Highlighting on Table Rows */
 .priority-high {
-  border-left: 5px solid #dc3545; /* Red for High Priority */
+  border-left: 5px solid #dc3545;
+  /* Red for High Priority */
 }
+
 .priority-normal {
-  border-left: 5px solid #ffc107; /* Yellow for Normal Priority */
+  border-left: 5px solid #ffc107;
+  /* Yellow for Normal Priority */
 }
+
 .priority-low {
-  border-left: 5px solid #198754; /* Green for Low Priority */
+  border-left: 5px solid #198754;
+  /* Green for Low Priority */
 }
 
 /* Ensure row hover is subtle and professional */
@@ -499,12 +506,16 @@ body.dark-mode .text-muted {
   border-radius: 0.75rem;
   overflow: hidden;
 }
+
 #viewNotificationModal .bg-primary {
-  background-color: #0d6efd !important; /* Bootstrap Primary */
+  background-color: #0d6efd !important;
+  /* Bootstrap Primary */
 }
+
 #viewNotificationModal .modal-body {
   padding: 1rem 1.5rem;
 }
+
 #viewNotificationModal .modal-footer {
   border-top: 1px solid #dee2e6;
 }
@@ -514,10 +525,12 @@ body.dark-mode .text-muted {
   background-color: #212529;
   color: #f8f9fa;
 }
+
 [data-bs-theme="dark"] #viewNotificationModal .modal-body {
   background-color: #212529;
   color: #f8f9fa;
 }
+
 [data-bs-theme="dark"] #viewNotificationModal .modal-footer {
   background-color: #212529;
   border-top-color: rgba(255, 255, 255, 0.15) !important;
@@ -529,4 +542,3 @@ body.dark-mode .text-muted {
   color: #f8f9fa !important;
   background-color: #343a40 !important;
 }
-

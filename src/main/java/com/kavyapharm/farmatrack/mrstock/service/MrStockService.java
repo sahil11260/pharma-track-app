@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class MrStockService {
@@ -33,16 +32,16 @@ public class MrStockService {
         if (userName == null || userName.isBlank()) {
             return list();
         }
-        return mrStockRepository.findAllByUserName(userName)
+        return mrStockRepository.findAllByUserNameIgnoreCase(userName)
                 .stream().map(MrStockService::toResponse).toList();
     }
 
-    public MrStockItemResponse get(String productId, String userName) {
-        return toResponse(getEntity(productId, userName));
+    public MrStockItemResponse get(String id, String userName) {
+        return toResponse(getEntity(id, userName));
     }
 
-    public MrStockItemResponse update(String productId, String userName, UpdateMrStockItemRequest request) {
-        MrStockItem item = getEntity(productId, userName);
+    public MrStockItemResponse update(String id, String userName, UpdateMrStockItemRequest request) {
+        MrStockItem item = getEntity(id, userName);
         item.setName(request.name());
         item.setStock(request.stock());
         return toResponse(mrStockRepository.save(item));
@@ -74,46 +73,39 @@ public class MrStockService {
         return String.format("P%03d", max + 1);
     }
 
-    public void adjustStockOrThrow(String productId, String userName, int delta) {
-        Objects.requireNonNull(productId, "productId is required");
-
-        Optional<MrStockItem> optItem = mrStockRepository.findByIdAndUserName(productId, userName);
-        MrStockItem item;
-
-        if (optItem.isPresent()) {
-            item = optItem.get();
-        } else {
-            // Create new stock entry for this user
-            item = new MrStockItem();
-            item.setId(productId);
-            item.setUserName(userName);
-
-            String productName = "Product " + productId;
-            try {
-                Long pId = Long.parseLong(productId);
-                productName = productRepository.findById(pId)
-                        .map(com.kavyapharm.farmatrack.product.model.Product::getName)
-                        .orElse(productName);
-            } catch (Exception ignored) {
-            }
-
-            item.setName(productName);
-            item.setStock(0);
-        }
+    public void adjustStockOrThrow(String id, String investigatorName, int delta) {
+        Objects.requireNonNull(id, "id is required");
+        MrStockItem item = mrStockRepository.findByIdAndUserNameIgnoreCase(id, investigatorName)
+                .orElseGet(() -> {
+                    MrStockItem newItem = new MrStockItem();
+                    newItem.setId(id);
+                    newItem.setUserName(investigatorName);
+                    String productName = "Product " + id;
+                    try {
+                        Long pId = Long.parseLong(id);
+                        productName = productRepository.findById(pId)
+                                .map(com.kavyapharm.farmatrack.product.model.Product::getName)
+                                .orElse(productName);
+                    } catch (Exception ignored) {
+                    }
+                    newItem.setName(productName);
+                    newItem.setStock(0);
+                    return newItem;
+                });
 
         int current = item.getStock() == null ? 0 : item.getStock();
         int next = current + delta;
-
-        // Dynamic reporting: Allow negative stock so MRs can submit reports even if
-        // their digital inventory hasn't been updated yet.
+        if (next < 0) {
+            throw new IllegalArgumentException("Insufficient stock for product " + id + ". Available: " + current);
+        }
         item.setStock(next);
         mrStockRepository.save(item);
     }
 
-    private MrStockItem getEntity(String productId, String userName) {
-        return mrStockRepository.findByIdAndUserName(productId, userName)
+    private MrStockItem getEntity(String id, String userName) {
+        return mrStockRepository.findByIdAndUserNameIgnoreCase(id, userName)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Stock item not found for product " + productId + " and user " + userName));
+                        "Stock item not found for id " + id + " and user " + userName));
     }
 
     public static MrStockItemResponse toResponse(MrStockItem item) {

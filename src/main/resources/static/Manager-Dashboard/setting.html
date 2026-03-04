@@ -98,7 +98,9 @@
                     </div>
                     <div class="col-md-4">
                       <label for="mobileNumber" class="form-label">Mobile Number</label>
-                      <input type="tel" class="form-control" id="mobileNumber" />
+                      <input type="tel" class="form-control" id="mobileNumber" maxlength="10" pattern="[0-9]{10}"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                        title="Please enter a 10-digit mobile number" placeholder="10-digit number" />
                     </div>
                   </div>
 
@@ -117,8 +119,8 @@
                       <select class="form-select" id="currency">
                         <option value="INR" selected>Indian Rupee (&#8377;)</option>
                         <option value="USD">US Dollar ($)</option>
-                        <option value="EUR">Euro (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬)</option>
-                        <option value="GBP">British Pound (Ãƒâ€šÃ‚Â£)</option>
+                        <option value="EUR">Euro (€)</option>
+                        <option value="GBP">British Pound (£)</option>
                       </select>
                     </div>
                   </div>

@@ -19,6 +19,16 @@
   <!-- Admin Theme CSS -->
   <link rel="stylesheet" href="./assets/css/style.css" />
   <script src="/config.js"></script>
+  <style>
+    /* Ensure modals are above the navbar (z-index 1100) */
+    .modal {
+      z-index: 1200 !important;
+    }
+
+    .modal-backdrop {
+      z-index: 1150 !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -125,7 +135,7 @@
               <thead>
                 <tr class="table-primary">
                   <th>Date & Time</th>
-                  <th>Doctor / Location</th>
+                  <th>Doctor / Clinic</th>
                   <th>Visit Type</th>
                   <th>Rating</th>
                   <th>Samples (Qty)</th>
@@ -191,9 +201,9 @@
                 </select>
               </div>
               <div class="col-md-4 mb-3">
-                <label for="clinicLocation" class="form-label fw-bold">Clinic / Location <span
+                <label for="clinicName" class="form-label fw-bold">Clinic Name <span
                     class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="clinicLocation" required />
+                <input type="text" class="form-control" id="clinicName" required />
               </div>
               <div class="col-md-4 mb-3">
                 <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span
