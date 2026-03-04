@@ -46,12 +46,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (emailField) emailField.value = email;
 
     // Update Navbar name
-    const userDropdownBtn = document.getElementById("userDropdown");
-    if (userDropdownBtn) {
-      const icon = userDropdownBtn.querySelector('i, img');
-      userDropdownBtn.innerHTML = '';
-      if (icon) userDropdownBtn.appendChild(icon);
-      userDropdownBtn.appendChild(document.createTextNode(' ' + name));
+    const navbarIcon = document.querySelector('nav .bi-person-circle');
+    if (navbarIcon && navbarIcon.parentElement) {
+      const parentBtn = navbarIcon.parentElement;
+      // Clear existing text content (if any), keep the icon
+      parentBtn.innerHTML = '';
+      parentBtn.appendChild(navbarIcon);
+      parentBtn.appendChild(document.createTextNode(' ' + name));
     }
 
     // Load saved profile picture (Isolated by email)

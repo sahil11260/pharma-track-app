@@ -22,8 +22,8 @@ public class StockReceivedController {
 
     @GetMapping
     public List<StockReceivedEntryResponse> list(
-            @RequestParam(required = false) String productId,
-            @RequestParam(required = false) String userName) {
+            @RequestParam(value = "productId", required = false) String productId,
+            @RequestParam(value = "userName", required = false) String userName) {
         return service.list(productId, userName);
     }
 

@@ -6,7 +6,7 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1030;
   background: #f8f9fa;
 }
 
@@ -19,7 +19,7 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 999;
+  z-index: 1020;
   overflow-y: auto;
 }
 
@@ -403,10 +403,12 @@ body.dark-mode .dark-logo {
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 3px;
 }
+
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #666;
 }

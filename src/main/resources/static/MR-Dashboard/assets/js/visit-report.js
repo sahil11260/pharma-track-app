@@ -19,14 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function getCurrentUserIdentifier() {
         try {
             const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
-            // Prioritize name over email for DCR mrName field consistency
             const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
-            if (name) return name;
+            if (name) return name.toLowerCase();
             const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
-            if (email) return email;
+            if (email) return email.toLowerCase();
         } catch (e) {
         }
-        return "";
+        return "anonymous";
     }
 
     function getCurrentUserIdentifierLower() {
@@ -86,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dcrModalLabel = document.getElementById('dcrModalLabel');
     const reportIdField = document.getElementById('reportIdField');
     const doctorSelect = document.getElementById('doctorSelect');
-    const clinicLocationInput = document.getElementById('clinicLocation');
+    const clinicNameInput = document.getElementById('clinicName');
     const sampleProductSelect = document.getElementById('sampleProductSelect');
     const sampleQuantityInput = document.getElementById('sampleQuantityInput');
     const addSampleBtn = document.getElementById('addSampleBtn');
@@ -159,19 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     assignedMR: d.assignedMR || d.assignedMr || ''
                 }));
 
-                // Defensive filtering: if backend returns broader list (e.g. anonymous access),
-                // keep only doctors assigned to the logged-in MR.
-                const currentLower = getCurrentUserIdentifierLower();
-                if (currentLower) {
-                    const scoped = assignedDoctors.filter(d => {
-                        const amr = (d.assignedMR || '').trim().toLowerCase();
-                        return amr === '' || amr === currentLower;
-                    });
-                    // If filtering would hide everything due to missing assignedMR, keep original.
-                    if (scoped.length > 0) {
-                        assignedDoctors = scoped;
-                    }
-                }
+                // The backend now filters doctors based on the logged-in MR role.
+                assignedDoctors.sort((a, b) => a.name.localeCompare(b.name));
                 console.log('[DCR] Loaded doctors:', assignedDoctors.length);
                 populateDoctors();
                 doctorsLoaded = true;
@@ -244,22 +232,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function populateProductSelect(selectElement) {
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        // Combine systemProducts and mrStock for better coverage
-        // We use systemProducts as the primary list of what SHOULD exist
-        const displayList = systemProducts.length > 0 ? systemProducts : mrStock;
+        // Use mrStock exclusively for MR's assigned products
+        const displayList = mrStock;
 
         displayList.forEach(product => {
             const effectiveStock = getProductStock(product.id);
 
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.name} (Stock: ${effectiveStock})`;
-
-            if (effectiveStock <= 0) {
-                // option.disabled = true; // Don't disable, let them select it but they might see error on submit if stock check is active
+            // Only show products with stock > 0
+            if (effectiveStock > 0) {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (Stock: ${effectiveStock})`;
+                selectElement.appendChild(option);
             }
-
-            selectElement.appendChild(option);
         });
     }
 
@@ -279,11 +264,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${sample.productName}</td>
                     <td class="text-center">${sample.quantity}</td>
                     <td class="text-center">
-                        <div class="btn-group action-btn-group">
-                            <button type="button" class="btn btn-sm btn-outline-info edit-sample-btn" data-id="${sample.id}">
-                                <i class="bi bi-pencil"></i>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-primary edit-sample-btn" data-id="${sample.id}" title="Edit Quantity">
+                                <i class="bi bi-pencil-square"></i>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-sample-btn" data-id="${sample.id}">
+                            <button type="button" class="btn btn-outline-danger delete-sample-btn" data-id="${sample.id}" title="Remove Sample">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -442,8 +427,8 @@ document.addEventListener("DOMContentLoaded", () => {
             row.innerHTML = `
                 <td>${formattedDate}</td>
                 <td>
-                    <span class="fw-bold">${dcr.doctorName}</span><br>
-                    <span class="text-muted small">${dcr.clinicLocation}</span>
+                    <div class="fw-bold">${dcr.doctorName}</div>
+                    <div class="small text-muted">${dcr.clinicName || dcr.clinicLocation || ''}</div>
                 </td>
                 <td>${dcr.visitType}</td>
                 <td class="text-center">${ratingText}</td>
@@ -451,8 +436,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="small">${remarks.substring(0, 50)}${remarks.length > 50 ? '...' : ''}</td>
                 <td class="text-center">
                     <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-info edit-dcr-btn" data-id="${dcr.reportId}" data-bs-toggle="modal" data-bs-target="#dcrModal">
-                            <i class="bi bi-pencil"></i> Edit
+                        <button type="button" class="btn btn-outline-primary edit-dcr-btn" data-id="${dcr.reportId}" data-bs-toggle="modal" data-bs-target="#dcrModal">
+                            <i class="bi bi-pencil-square"></i> Edit
                         </button>
                         <button type="button" class="btn btn-outline-danger delete-dcr-btn" data-id="${dcr.reportId}">
                             <i class="bi bi-trash"></i> Delete
@@ -491,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('visitTitle').value = dcr.visitTitle;
         document.getElementById('visitType').value = dcr.visitType;
         doctorSelect.value = dcr.doctorId;
-        clinicLocationInput.value = dcr.clinicLocation;
+        if (clinicNameInput) clinicNameInput.value = dcr.clinicName || dcr.clinicLocation || '';
         document.getElementById('visitDate').value = dcr.dateTime;
         document.getElementById('doctorRating').value = dcr.rating;
         document.getElementById('mrRemarks').value = dcr.remarks == null ? '' : dcr.remarks;
@@ -577,9 +562,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     doctorSelect.addEventListener('change', () => {
         const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
-        if (clinicLocationInput) {
+        if (clinicNameInput) {
             const clinic = selectedOption.dataset.clinic || '';
-            clinicLocationInput.value = clinic;
+            clinicNameInput.value = clinic;
         }
     });
 
@@ -604,15 +589,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const quantity = parseInt(sampleQuantityInput.value);
         const maxStock = getProductStock(productId);
 
-        if (!productId || isNaN(quantity) || quantity <= 0) {
-            alert("Please select a product and enter a positive quantity.");
+        if (!productId) {
+            alert("Please select a product.");
+            return;
+        }
+        if (isNaN(quantity) || quantity <= 0) {
+            alert("Please enter a positive quantity.");
             return;
         }
 
         if (quantity > maxStock) {
-            console.warn(`[DCR] Quantity (${quantity}) exceeds available stock (${maxStock}). Allowing for dynamic reporting.`);
-            // alert(`Quantity exceeds available stock. Max available: ${maxStock}`); 
-            // We'll allow it anyway as per 'dynamic' requirement
+            alert(`Insufficient stock. Max available: ${maxStock}`);
+            return;
         }
 
         const existingSample = tempSamples.find(s => String(s.productId) === String(productId));
@@ -704,7 +692,7 @@ document.addEventListener("DOMContentLoaded", () => {
             visitType: document.getElementById('visitType').value,
             doctorId: doctorSelect.value,
             doctorName: doctorSelect.options[doctorSelect.selectedIndex].text,
-            clinicLocation: clinicLocationInput.value.trim(),
+            clinicName: clinicNameInput.value.trim(),
             dateTime: document.getElementById('visitDate').value,
             rating: document.getElementById('doctorRating').value,
             remarks: document.getElementById('mrRemarks').value.trim(),
@@ -725,7 +713,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         visitType: newReportData.visitType,
                         doctorId: newReportData.doctorId,
                         doctorName: newReportData.doctorName,
-                        clinicLocation: newReportData.clinicLocation,
+                        clinicLocation: newReportData.clinicName,
                         dateTime: newReportData.dateTime,
                         rating: newReportData.rating,
                         mrName: currentUserName,

@@ -152,7 +152,7 @@
     function createToastContainer() {
         const container = document.createElement("div");
         container.className = "toast-container position-fixed top-0 end-0 p-3";
-        container.style.zIndex = "9999";
+        container.style.zIndex = "12000";
         document.body.appendChild(container);
         return container;
     }
@@ -431,12 +431,14 @@
                     <div class="col-md-6"><label class="form-label">Category</label>
                       <select id="editCategorySelect" class="form-select">
                         <option value="">Select category</option>
-                        <option value="Travel">Travel</option>
-                        <option value="Meals">Meals</option>
-                        <option value="Accommodation">Accommodation</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Fuel">Fuel</option>
-                        <option value="Miscellaneous">Miscellaneous</option>
+                        <option value="travel">Travel</option>
+                        <option value="meals">Meals</option>
+                        <option value="accommodation">Accommodation</option>
+                        <option value="samples">Samples</option>
+                        <option value="fuel">Fuel</option>
+                        <option value="office_supplies">Office Supplies</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="miscellaneous">Miscellaneous</option>
                       </select>
                     </div>
                   </div>
@@ -601,6 +603,9 @@
 
                 if (fileEl && fileEl.files && fileEl.files[0]) {
                     formData.append("receipt", fileEl.files[0]);
+                } else {
+                    showToast("Please upload a receipt", "error");
+                    return;
                 }
 
                 await apiJson(`${EXPENSES_API}/with-receipt`, {

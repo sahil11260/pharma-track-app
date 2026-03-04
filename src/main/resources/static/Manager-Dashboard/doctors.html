@@ -157,7 +157,7 @@
   </div>
 
   <div class="modal fade" id="addDoctorModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title">
@@ -171,7 +171,9 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label">Name</label>
-                  <input type="text" class="form-control" id="doctorName" required />
+                  <input type="text" class="form-control" id="doctorName" required pattern="[A-Za-z\s]+"
+                    title="Please enter only letters and spaces"
+                    oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                 </div>
               </div>
 

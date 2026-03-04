@@ -6,7 +6,7 @@
 .navbar {
   height: 60px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1030;
   background: #f8f9fa;
 }
 
@@ -19,7 +19,7 @@
   height: calc(100vh - 60px);
   background: #f8f9fa;
   transition: transform 0.3s ease;
-  z-index: 999;
+  z-index: 1020;
   overflow-y: auto;
 }
 
@@ -246,14 +246,17 @@
   background: linear-gradient(45deg, #ffd700, #ffed4e);
   color: #000;
 }
+
 .rank-2 {
   background: linear-gradient(45deg, #c0c0c0, #e8e8e8);
   color: #000;
 }
+
 .rank-3 {
   background: linear-gradient(45deg, #cd7f32, #daa520);
   color: #000;
 }
+
 .rank-other {
   background: linear-gradient(45deg, #6c757d, #adb5bd);
 }
@@ -431,10 +434,12 @@ body.modal-open {
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 3px;
 }
+
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #666;
 }

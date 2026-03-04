@@ -22,7 +22,7 @@ public class DcrController {
     }
 
     @GetMapping
-    public List<DcrResponse> list(@RequestParam(required = false) String mrName) {
+    public List<DcrResponse> list(@RequestParam(value = "mrName", required = false) String mrName) {
         if (mrName != null && !mrName.isBlank()) {
             return dcrService.listByMr(mrName);
         }

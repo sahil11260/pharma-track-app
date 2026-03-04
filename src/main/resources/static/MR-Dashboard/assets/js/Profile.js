@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.error('Error parsing user data:', e);
     }
-
     const fullNameInput = document.getElementById('fullName');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
@@ -16,12 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const formAlert = document.getElementById('formAlert');
     const strengthBar = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
-
     // Profile Picture Elements
     const profileInput = document.getElementById('profile');
     const profilePreview = document.getElementById('profilePreview');
     const profileModalImg = document.querySelector('#profileModal img');
-
     // Load existing user data
     if (currentUser) {
         fullNameInput.value = currentUser.name || '';
@@ -90,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
             togglePasswordIcon.classList.toggle('bi-eye-slash');
         });
     }
-
     const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
     const toggleConfirmPasswordIcon = document.getElementById('toggleConfirmPasswordIcon');
     if (toggleConfirmPassword) {
@@ -124,6 +120,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 strengthBar.classList.add('strength-strong');
                 strengthText.textContent = 'Strong password';
                 strengthText.style.color = '#28a745';
+            }
+
+            // Real-time mismatch check
+            validatePasswordsMatch();
+        });
+    }
+
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', () => {
+            validatePasswordsMatch();
+        });
+    }
+
+    function validatePasswordsMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        const confirmError = document.getElementById('confirmError');
+
+        if (confirmPassword && password !== confirmPassword) {
+            confirmPasswordInput.classList.add('is-invalid');
+            if (confirmError) confirmError.style.display = 'block';
+        } else {
+            confirmPasswordInput.classList.remove('is-invalid');
+            if (confirmError) confirmError.style.display = 'none';
+        }
+    }
+
+    if (fullNameInput) {
+        fullNameInput.addEventListener('input', function () {
+            if (this.validity.patternMismatch || this.value.trim() === '') {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
             }
         });
     }
@@ -166,6 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let isValid = true;
 
+            const name = fullNameInput.value.trim();
+            if (name === '' || !/^[A-Za-z\s]+$/.test(name)) {
+                fullNameInput.classList.add('is-invalid');
+                isValid = false;
+            }
+
             const email = emailInput.value.trim();
             if (!validateEmail(email)) {
                 emailInput.classList.add('is-invalid');
@@ -181,15 +216,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (password !== confirmPassword) {
                     confirmPasswordInput.classList.add('is-invalid');
+                    const confirmError = document.getElementById('confirmError');
+                    if (confirmError) confirmError.style.display = 'block';
                     isValid = false;
                 }
             }
-
             if (!isValid) {
                 showAlert('Please fix the errors before submitting.', 'danger');
                 return;
             }
-
             // Save profile picture
             if (profileInput && profileInput.files[0]) {
                 const reader = new FileReader();

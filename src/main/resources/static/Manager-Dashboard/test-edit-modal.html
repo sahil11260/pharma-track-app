@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
+
 <body>
     <div class="container mt-5">
         <h2>Test Edit Modal Functionality</h2>
-        
+
         <table class="table">
             <thead>
                 <tr>
@@ -39,7 +41,7 @@
 
     <!-- EDIT TARGET MODAL -->
     <div class="modal fade" id="editTargetModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
@@ -50,7 +52,7 @@
                 <div class="modal-body">
                     <form id="editTargetForm">
                         <input type="hidden" id="editTargetId" />
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -76,7 +78,8 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Sales Achievement (Units)</label>
-                                    <input type="number" class="form-control" id="editSalesAchievement" min="0" required />
+                                    <input type="number" class="form-control" id="editSalesAchievement" min="0"
+                                        required />
                                 </div>
                             </div>
                         </div>
@@ -113,20 +116,20 @@
             console.log('=== TEST EDIT TARGET CALLED ===');
             console.log('Target ID:', targetId);
             console.log('Bootstrap available:', typeof bootstrap !== 'undefined');
-            
+
             // Populate modal
             document.getElementById('editTargetId').value = testTarget.id;
             document.getElementById('editMRName').value = testTarget.mrName;
             document.getElementById('editProductName').value = testTarget.productName;
             document.getElementById('editSalesTarget').value = testTarget.targetUnits;
             document.getElementById('editSalesAchievement').value = testTarget.achievedUnits;
-            
+
             console.log('Fields populated');
-            
+
             // Show modal
             const modalEl = document.getElementById('editTargetModal');
             console.log('Modal element:', modalEl);
-            
+
             if (modalEl) {
                 const modal = new bootstrap.Modal(modalEl);
                 console.log('Modal instance created:', modal);
@@ -144,7 +147,7 @@
                 updateBtn.addEventListener('click', () => {
                     const achievement = document.getElementById('editSalesAchievement').value;
                     alert(`Update clicked! Achievement value: ${achievement}`);
-                    
+
                     // Close modal
                     const modalEl = document.getElementById('editTargetModal');
                     const modal = bootstrap.Modal.getInstance(modalEl);
@@ -157,4 +160,5 @@
         window.testEditTarget = testEditTarget;
     </script>
 </body>
+
 </html>

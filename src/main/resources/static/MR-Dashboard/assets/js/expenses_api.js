@@ -200,15 +200,17 @@ document.addEventListener("DOMContentLoaded", async () => {
           <td>${expense.category}</td>
           <td>₹${Number(expense.amount).toFixed(2)}</td>
           <td>${getAttachmentLink(expense.attachment, expense.originalName)}</td>
-          <td>${expense.desc || "-"}</td>
+          <td class="text-center">${expense.desc || "-"}</td>
           <td>${getStatusBadge(expense.status)}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary me-1" data-index="${globalIndex}" data-bs-toggle="modal" data-bs-target="#editExpenseModal" ${!isPending ? 'disabled' : ''}>
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${globalIndex})" ${!isPending ? 'disabled' : ''}>
-              <i class="bi bi-trash"></i>
-            </button>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary" data-index="${globalIndex}" data-bs-toggle="modal" data-bs-target="#editExpenseModal" ${!isPending ? 'disabled' : ''} title="Edit Expense">
+                <i class="bi bi-pencil-square"></i> Edit
+              </button>
+              <button class="btn btn-outline-danger" onclick="deleteExpense(${globalIndex})" ${!isPending ? 'disabled' : ''} title="Delete Expense">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -224,13 +226,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         const date = document.getElementById("expDate").value;
         const fileInput = document.getElementById("expAttachmentFile");
 
+        const amountError = document.getElementById("expAmountError");
+        if (amountError) amountError.textContent = "";
+
         if (!category || !amount || !date) {
             showToast("Please fill all required fields", "error");
             return false;
         }
 
         if (parseFloat(amount) <= 0) {
-            showToast("Amount must be greater than 0", "error");
+            if (amountError) amountError.textContent = "Amount must be greater than 0";
+            else showToast("Amount must be greater than 0", "error");
+            return false;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        if (date > today) {
+            showToast("Expense date cannot be in the future", "error");
             return false;
         }
 
@@ -332,13 +344,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         const amount = document.getElementById("editAmount").value;
         const date = document.getElementById("editDate").value;
 
+        const amountError = document.getElementById("editAmountError");
+        if (amountError) amountError.textContent = "";
+
         if (!category || !amount || !date) {
             showToast("Please fill all required fields", "error");
             return false;
         }
 
         if (parseFloat(amount) <= 0) {
-            showToast("Amount must be greater than 0", "error");
+            if (amountError) amountError.textContent = "Amount must be greater than 0";
+            else showToast("Amount must be greater than 0", "error");
+            return false;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        if (date > today) {
+            showToast("Expense date cannot be in the future", "error");
             return false;
         }
 

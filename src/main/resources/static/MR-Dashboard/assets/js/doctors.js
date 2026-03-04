@@ -48,8 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (Array.isArray(allDoctors)) {
                 // The backend now filters doctors based on the logged-in MR role.
-                // We map the received doctors to the UI format.
-                assignedDoctors = allDoctors.map(mapBackendDoctorToUI);
+                // We map the received doctors to the UI format and sort by name.
+                assignedDoctors = allDoctors
+                    .map(mapBackendDoctorToUI)
+                    .sort((a, b) => a.name.localeCompare(b.name));
 
                 saveDoctors();
                 doctorsApiMode = true;
@@ -126,6 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${doctor.clinic}</td>
                 <td>${doctor.specialization}</td>
                 <td>${doctor.City}</td>
+                <td class="text-center">
+                    <a href="visit-report.html?doctorId=${doctor.id}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-journal-plus"></i> Visit
+                    </a>
+                </td>
             `;
 
             doctorListBody.appendChild(row);

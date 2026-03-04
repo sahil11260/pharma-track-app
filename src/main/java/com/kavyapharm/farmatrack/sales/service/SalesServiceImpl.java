@@ -5,7 +5,6 @@ import com.kavyapharm.farmatrack.sales.model.SalesAchievement;
 import com.kavyapharm.farmatrack.sales.model.SalesTarget;
 import com.kavyapharm.farmatrack.sales.repository.SalesAchievementRepository;
 import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
-import com.kavyapharm.farmatrack.mrstock.repository.MrStockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +18,13 @@ public class SalesServiceImpl implements SalesService {
 
     private final SalesTargetRepository targetRepository;
     private final SalesAchievementRepository achievementRepository;
-    private final MrStockRepository mrStockRepository;
+    private final com.kavyapharm.farmatrack.mrstock.repository.MrStockRepository mrStockRepository;
     private final com.kavyapharm.farmatrack.user.repository.UserRepository userRepository;
     private final com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository;
 
     public SalesServiceImpl(SalesTargetRepository targetRepository,
             SalesAchievementRepository achievementRepository,
-            MrStockRepository mrStockRepository,
+            com.kavyapharm.farmatrack.mrstock.repository.MrStockRepository mrStockRepository,
             com.kavyapharm.farmatrack.user.repository.UserRepository userRepository,
             com.kavyapharm.farmatrack.dcr.repository.DcrRepository dcrRepository) {
         this.targetRepository = targetRepository;
@@ -52,15 +51,37 @@ public class SalesServiceImpl implements SalesService {
             String managerIdentifier = auth != null ? auth.getName() : null;
             if (managerIdentifier != null && !managerIdentifier.isBlank()) {
                 String productId = String.valueOf(request.productId());
-                Integer available = mrStockRepository.findByIdAndUserName(productId, managerIdentifier)
-                        .map(it -> it.getStock())
-                        .orElse(0);
 
-                int availableStock = available == null ? 0 : available;
+                // 1. DEDUCT from Manager
+                com.kavyapharm.farmatrack.mrstock.model.MrStockItem managerStock = mrStockRepository
+                        .findByIdAndUserNameIgnoreCase(productId, managerIdentifier)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Manager stock item not found for product " + productId));
+
+                int currentManagerStock = managerStock.getStock() == null ? 0 : managerStock.getStock();
                 int requested = request.targetUnits() == null ? 0 : request.targetUnits();
-                if (availableStock <= 0 || requested > availableStock) {
-                    throw new IllegalArgumentException("Insufficient stock to assign target");
+
+                if (currentManagerStock < requested) {
+                    throw new IllegalArgumentException("Insufficient manager stock. Available: " + currentManagerStock);
                 }
+
+                managerStock.setStock(currentManagerStock - requested);
+                mrStockRepository.save(managerStock);
+
+                // 2. ADD to MR
+                com.kavyapharm.farmatrack.mrstock.model.MrStockItem mrStock = mrStockRepository
+                        .findByIdAndUserNameIgnoreCase(productId, request.mrName())
+                        .orElseGet(() -> {
+                            com.kavyapharm.farmatrack.mrstock.model.MrStockItem newItem = new com.kavyapharm.farmatrack.mrstock.model.MrStockItem();
+                            newItem.setId(productId);
+                            newItem.setUserName(request.mrName());
+                            newItem.setName(managerStock.getName());
+                            newItem.setStock(0);
+                            return newItem;
+                        });
+
+                mrStock.setStock((mrStock.getStock() == null ? 0 : mrStock.getStock()) + requested);
+                mrStockRepository.save(mrStock);
             }
         }
 
@@ -191,24 +212,34 @@ public class SalesServiceImpl implements SalesService {
         int totalAchieved = 0;
         for (com.kavyapharm.farmatrack.user.model.User sub : subordinates) {
             String subName = sub.getName();
+            String subEmail = sub.getEmail();
             Long subId = sub.getId();
 
             if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                totalAchieved += (int) dcrRepository.findByMrNameIgnoreCase(subName).stream()
-                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                totalAchieved += (int) dcrRepository.findAll().stream()
+                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
+                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .count();
             } else {
                 // Sum DCR Reported Samples for this subordinate
-                int dcrSum = dcrRepository.findByMrNameIgnoreCase(subName).stream()
-                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), month, year))
+                int dcrSum = dcrRepository.findAll().stream()
+                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
+                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .flatMap(dcr -> dcr.getSamplesGiven().stream())
                         .filter(item -> isProductMatch(target, item))
                         .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
                         .sum();
 
                 // Sum Manual entry achievements for this subordinate
-                int manualSum = achievementRepository.sumAchievedUnitsByMrAndProduct(
-                        subId, target.getProductId(), month, year);
+                int manualSum = achievementRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
+                        subId, target.getProductId(), month, year).stream()
+                        .filter(ach -> isProductMatchForAchievement(target, ach))
+                        .filter(ach -> ach.getAchievementDate() != null
+                                && isDateWithinTargetRange(ach.getAchievementDate(), target))
+                        .mapToInt(SalesAchievement::getAchievedUnits)
+                        .sum();
 
                 totalAchieved += (dcrSum + manualSum);
             }
@@ -240,14 +271,34 @@ public class SalesServiceImpl implements SalesService {
         return allSubordinates;
     }
 
-    private boolean isWithinPeriod(String dateTimeStr, Integer month, Integer year) {
+    private boolean isWithinTargetRange(String dateTimeStr, SalesTarget target) {
+        if (dateTimeStr == null || dateTimeStr.isBlank())
+            return false;
         try {
-            if (dateTimeStr == null)
-                return false;
-            LocalDate date = LocalDate.parse(dateTimeStr.substring(0, 10));
-            return date.getMonthValue() == month && date.getYear() == year;
+            LocalDate saleDate = LocalDate.parse(dateTimeStr.substring(0, 10));
+            return isDateWithinTargetRange(saleDate, target);
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private boolean isDateWithinTargetRange(LocalDate date, SalesTarget target) {
+        if (date.getMonthValue() != target.getPeriodMonth() || date.getYear() != target.getPeriodYear()) {
+            return false;
+        }
+        LocalDate start = target.getStartDate() != null ? target.getStartDate() : target.getAssignedDate();
+        if (date.isBefore(start))
+            return false;
+        if (target.getEndDate() != null && date.isAfter(target.getEndDate()))
+            return false;
+        return true;
+    }
+
+    private boolean isProductMatchForAchievement(SalesTarget target, SalesAchievement achievement) {
+        if (target.getProductId() != null) {
+            return target.getProductId().equals(achievement.getProductId());
+        } else {
+            return target.getProductName().equalsIgnoreCase(achievement.getProductName());
         }
     }
 
@@ -381,20 +432,24 @@ public class SalesServiceImpl implements SalesService {
         if (request.achievedUnits() != null) {
             // Find current DCR sum (which we can't change)
             int dcrSum = 0;
+            com.kavyapharm.farmatrack.user.model.User mrUser = userRepository.findById(target.getMrId()).orElse(null);
+            String subName = target.getMrName();
+            String subEmail = mrUser != null ? mrUser.getEmail() : subName;
+
             if (!"Visit".equalsIgnoreCase(target.getCategory())) {
                 dcrSum = dcrRepository.findAll().stream()
-                        .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), target.getPeriodMonth(),
-                                target.getPeriodYear()))
+                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
+                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .flatMap(dcr -> dcr.getSamplesGiven().stream())
                         .filter(item -> isProductMatch(target, item))
                         .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
                         .sum();
             } else {
                 dcrSum = (int) dcrRepository.findAll().stream()
-                        .filter(dcr -> target.getMrName().equalsIgnoreCase(dcr.getMrName()))
-                        .filter(dcr -> isWithinPeriod(dcr.getDateTime(), target.getPeriodMonth(),
-                                target.getPeriodYear()))
+                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
+                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .count();
             }
 

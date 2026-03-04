@@ -191,7 +191,7 @@
   </div>
 
   <div class="modal fade" id="addStockModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -251,7 +251,7 @@
   </div>
 
   <div class="modal fade" id="distributeSampleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -299,7 +299,9 @@
               <div class="col-md-4">
                 <div class="mb-3">
                   <label class="form-label">Recipient Name</label>
-                  <input type="text" class="form-control" id="recipientName" required />
+                  <input type="text" class="form-control" id="recipientName" required pattern="[A-Za-z\s]+"
+                    title="Please enter only letters and spaces"
+                    oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                 </div>
               </div>
             </div>
@@ -323,7 +325,7 @@
   </div>
 
   <div class="modal fade" id="mrStocksModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -406,6 +408,17 @@
   <script src="assets/js/samples.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const expiryDateInput = document.getElementById('expiryDate');
+      if (expiryDateInput) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        expiryDateInput.setAttribute('min', tomorrowStr);
+      }
+    });
+  </script>
 </body>
 
 </html>

@@ -35,14 +35,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Robust User Identification ---
     function getMRName() {
-        const userStr = localStorage.getItem('kavya_user');
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                if (user.name) return user.name;
-            } catch (e) { }
-        }
-        return localStorage.getItem('signup_name') || 'MR User';
+        const userStr = localStorage.getItem("kavya_user");
+        let user = null;
+        try { if (userStr) user = JSON.parse(userStr); } catch (e) { }
+        return (user && user.name) ? user.name : (localStorage.getItem("signup_name") || "");
     }
 
     // --- Calculations ---
@@ -86,7 +82,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         productsList.forEach((product, index) => {
             const received = calculateTotalReceived(product.id);
             const distributed = calculateTotalDistributed(product.id);
-            const remaining = received - distributed;
+            let remaining = received - distributed;
+            if (remaining < 0) remaining = 0;
 
             const stockStatus = remaining <= 0 ?
                 '<span class="badge bg-danger">Out of Stock</span>' :
@@ -107,10 +104,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <td class="text-center">
                     <div class="d-flex flex-column align-items-center gap-1">
                         ${stockStatus}
-                        <button class="btn btn-sm btn-link text-decoration-none view-details-btn" 
+                        <button class="btn btn-sm btn-outline-info px-3" 
                             data-id="${product.id}" data-name="${product.name}" 
-                            data-bs-toggle="modal" data-bs-target="#distributionModal">
-                            <i class="bi bi-clock-history"></i> History
+                            data-bs-toggle="modal" data-bs-target="#distributionModal"
+                            title="View Allocation History">
+                            <i class="bi bi-clock-history me-1"></i> History
                         </button>
                     </div>
                 </td>
@@ -162,7 +160,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             distributionDetailsTableBody.innerHTML = entries.length ? entries.map(e => `
                 <tr>
                     <td>${new Date(e.dateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
-                    <td><div class="fw-bold">${e.doctorName}</div><div class="small text-muted">${e.clinicLocation}</div></td>
+                    <td><div class="fw-bold">${e.doctorName}</div><div class="small text-muted">${e.clinicName || e.clinicLocation || ''}</div></td>
                     <td class="text-center fw-bold text-primary">${e.qty}</td>
                     <td class="small text-muted">${e.remarks || ''}</td>
                 </tr>

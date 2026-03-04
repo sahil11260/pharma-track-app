@@ -174,7 +174,7 @@
 
   <!-- ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¾ Add/Edit Modal -->
   <div class="modal fade" id="mrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <form id="mrForm">
           <div class="modal-header">
@@ -184,7 +184,8 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">MR Name</label>
-              <input type="text" class="form-control" id="mrName" required />
+              <input type="text" class="form-control" id="mrName" required pattern="[A-Za-z\s]+"
+                title="Please enter only letters and spaces" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
             </div>
             <div class="mb-3">
               <label class="form-label">Email</label>

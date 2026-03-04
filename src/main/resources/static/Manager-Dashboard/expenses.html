@@ -271,8 +271,8 @@
             </div>
 
             <div class="mt-2">
-              <label class="form-label">Upload Receipt (optional)</label>
-              <input id="addAttachment" type="file" class="form-control" accept="image/*,.pdf" />
+              <label class="form-label">Upload Receipt</label>
+              <input id="addAttachment" type="file" class="form-control" accept="image/*,.pdf" required />
               <small class="text-muted">Accepted: JPG, PNG, PDF. (max ~5MB)</small>
             </div>
 
@@ -289,7 +289,7 @@
 
   <!-- EXPENSE DETAILS MODAL -->
   <div class="modal fade" id="expenseDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><i class="bi bi-receipt"></i> Expense Details</h5>
@@ -361,6 +361,15 @@
   <script src="assets/js/expenses_api.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const expenseDateInput = document.getElementById('addExpenseDate');
+      if (expenseDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        expenseDateInput.setAttribute('max', today);
+      }
+    });
+  </script>
 </body>
 
 </html>
