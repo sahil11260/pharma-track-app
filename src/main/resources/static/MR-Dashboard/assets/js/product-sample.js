@@ -101,13 +101,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <td class="text-center h5 mb-0">
                     <span class="${remaining <= 10 ? 'text-danger' : 'text-success'} fw-bold">${remaining}</span>
                 </td>
-                <td class="text-center">
-                    <div class="d-flex flex-column align-items-center gap-1">
-                        ${stockStatus}
-                        <button class="btn btn-sm btn-outline-info px-3" 
+                <td class="text-center align-middle">
+                    <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div>${stockStatus}</div>
+                        <button class="btn btn-sm btn-outline-info rounded-pill px-2 py-1" 
                             data-id="${product.id}" data-name="${product.name}" 
                             data-bs-toggle="modal" data-bs-target="#distributionModal"
-                            title="View Allocation History">
+                            title="View Allocation History" style="font-size: 0.8rem;">
                             <i class="bi bi-clock-history me-1"></i> History
                         </button>
                     </div>

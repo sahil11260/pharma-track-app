@@ -21,6 +21,12 @@ async function loadNotifications() {
     // Detect if we are in a dropdown (needs <li>) or a modal/div container
     const isDropdown = notificationList.tagName === 'UL' || notificationList.id === 'notificationList';
 
+    if (isDropdown || notificationList.id === 'notificationsContent') {
+        notificationList.style.maxHeight = '300px';
+        notificationList.style.overflowY = 'auto';
+        notificationList.style.overflowX = 'hidden';
+    }
+
     try {
         const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
         const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
@@ -60,8 +66,8 @@ async function loadNotifications() {
             `;
             notificationList.innerHTML = isDropdown ? `<li>${emptyContent}</li>` : emptyContent;
         } else {
-            // Show only the latest 5 notifications in dropdown, or more in modal
-            const maxItems = isDropdown ? 5 : 10;
+            // Show only the latest 30 notifications in dropdown, or more in modal
+            const maxItems = isDropdown ? 30 : 50;
             const recentNotifications = notifications.slice(0, maxItems);
 
             notificationList.innerHTML = recentNotifications.map(notification => {
