@@ -247,6 +247,12 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
 
     const phone = document.getElementById("mrPhone").value;
+    const name = document.getElementById("mrName").value;
+
+    if (!name || !name.trim()) {
+      alert("MR Name is required.");
+      return;
+    }
 
     // Phone validation: Must be exactly 10 digits
     if (phone && phone.length !== 10) {
@@ -254,9 +260,16 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const email = document.getElementById("mrEmail").value.trim();
+    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
+      return;
+    }
+
     const payload = {
-      name: document.getElementById("mrName").value,
-      email: document.getElementById("mrEmail").value,
+      name: name,
+      email: email,
       role: "MR",
       phone: phone,
       territory: document.getElementById("mrTerritory").value,
@@ -265,7 +278,19 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const password = document.getElementById("mrPassword").value;
-    if (password) payload.password = password;
+    if (!editMode && (!password || !password.trim())) {
+      alert("Password is required.");
+      return;
+    }
+
+    if (password && password.trim()) {
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+      if (!passRegex.test(password)) {
+        alert("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
+        return;
+      }
+      payload.password = password;
+    }
 
     try {
       submitBtn.disabled = true;
