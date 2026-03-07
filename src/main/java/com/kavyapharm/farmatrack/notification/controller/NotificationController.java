@@ -28,7 +28,7 @@ public class NotificationController {
     }
 
     @GetMapping("/{id}")
-    public NotificationResponse get(@PathVariable String id) {
+    public NotificationResponse get(@PathVariable("id") String id) {
         return notificationService.get(id);
     }
 
@@ -38,12 +38,13 @@ public class NotificationController {
     }
 
     @PutMapping("/{id}")
-    public NotificationResponse update(@PathVariable String id, @Valid @RequestBody UpdateNotificationRequest request) {
+    public NotificationResponse update(@PathVariable("id") String id,
+            @Valid @RequestBody UpdateNotificationRequest request) {
         return notificationService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
         notificationService.delete(id);
         return ResponseEntity.noContent().build();
     }

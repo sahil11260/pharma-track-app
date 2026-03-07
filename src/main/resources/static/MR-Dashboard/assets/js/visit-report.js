@@ -461,6 +461,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSamplesTable();
         // Reset the 'Select Rating' to the default '3' for new entries
         document.getElementById('doctorRating').value = '3';
+
+        // Clear validation errors
+        const visitDateInput = document.getElementById('visitDate');
+        const visitDateError = document.getElementById('visitDateError');
+        if (visitDateInput) visitDateInput.classList.remove('is-invalid');
+        if (visitDateError) visitDateError.classList.add('d-none');
     }
 
     // Function to Load a DCR for Editing
@@ -490,10 +496,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 4. Render Samples Table
         renderSamplesTable();
+
+        // Clear validation errors
+        const visitDateInput = document.getElementById('visitDate');
+        const visitDateError = document.getElementById('visitDateError');
+        if (visitDateInput) visitDateInput.classList.remove('is-invalid');
+        if (visitDateError) visitDateError.classList.add('d-none');
+    }
+
+    function updateVisitDateMax() {
+        const visitDateInput = document.getElementById('visitDate');
+        if (visitDateInput) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const maxString = `${year}-${month}-${day}T${hours}:${minutes}`;
+            visitDateInput.setAttribute('max', maxString);
+        }
     }
 
     // Handle Modal Show Event (for Edit button)
     dcrModalElement.addEventListener('show.bs.modal', (event) => {
+        updateVisitDateMax();
         const button = event.relatedTarget;
         if (button && button.classList.contains('edit-dcr-btn')) {
             const reportId = parseInt(button.dataset.id);
@@ -567,6 +594,20 @@ document.addEventListener("DOMContentLoaded", () => {
             clinicNameInput.value = clinic;
         }
     });
+
+    const visitDateInput = document.getElementById('visitDate');
+    if (visitDateInput) {
+        visitDateInput.addEventListener('input', () => {
+            const visitDate = new Date(visitDateInput.value);
+            const now = new Date();
+            const visitDateError = document.getElementById('visitDateError');
+
+            if (visitDate <= now) {
+                if (visitDateError) visitDateError.classList.add('d-none');
+                visitDateInput.classList.remove('is-invalid');
+            }
+        });
+    }
 
     sampleProductSelect.addEventListener('change', () => {
         const productId = sampleProductSelect.value;
@@ -670,6 +711,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- FORM SUBMISSION (Add/Edit Logic) ---
     dcrForm.addEventListener('submit', (event) => {
         event.preventDefault();
+
+        // 1. Validate Visit Date (Must not be in the future)
+        const visitDateInput = document.getElementById('visitDate');
+        const visitDateError = document.getElementById('visitDateError');
+        const visitDate = new Date(visitDateInput.value);
+        const now = new Date();
+
+        if (visitDate > now) {
+            if (visitDateError) visitDateError.classList.remove('d-none');
+            visitDateInput.classList.add('is-invalid');
+            visitDateInput.focus();
+            return;
+        } else {
+            if (visitDateError) visitDateError.classList.add('d-none');
+            visitDateInput.classList.remove('is-invalid');
+        }
 
         // AUTO-ADD HELPER: If user filled in sample fields but forgot to click '+', add it now
         const pendingPid = sampleProductSelect.value;
@@ -813,6 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveStock();
     }
     (async function () {
+        updateVisitDateMax();
         await refreshFromApiOrFallback();
     })();
 });

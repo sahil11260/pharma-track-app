@@ -21,7 +21,7 @@ public class DistributionController {
     }
 
     @GetMapping
-    public List<Distribution> list(@RequestParam(required = false) String userName) {
+    public List<Distribution> list(@RequestParam(name = "userName", required = false) String userName) {
         if (userName != null && !userName.isBlank()) {
             return distributionService.listByUser(userName);
         }
