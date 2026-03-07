@@ -40,7 +40,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url, { ...options, headers });
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || `Error ${response.status}`);
+        let errorMsg = `Error ${response.status}: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.message || errorMsg;
+        } catch (e) {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
       if (response.status === 204) return null;
       return await response.json();
@@ -237,15 +244,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     viewUserModalLabel.textContent = `${apiRoleToUiRole(user.role)} Details`;
     let detailsHtml = `
-      <div class="list-group list-group-flush bg-dark">
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>ID:</span> <strong>${user.id}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Name:</span> <strong>${user.name}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Email:</span> <strong>${user.email}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Role:</span> <strong>${apiRoleToUiRole(user.role)}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Phone:</span> <strong>${user.phone || "\u2014"}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Territory:</span> <strong>${user.territory || "\u2014"}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Status:</span> <strong>${user.status || "ACTIVE"}</strong></div>
-        <div class="list-group-item bg-dark text-white d-flex justify-content-between"><span>Last Login:</span> <strong>${user.lastLogin || "\u2014"}</strong></div>
+      <div class="list-group list-group-flush">
+        <div class="list-group-item d-flex justify-content-between"><span>ID:</span> <strong>${user.id}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Name:</span> <strong>${user.name}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Email:</span> <strong>${user.email}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Role:</span> <strong>${apiRoleToUiRole(user.role)}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Phone:</span> <strong>${user.phone || "\u2014"}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Territory:</span> <strong>${user.territory || "\u2014"}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Status:</span> <strong>${user.status || "ACTIVE"}</strong></div>
+        <div class="list-group-item d-flex justify-content-between"><span>Last Login:</span> <strong>${user.lastLogin || "\u2014"}</strong></div>
       </div>
     `;
     viewUserDetailsBody.innerHTML = detailsHtml;
@@ -364,10 +371,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const activeForm = Array.from(document.querySelectorAll(".user-form")).find(f => f.style.display === "block");
     if (!activeForm) return;
 
-    const form = activeForm.querySelector("form");
     const prefix = activeForm.id.replace("Form", "");
-
     const phone = document.getElementById(`${prefix}Phone`) ? document.getElementById(`${prefix}Phone`).value : "";
+    const name = document.getElementById(`${prefix}Name`) ? document.getElementById(`${prefix}Name`).value : "";
+
+    if (!name || !name.trim()) {
+      alert("Full Name is required.");
+      return;
+    }
 
     if (!editingUserId && (!phone || !phone.trim())) {
       alert("Phone number is required.");
@@ -388,14 +399,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const email = document.getElementById(`${prefix}Email`).value.trim();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      alert("Please enter a valid email address.");
+      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
       return;
     }
 
     const payload = {
-      name: document.getElementById(`${prefix}Name`).value,
+      name: name,
       email: email,
       phone: phone,
       status: "ACTIVE"
@@ -519,6 +530,14 @@ document.addEventListener("DOMContentLoaded", function () {
   phoneInputs.forEach(input => {
     input.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  });
+
+  // Fix for Names: only accept letters and spaces
+  const nameInputs = document.querySelectorAll('.user-form input[id$="Name"]');
+  nameInputs.forEach(input => {
+    input.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z\s]/g, "");
     });
   });
 

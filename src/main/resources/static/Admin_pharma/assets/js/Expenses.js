@@ -183,10 +183,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
               </div>
 
-              <div>
+              <!-- <div>
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editExpense(${e.id})"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${e.id})"><i class="bi bi-trash"></i></button>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>`
@@ -332,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })();
   };
 
+  /*
   window.deleteExpense = (id) => {
     if (!confirm("Delete this expense?")) return;
 
@@ -369,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // ---------------------------------------------------------
-  // ðŸ”¥ Add / Update Expense
+  // 🔥 Add / Update Expense
   // ---------------------------------------------------------
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -398,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (editIndex !== null) {
             // Update
-            await fetch(`${EXPENSES_API}/${editIndex}/with-receipt`, {
+            await fetch(`${EXPENSES_API}/$ {editIndex}/with-receipt`, {
               method: "PUT",
               headers: getAuthHeader(),
               body: formData
@@ -451,6 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderCards();
     })();
   });
+  */
 
   // ---------------------------------------------------------
   // ðŸ”¥ Filters

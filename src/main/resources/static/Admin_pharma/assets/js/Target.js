@@ -417,22 +417,33 @@ document.addEventListener("DOMContentLoaded", () => {
       .filter(t => t.period === product && (editIndex === null || Number(t.id) !== Number(editIndex)))
       .reduce((sum, t) => sum + (Number(t.salesTarget) || 0), 0);
 
-    if (!name || !product || !qty || !given || !deadline) {
-      alert("âš ï¸ Fill all fields.");
+    if (!name || !product || form.targetQty.value.trim() === "" || !given || !deadline) {
+      alert("⚠️ Please fill all required fields.");
       return false;
     }
 
     if (qty <= 0) {
-      alert("âš  Quantity must be positive.");
+      alert("⚠️ Target quantity must be a positive number (greater than zero).");
       return false;
     }
 
     const availableToAssign = totalStock - prevAssignedTotal;
     if (qty > availableToAssign) {
-      const msg = prevAssignedTotal > 0
-        ? `âš  Insufficient stock. Available: ${totalStock} units. \nAlready assigned: ${prevAssignedTotal} units. \nRemaining capacity: ${availableToAssign} units.`
-        : `âš  Insufficient stock. Available: ${totalStock} units.`;
+      const msg = `⚠️ Insufficient stock. \n\nTotal Stock: ${totalStock} \nAssigned to others: ${prevAssignedTotal} \nAvailable to assign: ${availableToAssign} \n\nYou are trying to assign ${qty} units, which exceeds the remaining stock.`;
       alert(msg);
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (new Date(given) < today) {
+      alert("⚠️ Target Given Date cannot be in the past.");
+      return false;
+    }
+
+    if (new Date(deadline) < today) {
+      alert("⚠️ Deadline Date cannot be in the past.");
       return false;
     }
 
@@ -559,6 +570,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // loadFromStorageIfAny();
   (async function () {
+    const today = new Date().toISOString().split('T')[0];
+    const targetGivenDateInput = document.getElementById("targetGivenDate");
+    const targetDeadlineInput = document.getElementById("targetDeadline");
+    if (targetGivenDateInput) targetGivenDateInput.min = today;
+    if (targetDeadlineInput) targetDeadlineInput.min = today;
+
     await refreshTargetsFromApiOrFallback();
     await refreshUsersAndProducts();
     renderTable();

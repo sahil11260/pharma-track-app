@@ -43,10 +43,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastDoctorIdMap = {};
 
   const reportTableBody = document.getElementById("reportTableBody");
-  const tableSearch = document.getElementById("tableSearch");
   const totalVisitsEl = document.getElementById("totalVisits");
   const totalExpensesEl = document.getElementById("totalExpenses");
   const salesAchievedEl = document.getElementById("salesAchieved");
+  const searchInput = document.getElementById("searchReport");
+  const tableSearch = document.getElementById("tableSearch");
+  const startDateInput = document.getElementById("startDate");
+  const endDateInput = document.getElementById("endDate");
 
   async function fetchAllData() {
     try {
@@ -81,26 +84,24 @@ document.addEventListener("DOMContentLoaded", () => {
       window._doctorIdMap = doctorIdMap; // Expose for renderTable to use if it's outside this scope or just use local variable if I move it inside
 
       lastDoctorIdMap = doctorIdMap;
-      updateSummaryCards();
-      updateCharts();
-      renderTable(allDcrs, doctorIdMap);
+      applyFilters(); // Initial render with all data
     } catch (e) {
       console.error("Failed to fetch data:", e);
     }
   }
 
-  function updateSummaryCards() {
+  function updateSummaryCards(filteredDcrs, filteredExpenses, filteredTargets) {
     // Total Doctor Visits
-    totalVisitsEl.textContent = allDcrs.length;
+    totalVisitsEl.textContent = filteredDcrs.length;
 
     // Total Expenses (sum of all approved expenses)
-    const totalExpense = allExpenses
-      .filter(e => e.status === "APPROVED")
+    const totalExpense = filteredExpenses
+      .filter(e => e.status === "APPROVED" || e.status === "Approved")
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     totalExpensesEl.textContent = `\u20B9${totalExpense.toLocaleString('en-IN')}`;
 
     // Sales Achieved (sum of sales achievements from targets)
-    const totalSales = allTargets
+    const totalSales = filteredTargets
       .reduce((sum, t) => sum + (Number(t.salesAchievement) || 0), 0);
     salesAchievedEl.textContent = `\u20B9${(totalSales / 100000).toFixed(2)} Lakh`;
   }
@@ -180,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </tr>`;
         }
       )
-      .join("") || '<tr><td colspan="6" class="text-center text-muted">No visit records found</td></tr>';
+      .join("") || '<tr><td colspan="6" class="text-center text-danger fw-bold my-4 p-4">⚠️ Data not found for the selected filters.</td></tr>';
 
     renderPagination(totalPages);
   }
@@ -232,27 +233,56 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  tableSearch.addEventListener("input", (e) => {
+  function applyFilters() {
+    const term = (searchInput.value || tableSearch.value || "").toLowerCase();
+    const start = startDateInput.value ? new Date(startDateInput.value) : null;
+    const end = endDateInput.value ? new Date(endDateInput.value) : null;
+
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(23, 59, 59, 999);
+
+    const filterFn = (item, dateField, nameField) => {
+      const matchSearch = !term ||
+        (item[nameField] || '').toLowerCase().includes(term) ||
+        (item.doctorName || '').toLowerCase().includes(term) ||
+        (item.category || '').toLowerCase().includes(term) ||
+        (item.remarks || '').toLowerCase().includes(term);
+
+      let matchDate = true;
+      if (dateField && item[dateField]) {
+        const itemDate = new Date(item[dateField]);
+        if (start && itemDate < start) matchDate = false;
+        if (end && itemDate > end) matchDate = false;
+      }
+      return matchSearch && matchDate;
+    };
+
+    const filteredDcrs = allDcrs.filter(d => filterFn(d, 'dateTime', 'mrName'));
+    const filteredExpenses = allExpenses.filter(e => filterFn(e, 'expenseDate', 'mrName'));
+    const filteredTargets = allTargets.filter(t => filterFn(t, 'startDate', 'mrName'));
+
+    updateSummaryCards(filteredDcrs, filteredExpenses, filteredTargets);
+    updateCharts(filteredExpenses, filteredTargets);
     currentPage = 1;
-    const term = e.target.value.toLowerCase();
-    const filtered = allDcrs.filter(
-      (r) =>
-        (r.mrName || '').toLowerCase().includes(term) ||
-        (r.doctorName || '').toLowerCase().includes(term) ||
-        (r.remarks || '').toLowerCase().includes(term) ||
-        (r.region || '').toLowerCase().includes(term)
-    );
-    renderTable(filtered, lastDoctorIdMap);
+    renderTable(filteredDcrs, lastDoctorIdMap);
+  }
+
+  searchInput.addEventListener("input", applyFilters);
+  tableSearch.addEventListener("input", (e) => {
+    searchInput.value = e.target.value;
+    applyFilters();
   });
+  startDateInput.addEventListener("change", applyFilters);
+  endDateInput.addEventListener("change", applyFilters);
 
   // ===== Charts =====
   let regionSalesChart = null;
   let expenseChart = null;
 
-  function updateCharts() {
+  function updateCharts(filteredExpenses, filteredTargets) {
     // Regional Sales Overview - Group by manager/person
     const salesByPerson = {};
-    allTargets.forEach(t => {
+    filteredTargets.forEach(t => {
       const person = t.mrName || 'Unknown';
       if (!salesByPerson[person]) {
         salesByPerson[person] = 0;
@@ -265,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Expense Breakdown by category (Only include APPROVED)
     const expenseByCategory = {};
-    allExpenses.filter(e => e.status === "APPROVED").forEach(e => {
+    filteredExpenses.filter(e => e.status === "APPROVED" || e.status === "Approved").forEach(e => {
       const category = e.category || 'Miscellaneous';
       if (!expenseByCategory[category]) {
         expenseByCategory[category] = 0;
@@ -277,7 +307,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const expenseData = expenseLabels.map(label => expenseByCategory[label]);
 
     // Update Regional Sales Chart
-    const regionSalesCtx = document.getElementById("regionSalesChart").getContext("2d");
+    const chartSection = document.getElementById("regionSalesChart");
+    if (!chartSection) return;
+    const regionSalesCtx = chartSection.getContext("2d");
     if (regionSalesChart) {
       regionSalesChart.destroy();
     }

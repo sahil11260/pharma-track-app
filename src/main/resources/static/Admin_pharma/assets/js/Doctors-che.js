@@ -41,7 +41,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const response = await fetch(url, { ...options, headers });
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || `Error ${response.status}`);
+        let errorMsg = `Error ${response.status}: ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.message || errorMsg;
+        } catch (e) {
+          errorMsg = errorText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
       if (response.status === 204) return null;
       return await response.json();
@@ -232,8 +239,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   doctorForm.addEventListener("submit", async function (e) {
     e.preventDefault();
+    const name = document.getElementById("doctorName").value;
     const phone = document.getElementById("doctorPhone").value;
     const specialty = document.getElementById("doctorSpecialty").value;
+
+    if (!name || !name.trim()) {
+      alert("Doctor Name is required.");
+      return;
+    }
 
     if (!specialty) {
       alert("Specialty is required.");
@@ -247,14 +260,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const email = document.getElementById("doctorContact").value.trim();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      alert("Please enter a valid email address.");
+      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
       return;
     }
 
     const payload = {
-      name: document.getElementById("doctorName").value,
+      name: name,
       specialty: document.getElementById("doctorSpecialty").value,
       city: document.getElementById("doctorCity").value,
       phone: phone,
@@ -294,6 +307,14 @@ document.addEventListener("DOMContentLoaded", function () {
   if (phoneInput) {
     phoneInput.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
+
+  // Fix for Doctor Name: only accept letters and spaces
+  const nameInput = document.getElementById("doctorName");
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z\s.]/g, "");
     });
   }
 });

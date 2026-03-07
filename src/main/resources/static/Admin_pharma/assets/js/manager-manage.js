@@ -209,6 +209,12 @@ document.addEventListener("DOMContentLoaded", function () {
     e.preventDefault();
 
     const phone = document.getElementById("managerPhone").value;
+    const name = document.getElementById("managerName").value;
+
+    if (!name || !name.trim()) {
+      alert("Manager Name is required.");
+      return;
+    }
 
     // Phone validation: Must be exactly 10 digits
     if (phone && phone.length !== 10) {
@@ -216,9 +222,16 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const email = document.getElementById("managerEmail").value.trim();
+    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
+      return;
+    }
+
     const payload = {
-      name: document.getElementById("managerName").value,
-      email: document.getElementById("managerEmail").value,
+      name: name,
+      email: email,
       role: "MANAGER",
       phone: phone,
       territory: document.getElementById("managerTerritory").value,
@@ -227,7 +240,19 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     const password = document.getElementById("managerPassword").value;
-    if (password) payload.password = password;
+    if (!editMode && (!password || !password.trim())) {
+      alert("Password is required.");
+      return;
+    }
+
+    if (password && password.trim()) {
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+      if (!passRegex.test(password)) {
+        alert("Password must be at least 8 characters and include uppercase, lowercase, number and special character.");
+        return;
+      }
+      payload.password = password;
+    }
 
     try {
       submitBtn.disabled = true;
@@ -283,6 +308,14 @@ document.addEventListener("DOMContentLoaded", function () {
   if (phoneInput) {
     phoneInput.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
+
+  // Fix for Manager Name: only accept letters and spaces
+  const nameInput = document.getElementById("managerName");
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z\s]/g, "");
     });
   }
 });

@@ -312,7 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const editingProductId = editingProductIdInput ? editingProductIdInput.value : "-1";
     const expiryDateVal = newExpiryDate ? newExpiryDate.value : "";
 
-    if (price < 0) return alert("Product price cannot be negative.");
+    if (price <= 0) return alert("Product price must be greater than zero.");
     if (stockToAdd < 0) return alert("Stock quantity cannot be negative.");
 
     const expiryVal = (newExpiryDate ? newExpiryDate.value : "").trim();
@@ -543,7 +543,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     for (let i = 1; i <= totalPages; i++) {
-        html += `
+      html += `
           <li class="page-item ${i === currentSummaryPage ? "active" : ""}">
             <a class="page-link" href="#" data-page="${i}">${i}</a>
           </li>`;
@@ -576,16 +576,20 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderSummaryCards(displayStock) {
     receivedSummaryRow.className = "row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3 mb-4";
     receivedSummaryRow.innerHTML = displayStock.map((p) => {
-      const isLow = p.available < 20;
+      const isOutOfStock = p.available === 0;
+      const isLow = p.available < 20 && p.available > 0;
+      const statusText = isOutOfStock ? "Out of stock" : (isLow ? "Low Stock" : "In Stock");
+      const statusColorClass = isOutOfStock ? "text-danger" : (isLow ? "text-warning" : "text-success");
+
       return `
         <div class="col">
-          <div class="card h-100 shadow-sm border-2 ${isLow ? "border-danger" : "border-primary-subtle"}">
+          <div class="card h-100 shadow-sm border-2 ${isOutOfStock ? "border-danger" : (isLow ? "border-warning" : "border-primary-subtle")}">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="bg-primary-subtle p-2 rounded text-primary"><i class="bi bi-capsule fs-4"></i></div>
                 <div class="text-end">
                   <h3 class="mb-0 fw-bold">${p.available}</h3>
-                  <small class="${isLow ? "text-danger" : "text-success"} fw-medium">${isLow ? "Low Stock" : "In Stock"}</small>
+                  <small class="${statusColorClass} fw-medium">${statusText}</small>
                 </div>
               </div>
               <div>
@@ -605,15 +609,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderSummaryTable(displayStock) {
     if (!summaryTableBody) return;
     summaryTableBody.innerHTML = displayStock.map(p => {
-      const isLow = p.available < 20;
+      const isOutOfStock = p.available === 0;
+      const isLow = p.available < 20 && p.available > 0;
+      const statusText = isOutOfStock ? 'Out of Stock' : (isLow ? 'Low' : 'OK');
+      const statusBadgeClass = isOutOfStock ? 'bg-danger' : (isLow ? 'bg-warning' : 'bg-success');
+
       return `
         <tr>
           <td><span class="text-muted small">${p.id}</span></td>
           <td><span class="fw-bold text-dark">${p.name}</span></td>
           <td><span class="badge bg-light text-dark border">${p.category}</span></td>
           <td class="text-end">₹${formatPrice(p.price)}</td>
-          <td class="text-end fw-bold ${isLow ? 'text-danger' : 'text-primary'}">${p.available}</td>
-          <td class="text-center"><span class="badge ${isLow ? 'bg-danger' : 'bg-success'}">${isLow ? 'Low' : 'OK'}</span></td>
+          <td class="text-end fw-bold ${isOutOfStock ? 'text-danger' : (isLow ? 'text-warning' : 'text-primary')}">${p.available}</td>
+          <td class="text-center"><span class="badge ${statusBadgeClass}">${statusText}</span></td>
           <td class="text-center">
             <button class="btn btn-sm btn-outline-primary me-1" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
             <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
