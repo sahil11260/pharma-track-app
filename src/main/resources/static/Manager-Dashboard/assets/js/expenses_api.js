@@ -231,8 +231,8 @@
           <td>${fmtDate(exp.submittedDate)}</td>
           <td class="table-actions">
             ${isPending ? `<button class="btn btn-outline-success btn-sm btn-approve me-1" data-id="${exp.id}" title="Approve"><i class="bi bi-check-lg"></i></button>` : `<button class="btn btn-outline-success btn-sm me-1 disabled-btn" disabled><i class="bi bi-check-lg"></i></button>`}
-            <button class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${exp.id}" title="Edit"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
+            ${isPending ? `<button class="btn btn-outline-danger btn-sm btn-reject me-1" data-id="${exp.id}" title="Reject"><i class="bi bi-x-lg"></i></button>` : `<button class="btn btn-outline-danger btn-sm me-1 disabled-btn" disabled><i class="bi bi-x-lg"></i></button>`}
+            <button class="btn btn-outline-dark btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
       `;
@@ -588,8 +588,8 @@
                 showToast("Please select an expense date", "error");
                 return;
             }
-            if (amount <= 0) {
-                showToast("Amount must be greater than 0", "error");
+            if (amount < 1 || !Number.isInteger(amount)) {
+                showToast("Amount must be a whole number greater than 0", "error");
                 return;
             }
 

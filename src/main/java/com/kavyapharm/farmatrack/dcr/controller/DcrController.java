@@ -30,7 +30,7 @@ public class DcrController {
     }
 
     @GetMapping("/{reportId}")
-    public DcrResponse get(@PathVariable Long reportId) {
+    public DcrResponse get(@PathVariable("reportId") Long reportId) {
         return dcrService.get(reportId);
     }
 
@@ -40,12 +40,12 @@ public class DcrController {
     }
 
     @PutMapping("/{reportId}")
-    public DcrResponse update(@PathVariable Long reportId, @Valid @RequestBody UpdateDcrRequest request) {
+    public DcrResponse update(@PathVariable("reportId") Long reportId, @Valid @RequestBody UpdateDcrRequest request) {
         return dcrService.update(reportId, request);
     }
 
     @DeleteMapping("/{reportId}")
-    public ResponseEntity<Void> delete(@PathVariable Long reportId) {
+    public ResponseEntity<Void> delete(@PathVariable("reportId") Long reportId) {
         dcrService.delete(reportId);
         return ResponseEntity.noContent().build();
     }

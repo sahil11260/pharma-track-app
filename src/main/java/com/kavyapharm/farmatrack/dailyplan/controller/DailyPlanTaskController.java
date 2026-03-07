@@ -20,17 +20,18 @@ public class DailyPlanTaskController {
     }
 
     @GetMapping
-    public List<DailyPlanTaskResponse> list(@RequestParam(required = false) String date) {
+    public List<DailyPlanTaskResponse> list(@RequestParam(name = "date", required = false) String date) {
         return dailyPlanTaskService.list(date);
     }
 
     @PutMapping("/{id}/status")
-    public DailyPlanTaskResponse updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateDailyPlanTaskStatusRequest request) {
+    public DailyPlanTaskResponse updateStatus(@PathVariable("id") Long id,
+            @Valid @RequestBody UpdateDailyPlanTaskStatusRequest request) {
         return dailyPlanTaskService.updateStatus(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         dailyPlanTaskService.delete(id);
         return ResponseEntity.noContent().build();
     }

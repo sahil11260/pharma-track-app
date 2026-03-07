@@ -128,7 +128,7 @@
       <li><a href="tasks.html"><i class="bi bi-people"></i> Task / Assignment</a></li>
       <li><a href="doctors.html"><i class="bi bi-hospital"></i> Doctors</a></li>
       <li><a href="samples.html"><i class="bi bi-box-seam"></i> Product Samples</a></li>
-      <li class="active"><a href="expenses.html"><i class="bi bi-bullseye"></i> Expense Management</a></li>
+      <li class="active"><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expense Management</a></li>
       <li><a href="reports.html"><i class="bi bi-cash-stack"></i> Reports & Feedbacks</a></li>
       <li><a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a></li>
 
@@ -143,7 +143,7 @@
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0"><i class="bi bi-bullseye"></i> Expense Management</h3>
+        <h3 class="fw-bold mb-0"><i class="bi bi-cash-stack"></i> Expense Management</h3>
         <div>
           <!-- changed button color to blue (btn-primary) as requested -->
           <button class="btn btn-primary" id="openAddExpenseBtn" data-bs-toggle="modal"
@@ -257,7 +257,7 @@
             <div class="row g-2 mt-2">
               <div class="col-md-6">
                 <label class="form-label">Amount</label>
-                <input id="addAmount" type="number" step="0.01" class="form-control" required />
+                <input id="addAmount" type="number" min="1" step="1" class="form-control" required />
               </div>
               <div class="col-md-6">
                 <label class="form-label">Expense Date</label>

@@ -610,11 +610,11 @@
 
 
   function deleteReport(reportId) {
-    if (!confirm(`Are you sure you want to delete report #${reportId}?`)) return;
+    if (!confirm(`Are you sure you want to delete this report?`)) return;
     const initialLength = window.reportsData.length;
     window.reportsData = window.reportsData.filter((r) => r.id !== reportId);
     if (window.reportsData.length < initialLength) {
-      alert(`Report #${reportId} deleted successfully.`);
+      alert(`Report deleted successfully.`);
       // adjust current page if needed
       const filtered = getFilteredReports();
       const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));

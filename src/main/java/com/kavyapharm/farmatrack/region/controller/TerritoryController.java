@@ -27,7 +27,7 @@ public class TerritoryController {
     }
 
     @GetMapping("/{id}")
-    public TerritoryResponse get(@PathVariable Long id) {
+    public TerritoryResponse get(@PathVariable("id") Long id) {
         return territoryService.get(id);
     }
 
@@ -37,12 +37,12 @@ public class TerritoryController {
     }
 
     @PutMapping("/{id}")
-    public TerritoryResponse update(@PathVariable Long id, @Valid @RequestBody UpdateTerritoryRequest request) {
+    public TerritoryResponse update(@PathVariable("id") Long id, @Valid @RequestBody UpdateTerritoryRequest request) {
         return territoryService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         territoryService.delete(id);
         return ResponseEntity.noContent().build();
     }

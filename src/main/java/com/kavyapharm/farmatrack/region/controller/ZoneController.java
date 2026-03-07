@@ -27,7 +27,7 @@ public class ZoneController {
     }
 
     @GetMapping("/{id}")
-    public ZoneResponse get(@PathVariable Long id) {
+    public ZoneResponse get(@PathVariable("id") Long id) {
         return zoneService.get(id);
     }
 
@@ -37,12 +37,12 @@ public class ZoneController {
     }
 
     @PutMapping("/{id}")
-    public ZoneResponse update(@PathVariable Long id, @Valid @RequestBody UpdateZoneRequest request) {
+    public ZoneResponse update(@PathVariable("id") Long id, @Valid @RequestBody UpdateZoneRequest request) {
         return zoneService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         zoneService.delete(id);
         return ResponseEntity.noContent().build();
     }

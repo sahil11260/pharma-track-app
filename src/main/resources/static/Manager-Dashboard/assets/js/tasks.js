@@ -142,13 +142,13 @@ function toUpdatePayload(task) {
 async function refreshTasksFromApiOrFallback() {
   try {
     // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('API timeout')), 3000)
     );
-    
+
     const dataPromise = apiJson(TASKS_API_BASE);
     const data = await Promise.race([dataPromise, timeoutPromise]);
-    
+
     if (Array.isArray(data)) {
       tasksData = data.map((t) => ({
         id: Number(t.id),
@@ -166,6 +166,8 @@ async function refreshTasksFromApiOrFallback() {
       }));
       saveTasksData();
       filteredTasks = tasksData.slice();
+      // Ensure local overdue check runs after loading from server
+      updateOverdueTasks();
       tasksApiMode = true;
       // Hide any retry banner if previously shown
       try { hideTasksApiRetryBanner(); } catch (e) { }
@@ -261,20 +263,28 @@ function hideTasksApiRetryBanner() {
 /* ---------------------------
    Utilities
    --------------------------- */
-function formatDate(dateString) {
-  if (!dateString) return "No Due Date";
+function parseDateSafely(dateString) {
+  if (!dateString) return null;
 
-  // Parse yyyy-mm-dd safely (avoid timezone shifting and cross-browser quirks)
-  let due;
+  let d;
+  // Handle ISO format yyyy-mm-dd
   if (typeof dateString === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    const [y, m, d] = dateString.split("-").map((n) => Number(n));
-    // Use local noon to prevent DST edge cases when normalizing to start-of-day
-    due = new Date(y, m - 1, d, 12, 0, 0, 0);
+    const [y, m, d_part] = dateString.split("-").map((n) => Number(n));
+    // Use local noon to avoid UTC midnight shifts and DST edge cases
+    d = new Date(y, m - 1, d_part, 12, 0, 0, 0);
   } else {
-    due = new Date(String(dateString).replace(/-/g, "/"));
+    // Fallback for other formats (like dd-mm-yyyy or slash-separated)
+    // Replace hyphens with slashes for better cross-browser compatibility with non-ISO formats
+    d = new Date(String(dateString).replace(/-/g, "/"));
   }
 
-  if (isNaN(due)) return String(dateString);
+  if (isNaN(d.getTime())) return null;
+  return d;
+}
+
+function formatDate(dateString) {
+  const due = parseDateSafely(dateString);
+  if (!due) return dateString || "No Due Date";
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -540,28 +550,40 @@ function ensureStatusModalExists() {
    --------------------------- */
 function updateOverdueTasks() {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
-  
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   let updatedCount = 0;
-  
+
   tasksData.forEach(task => {
-    if (task.dueDate && task.status !== 'completed' && task.status !== 'overdue') {
-      const dueDate = new Date(task.dueDate);
-      dueDate.setHours(0, 0, 0, 0);
-      
-      if (dueDate < today) {
-        task.status = 'overdue';
-        updatedCount++;
+    const currentStatus = normalizeTaskStatus(task.status);
+    if (task.dueDate && currentStatus !== 'completed') {
+      const dueDate = parseDateSafely(task.dueDate);
+      if (!dueDate) return;
+
+      const dueStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+
+      // Mark as overdue if the due date is strictly before today
+      if (dueStart < todayStart) {
+        if (currentStatus !== 'overdue') {
+          task.status = 'overdue';
+          updatedCount++;
+        }
+      } else {
+        // If due date is today or in the future, ensure it's not marked as overdue
+        if (currentStatus === 'overdue') {
+          task.status = 'pending';
+          updatedCount++;
+        }
       }
     }
   });
-  
+
   if (updatedCount > 0) {
     saveTasksData();
     // Update filtered tasks and re-render
     filteredTasks = tasksData.slice();
     applyFilters();
-    console.log(`Updated ${updatedCount} tasks to overdue status`);
+    console.log(`[TASK] Overdue check sync: updated ${updatedCount} tasks.`);
   }
 }
 
@@ -640,7 +662,7 @@ async function refreshDoctorList() {
 }
 
 // Populate doctor dropdown based on selected MR
-function populateDoctorDropdown(mrEmail) {
+function populateDoctorDropdown(mrEmail, targetValue = "") {
   const selectEl = document.getElementById("doctorName");
   if (!selectEl) return;
 
@@ -655,7 +677,7 @@ function populateDoctorDropdown(mrEmail) {
   selectEl.innerHTML = "";
   const defaultOpt = document.createElement("option");
   defaultOpt.value = "";
-  defaultOpt.textContent = "Optional";
+  defaultOpt.textContent = "Select Doctor";
   selectEl.appendChild(defaultOpt);
 
   // Filter doctors by assigned MR. In some datasets assignedMR stores MR name (not email),
@@ -684,6 +706,10 @@ function populateDoctorDropdown(mrEmail) {
     opt.dataset.clinicName = doctor.clinicName; // Store clinic name for later
     selectEl.appendChild(opt);
   });
+
+  if (targetValue) {
+    selectEl.value = targetValue;
+  }
 
   console.log("[TASK] Populated", filteredDoctors.length, "doctors for MR:", mrEmail || "all");
 }
@@ -745,7 +771,9 @@ function setupDoctorFiltering() {
   if (modalEl) {
     modalEl.addEventListener("shown.bs.modal", () => {
       const mrSel = document.getElementById("assignedTo");
-      populateDoctorDropdown(mrSel ? mrSel.value : "");
+      const doctorSel = document.getElementById("doctorName");
+      const currentDoctor = doctorSel ? doctorSel.value : "";
+      populateDoctorDropdown(mrSel ? mrSel.value : "", currentDoctor);
     });
   }
 }
@@ -1075,6 +1103,12 @@ function editTask(taskId) {
     if (titleEl) titleEl.value = task.title || "";
     if (typeEl) typeEl.value = task.type || "";
     if (assignedEl) assignedEl.value = task.assignedTo || "";
+
+    // Proactively populate doctor dropdown for THIS MR before setting doctor value in edit mode
+    if (task.type === "doctor-visit") {
+      populateDoctorDropdown(task.assignedTo || "", task.doctorName || "");
+    }
+
     if (priorityEl) priorityEl.value = task.priority || "medium";
     if (dueDateEl) dueDateEl.value = task.dueDate || "";
     if (locationEl) locationEl.value = task.location || "";
@@ -1203,7 +1237,7 @@ function initCreateTaskHandler() {
     const locationEl = document.getElementById("taskLocation");
     const dueDateEl = document.getElementById("dueDate");
     const assignedToEl = document.getElementById("assignedTo");
-    
+
     if (locationEl) locationEl.classList.remove("is-invalid");
     if (dueDateEl) dueDateEl.classList.remove("is-invalid");
     if (assignedToEl) assignedToEl.classList.remove("is-invalid");
@@ -1211,7 +1245,7 @@ function initCreateTaskHandler() {
     const locationVal = (locationEl ? locationEl.value : "").trim();
     const dueDateVal = (dueDateEl ? dueDateEl.value : "").trim();
     const assignedToVal = (assignedToEl ? assignedToEl.value : "").trim();
-    
+
     // Validate location
     if (!locationVal) {
       if (locationEl) {
@@ -1221,13 +1255,13 @@ function initCreateTaskHandler() {
       showToast("Validation", "Location is required.");
       return;
     }
-    
+
     // Validate due date (no past dates)
     if (dueDateVal) {
       const selectedDate = new Date(dueDateVal);
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
-      
+
       if (selectedDate < today) {
         if (dueDateEl) {
           dueDateEl.classList.add("is-invalid");
@@ -1237,14 +1271,14 @@ function initCreateTaskHandler() {
         return;
       }
     }
-    
+
     // Validate territory restriction
     if (assignedToVal && locationVal) {
       const selectedMR = mrData.find(mr => mr.email === assignedToVal || mr.name === assignedToVal);
       if (selectedMR && selectedMR.territory) {
         const mrTerritory = selectedMR.territory.toLowerCase();
         const taskLocation = locationVal.toLowerCase();
-        
+
         // Check if task location contains MR's territory or vice versa
         if (!taskLocation.includes(mrTerritory) && !mrTerritory.includes(taskLocation)) {
           if (locationEl) {
@@ -1255,6 +1289,22 @@ function initCreateTaskHandler() {
           return;
         }
       }
+    }
+
+    // Validate doctor name for doctor-visit
+    const taskTypeVal = document.getElementById("taskType").value;
+    const doctorNameEl = document.getElementById("doctorName");
+    const doctorNameVal = (doctorNameEl ? doctorNameEl.value : "").trim();
+
+    if (doctorNameEl) doctorNameEl.classList.remove("is-invalid");
+
+    if (taskTypeVal === "doctor-visit" && !doctorNameVal) {
+      if (doctorNameEl) {
+        doctorNameEl.classList.add("is-invalid");
+        doctorNameEl.focus();
+      }
+      showToast("Validation", "Doctor Name is mandatory for Doctor Visit tasks.");
+      return;
     }
 
     // Prevent double submission
@@ -1443,10 +1493,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // load persisted data
   loadTasksData();
-  
+
   // Auto-update overdue tasks
   updateOverdueTasks();
-  
+
   // Set up periodic overdue check (every 5 minutes)
   setInterval(updateOverdueTasks, 5 * 60 * 1000);
 
