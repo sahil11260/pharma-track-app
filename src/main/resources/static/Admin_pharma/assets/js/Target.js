@@ -274,8 +274,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const to = toDate.value ? new Date(toDate.value) : null;
 
     if (from && to && from > to) {
-      alert("From Date cannot be later than To Date.");
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Invalid date range: From Date is later than To Date</td></tr>';
+      alert("To Date cannot be earlier than From Date.");
+      toDate.value = ""; // Clear invalid date
       return;
     }
 
@@ -315,9 +315,9 @@ document.addEventListener("DOMContentLoaded", () => {
             </span>
           </td>
           <td>
-            <div class="d-flex align-items-center">
-              <button class="btn btn-sm btn-outline-primary me-1" onclick="editTarget(${t.id})"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteTarget(${t.id})"><i class="bi bi-trash"></i></button>
+            <div class="d-flex justify-content-center gap-2">
+              <button class="btn btn-outline-primary" onclick="editTarget(${t.id})" ${t.achievementPercentage >= 100 ? 'disabled title="Achieved targets cannot be edited"' : ''}><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger" onclick="deleteTarget(${t.id})" ${t.achievementPercentage >= 100 ? 'disabled title="Achieved targets cannot be deleted"' : ''}><i class="bi bi-trash"></i></button>
             </div>
           </td>
         </tr>`
@@ -560,21 +560,63 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------------------------------------
   // ðŸ”¥ FILTERS
   // ---------------------------------------------------------
+  const targetModalEl = document.getElementById("targetModal");
+  if (targetModalEl) {
+    targetModalEl.addEventListener("show.bs.modal", (event) => {
+      // If triggered by "Add Target" button which has data-bs-toggle="modal"
+      if (event.relatedTarget) {
+        form.reset();
+        editIndex = null;
+        if (availableInfo) availableInfo.textContent = "";
+        const modalTitle = targetModalEl.querySelector(".modal-title");
+        if (modalTitle) modalTitle.textContent = "Add Target";
+      }
+    });
+  }
+
   searchInput.addEventListener("input", () => {
     currentPage = 1;
     renderTable();
   });
 
-  fromDate.addEventListener("change", renderTable);
-  toDate.addEventListener("change", renderTable);
+  fromDate.addEventListener("change", () => {
+    if (fromDate.value && toDate.value && new Date(fromDate.value) > new Date(toDate.value)) {
+      alert("From Date cannot be later than To Date.");
+      fromDate.value = "";
+    }
+    renderTable();
+  });
+  toDate.addEventListener("change", () => {
+    if (fromDate.value && toDate.value && new Date(fromDate.value) > new Date(toDate.value)) {
+      alert("To Date cannot be earlier than From Date.");
+      toDate.value = "";
+    }
+    renderTable();
+  });
 
   // loadFromStorageIfAny();
   (async function () {
     const today = new Date().toISOString().split('T')[0];
     const targetGivenDateInput = document.getElementById("targetGivenDate");
     const targetDeadlineInput = document.getElementById("targetDeadline");
-    if (targetGivenDateInput) targetGivenDateInput.min = today;
-    if (targetDeadlineInput) targetDeadlineInput.min = today;
+    if (targetGivenDateInput) {
+      targetGivenDateInput.min = today;
+      targetGivenDateInput.addEventListener("change", () => {
+        if (targetGivenDateInput.value && targetDeadlineInput.value && new Date(targetGivenDateInput.value) > new Date(targetDeadlineInput.value)) {
+          alert("Target Given Date cannot be later than Deadline Date.");
+          targetGivenDateInput.value = "";
+        }
+      });
+    }
+    if (targetDeadlineInput) {
+      targetDeadlineInput.min = today;
+      targetDeadlineInput.addEventListener("change", () => {
+        if (targetGivenDateInput.value && targetDeadlineInput.value && new Date(targetGivenDateInput.value) > new Date(targetDeadlineInput.value)) {
+          alert("Deadline Date cannot be earlier than Given Date.");
+          targetDeadlineInput.value = "";
+        }
+      });
+    }
 
     await refreshTargetsFromApiOrFallback();
     await refreshUsersAndProducts();

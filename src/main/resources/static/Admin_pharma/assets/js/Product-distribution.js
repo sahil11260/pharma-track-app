@@ -309,8 +309,23 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const price = parseFloat(newPrice.value || "0");
     let stockToAdd = parseInt(newStock.value || "0", 10);
+    const productName = (newProductName.value || "").trim();
     const editingProductId = editingProductIdInput ? editingProductIdInput.value : "-1";
     const expiryDateVal = newExpiryDate ? newExpiryDate.value : "";
+
+    // Product Name Validation
+    if (!productName) {
+      alert("Product Name is required.");
+      return;
+    }
+    if (!/[a-zA-Z]/.test(productName)) {
+      alert("Product Name must contain characters. It cannot be numbers only or special characters only.");
+      return;
+    }
+    if (!/[a-zA-Z0-9]/.test(productName)) {
+      alert("Product Name must contain alphanumeric characters.");
+      return;
+    }
 
     if (price <= 0) return alert("Product price must be greater than zero.");
     if (stockToAdd < 0) return alert("Stock quantity cannot be negative.");
@@ -352,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
         addProductForm.reset();
         bootstrap.Modal.getOrCreateInstance(document.getElementById("addProductModal")).hide();
       } catch (err) {
-        if (err.message.includes("already added")) alert("Product cannot be created as its been already added as per the project standards");
+        if (err.message.includes("already added")) alert("Product is already exist.");
         else alert("Failed to save product: " + err.message);
       }
     })();
@@ -413,7 +428,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const isEditMode = editingProductIdInput && editingProductIdInput.value !== "-1";
 
     if (existing && !isEditMode) {
-      alert("Product cannot be created as its been already added as per the project standards");
+      alert("Product is already exist.");
+      newProductName.value = "";
+    } else if (name && !/[a-zA-Z]/.test(name)) {
+      alert("Product Name must contain characters. It cannot be numbers only or special characters only.");
       newProductName.value = "";
     } else if (existing) {
       newCategory.value = existing.category || "";
@@ -596,9 +614,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <h6 class="mb-0 fw-bold text-dark">${p.name}</h6>
                 <div class="text-muted small">${p.category} | ₹${formatPrice(p.price)}/unit</div>
               </div>
-              <div class="d-flex justify-content-end mt-2 gap-1">
-                <button class="btn btn-sm btn-outline-primary" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
+              <div class="d-flex justify-content-center mt-3 gap-2">
+                <button class="btn btn-outline-primary flex-grow-1" onclick="prod_edit(${p.id})"><i class="bi bi-pencil-square"></i> Edit</button>
+                <button class="btn btn-outline-danger flex-grow-1" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i> Delete</button>
               </div>
             </div>
           </div>
@@ -623,8 +641,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <td class="text-end fw-bold ${isOutOfStock ? 'text-danger' : (isLow ? 'text-warning' : 'text-primary')}">${p.available}</td>
           <td class="text-center"><span class="badge ${statusBadgeClass}">${statusText}</span></td>
           <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
+            <div class="d-flex justify-content-center gap-2">
+              <button class="btn btn-outline-primary" onclick="prod_edit(${p.id})"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger" onclick="prod_delete(${p.id})"><i class="bi bi-trash"></i></button>
+            </div>
           </td>
         </tr>`;
     }).join("");
@@ -651,8 +671,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${a.role}</td>
         <td>${a.qty}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="pd_edit(${allocations.indexOf(a)})"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger" onclick="pd_delete(${allocations.indexOf(a)})"><i class="bi bi-trash"></i></button>
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-outline-primary" onclick="pd_edit(${allocations.indexOf(a)})"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger" onclick="pd_delete(${allocations.indexOf(a)})"><i class="bi bi-trash"></i></button>
+          </div>
         </td>
       </tr>`).join("");
     renderPagination(totalPages);

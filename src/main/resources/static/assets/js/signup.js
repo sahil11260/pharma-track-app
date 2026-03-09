@@ -57,10 +57,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // EMAIL
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(emailField.value.trim())) {
-      emailError.textContent = "Please enter a valid email address.";
+    const emailValue = emailField.value.trim();
+    if (/[A-Z]/.test(emailValue)) {
+      emailError.textContent = "Email should not contain capital letters.";
       valid = false;
+    } else {
+      const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.(com|in|org|net|edu|gov|co|io)$/;
+      if (!emailRegex.test(emailValue)) {
+        emailError.textContent = "Please enter a valid email address with common extensions (.com, .in, etc.) and no capital letters.";
+        valid = false;
+      }
     }
 
     // PASSWORD
