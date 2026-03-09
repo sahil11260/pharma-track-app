@@ -123,8 +123,10 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${d.assignedMR || '<span class="text-muted">Unassigned</span>'}</td>
         <td>${d.contact}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-2 edit-btn" data-id="${d.id}"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${d.id}"><i class="bi bi-trash"></i></button>
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-outline-primary edit-btn" data-id="${d.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger delete-btn" data-id="${d.id}"><i class="bi bi-trash"></i></button>
+          </div>
         </td>
       `;
       tableBody.appendChild(tr);
@@ -260,9 +262,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const email = document.getElementById("doctorContact").value.trim();
-    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    // Check for capital letters
+    if (/[A-Z]/.test(email)) {
+      alert("Email should not contain capital letters.");
+      return;
+    }
+
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.(com|in|org|net|edu|gov|co|io)$/;
     if (!emailRegex.test(email)) {
-      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
+      alert("Invalid email format. Please use a standard email (e.g., user@example.com) with common extensions (.com, .in, .org, etc.) and no capital letters.");
       return;
     }
 

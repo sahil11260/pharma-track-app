@@ -173,20 +173,19 @@ document.addEventListener("DOMContentLoaded", () => {
             }">${e.status}</span>
             </div>
 
-            <div class="card-footer bg-transparent border-0 d-flex justify-content-between">
-              <div>
-                ${e.status === "Pending"
+            <div class="card-footer bg-transparent border-0 pt-0">
+              ${e.status === "Pending"
               ? `
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="approveExpense(${e.id})"><i class="bi bi-check-lg"></i></button>
-                    <button class="btn btn-sm btn-outline-danger me-1" onclick="rejectExpense(${e.id})"><i class="bi bi-x-lg"></i></button>`
+                  <div class="d-flex gap-2 w-100 mt-2">
+                    <button class="btn btn-sm btn-outline-success flex-grow-1 shadow-sm py-1" onclick="approveExpense(${e.id})">
+                      <i class="bi bi-check-lg pe-1"></i> Approve
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger flex-grow-1 shadow-sm py-1" onclick="rejectExpense(${e.id})">
+                      <i class="bi bi-x-lg pe-1"></i> Reject
+                    </button>
+                  </div>`
               : ""
             }
-              </div>
-
-              <!-- <div>
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="editExpense(${e.id})"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${e.id})"><i class="bi bi-trash"></i></button>
-              </div> -->
             </div>
           </div>
         </div>`

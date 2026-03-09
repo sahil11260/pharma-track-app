@@ -56,9 +56,9 @@
 
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
+    <div class="sidebar-header text-center py-2">
       <img src="assets/images/image.png" class="logo light-logo" alt="logo" />
-      <img src="assets/images/logo-dark.png" class="logo dark-logo" alt="dark logo" />
+      <img src="assets/images/logo-dark.png" class="logo dark-logo" alt="logo" />
     </div>
     <ul class="sidebar-menu mb-5">
       <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
@@ -82,15 +82,19 @@
       <!-- Filters -->
       <div class="row g-3 mb-4">
         <div class="col-md-3">
+          <label class="form-label ms-1 mb-1 fw-semibold">Search</label>
           <input type="text" class="form-control" id="searchReport" placeholder="Search MR / Doctor" />
         </div>
         <div class="col-md-3">
+          <label class="form-label ms-1 mb-1 fw-semibold">From Date</label>
           <input type="date" class="form-control" id="startDate" />
         </div>
         <div class="col-md-3">
+          <label class="form-label ms-1 mb-1 fw-semibold">To Date</label>
           <input type="date" class="form-control" id="endDate" />
         </div>
         <div class="col-md-3">
+          <label class="form-label ms-1 mb-1 fw-semibold">Report Type</label>
           <select class="form-select" id="reportType">
             <option value="">Select Report Type</option>
             <option>Doctor Visits</option>

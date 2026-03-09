@@ -215,17 +215,25 @@ public class SalesServiceImpl implements SalesService {
             String subEmail = sub.getEmail();
             Long subId = sub.getId();
 
+            // Fetch DCRs for this subordinate once per subordinate to avoid repetitive
+            // findAll()
+            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> dcrList = new ArrayList<>();
+            if (subName != null) {
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subName));
+            }
+            if (subEmail != null && !subEmail.equalsIgnoreCase(subName)) {
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subEmail));
+            }
+            // Deduplicate if needed (though findByMrName should be distinct in practice)
+            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> distinctDcrs = dcrList.stream().distinct().toList();
+
             if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                totalAchieved += (int) dcrRepository.findAll().stream()
-                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
-                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                totalAchieved += (int) distinctDcrs.stream()
                         .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .count();
             } else {
                 // Sum DCR Reported Samples for this subordinate
-                int dcrSum = dcrRepository.findAll().stream()
-                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
-                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                int dcrSum = distinctDcrs.stream()
                         .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .flatMap(dcr -> dcr.getSamplesGiven().stream())
                         .filter(item -> isProductMatch(target, item))
@@ -283,14 +291,25 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private boolean isDateWithinTargetRange(LocalDate date, SalesTarget target) {
+        // Essential: Must be within the target month and year
         if (date.getMonthValue() != target.getPeriodMonth() || date.getYear() != target.getPeriodYear()) {
             return false;
         }
-        LocalDate start = target.getStartDate() != null ? target.getStartDate() : target.getAssignedDate();
-        if (date.isBefore(start))
-            return false;
-        if (target.getEndDate() != null && date.isAfter(target.getEndDate()))
-            return false;
+
+        // For Monthly targets, we typically want to count the whole month's DCRs.
+        // However, we respect explicit boundaries if they are set beyond just
+        // defaulting to today.
+        // If start date is on the 1st of the month, or not set, we allow all.
+        // For now, let's be more lenient and only use boundaries if the target is NOT
+        // monthly or if they are meaningful.
+        if (target.getTargetType() != SalesTarget.TargetType.MONTHLY) {
+            LocalDate start = target.getStartDate() != null ? target.getStartDate() : target.getAssignedDate();
+            if (date.isBefore(start))
+                return false;
+            if (target.getEndDate() != null && date.isAfter(target.getEndDate()))
+                return false;
+        }
+
         return true;
     }
 
@@ -436,19 +455,22 @@ public class SalesServiceImpl implements SalesService {
             String subName = target.getMrName();
             String subEmail = mrUser != null ? mrUser.getEmail() : subName;
 
+            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> dcrList = new ArrayList<>();
+            if (subName != null)
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subName));
+            if (subEmail != null && !subEmail.equalsIgnoreCase(subName))
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subEmail));
+            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> distinctDcrs = dcrList.stream().distinct().toList();
+
             if (!"Visit".equalsIgnoreCase(target.getCategory())) {
-                dcrSum = dcrRepository.findAll().stream()
-                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
-                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                dcrSum = distinctDcrs.stream()
                         .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .flatMap(dcr -> dcr.getSamplesGiven().stream())
                         .filter(item -> isProductMatch(target, item))
                         .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
                         .sum();
             } else {
-                dcrSum = (int) dcrRepository.findAll().stream()
-                        .filter(dcr -> (subName.equalsIgnoreCase(dcr.getMrName())
-                                || subEmail.equalsIgnoreCase(dcr.getMrName())))
+                dcrSum = (int) distinctDcrs.stream()
                         .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
                         .count();
             }

@@ -272,8 +272,20 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.value = e.target.value;
     applyFilters();
   });
-  startDateInput.addEventListener("change", applyFilters);
-  endDateInput.addEventListener("change", applyFilters);
+  startDateInput.addEventListener("change", () => {
+    if (startDateInput.value && endDateInput.value && new Date(startDateInput.value) > new Date(endDateInput.value)) {
+      alert("From Date cannot be later than To Date.");
+      startDateInput.value = "";
+    }
+    applyFilters();
+  });
+  endDateInput.addEventListener("change", () => {
+    if (startDateInput.value && endDateInput.value && new Date(startDateInput.value) > new Date(endDateInput.value)) {
+      alert("To Date cannot be earlier than From Date.");
+      endDateInput.value = "";
+    }
+    applyFilters();
+  });
 
   // ===== Charts =====
   let regionSalesChart = null;

@@ -176,9 +176,11 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${territory}</td>
         <td><span class="badge ${u.status === 'ACTIVE' ? 'bg-success' : 'bg-warning'}">${u.status || 'ACTIVE'}</span></td>
         <td>
-          <button class="btn btn-sm btn-outline-success view-btn" data-id="${u.id}"><i class="bi bi-eye"></i></button>
-          <button class="btn btn-sm btn-outline-info edit-btn" data-id="${u.id}"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${u.id}"><i class="bi bi-trash"></i></button>
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-outline-success view-btn" data-id="${u.id}"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-info edit-btn" data-id="${u.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger delete-btn" data-id="${u.id}"><i class="bi bi-trash"></i></button>
+          </div>
         </td>
       `;
       userTableBody.appendChild(tr);
@@ -392,16 +394,29 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const territoryEl = document.getElementById(`${prefix}Territory`);
-    const territory = territoryEl ? territoryEl.value : "";
-    if (!editingUserId && (!territory || !territory.trim())) {
+    const territory = territoryEl ? territoryEl.value.trim() : "";
+    if (!editingUserId && (!territory)) {
       alert("Territory is required.");
       return;
     }
 
+    // Territory validation: should not be numbers only
+    if (territory && /^\d+$/.test(territory)) {
+      alert("Territory cannot be numbers only. Please enter a valid territory name.");
+      return;
+    }
+
     const email = document.getElementById(`${prefix}Email`).value.trim();
-    const emailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    // Check for capital letters
+    if (/[A-Z]/.test(email)) {
+      alert("Email should not contain capital letters.");
+      return;
+    }
+
+    // Stricter email regex: no capitals, restricted common TLDs to avoid .hoj, .jdh etc.
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.(com|in|org|net|edu|gov|co|io)$/;
     if (!emailRegex.test(email)) {
-      alert("Invalid email format. Only letters (a-z), numbers (0-9), and periods (.) are allowed before @.");
+      alert("Invalid email format. Please use a standard email (e.g., user@example.com) with common extensions (.com, .in, .org, etc.) and no capital letters.");
       return;
     }
 

@@ -157,7 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function validateEmail(email) {
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        // Check for capital letters
+        if (/[A-Z]/.test(email)) {
+            return false;
+        }
+        // Stricter email regex: no capitals, restricted common TLDs to avoid .hoj, .jdh etc.
+        const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.(com|in|org|net|edu|gov|co|io)$/;
         return emailRegex.test(email);
     }
 

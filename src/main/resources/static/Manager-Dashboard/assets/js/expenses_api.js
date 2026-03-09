@@ -230,8 +230,8 @@
           <td>${statusBadge(exp.status)}</td>
           <td>${fmtDate(exp.submittedDate)}</td>
           <td class="table-actions">
-            ${isPending ? `<button class="btn btn-outline-success btn-sm btn-approve me-1" data-id="${exp.id}" title="Approve"><i class="bi bi-check-lg"></i></button>` : `<button class="btn btn-outline-success btn-sm me-1 disabled-btn" disabled><i class="bi bi-check-lg"></i></button>`}
-            ${isPending ? `<button class="btn btn-outline-danger btn-sm btn-reject me-1" data-id="${exp.id}" title="Reject"><i class="bi bi-x-lg"></i></button>` : `<button class="btn btn-outline-danger btn-sm me-1 disabled-btn" disabled><i class="bi bi-x-lg"></i></button>`}
+            ${isPending ? `<button class="btn btn-outline-success btn-sm btn-approve" data-id="${exp.id}" title="Approve"><i class="bi bi-check-lg"></i></button>` : `<button class="btn btn-outline-success btn-sm disabled-btn" disabled><i class="bi bi-check-lg"></i></button>`}
+            ${isPending ? `<button class="btn btn-outline-danger btn-sm btn-reject" data-id="${exp.id}" title="Reject"><i class="bi bi-x-lg"></i></button>` : `<button class="btn btn-outline-danger btn-sm disabled-btn" disabled><i class="bi bi-x-lg"></i></button>`}
             <button class="btn btn-outline-dark btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
           </td>
         </tr>

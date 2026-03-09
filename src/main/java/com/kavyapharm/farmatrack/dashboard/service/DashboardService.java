@@ -1,5 +1,7 @@
 package com.kavyapharm.farmatrack.dashboard.service;
 
+import com.kavyapharm.farmatrack.user.repository.UserRepository;
+
 import com.kavyapharm.farmatrack.dto.DashboardStatsResponse;
 import com.kavyapharm.farmatrack.dto.DashboardChartsResponse;
 import com.kavyapharm.farmatrack.mrstock.repository.MrStockRepository;
@@ -9,7 +11,6 @@ import com.kavyapharm.farmatrack.sales.repository.SalesTargetRepository;
 import com.kavyapharm.farmatrack.dcr.repository.DcrRepository;
 import com.kavyapharm.farmatrack.task.repository.TaskRepository;
 import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
-import com.kavyapharm.farmatrack.product.repository.ProductRepository;
 import com.kavyapharm.farmatrack.doctor.service.DoctorService;
 import com.kavyapharm.farmatrack.user.model.User;
 import com.kavyapharm.farmatrack.user.model.UserRole;
@@ -33,8 +34,8 @@ public class DashboardService {
     private final DcrRepository dcrRepository;
     private final ExpenseRepository expenseRepository;
     private final TaskRepository taskRepository;
-    private final ProductRepository productRepository;
     private final DoctorService doctorService;
+    private final UserRepository userRepository;
 
     public DashboardService(UserService userService,
             MrStockRepository mrStockRepository,
@@ -43,8 +44,8 @@ public class DashboardService {
             DcrRepository dcrRepository,
             ExpenseRepository expenseRepository,
             TaskRepository taskRepository,
-            ProductRepository productRepository,
-            DoctorService doctorService) {
+            DoctorService doctorService,
+            UserRepository userRepository) {
         this.userService = userService;
         this.mrStockRepository = mrStockRepository;
         this.salesTargetRepository = salesTargetRepository;
@@ -52,8 +53,8 @@ public class DashboardService {
         this.dcrRepository = dcrRepository;
         this.expenseRepository = expenseRepository;
         this.taskRepository = taskRepository;
-        this.productRepository = productRepository;
         this.doctorService = doctorService;
+        this.userRepository = userRepository;
     }
 
     private static class TrackedInfo {
@@ -74,22 +75,42 @@ public class DashboardService {
             }
         }
 
-        if (info.currentUser != null && info.currentUser.getRole() == UserRole.MANAGER) {
-            String managerName = info.currentUser.getName();
-            String managerEmail = info.currentUser.getEmail();
-            userService.list().stream()
-                    .filter(u -> UserRole.MR.equals(u.role()) &&
-                            (Objects.equals(managerName, u.assignedManager()) ||
-                                    Objects.equals(managerEmail, u.assignedManager())))
-                    .forEach(u -> {
-                        info.mrNames.add(u.name());
-                        info.mrIds.add(u.id());
-                    });
-            // Managers also track themselves if they have achievements/tasks
-            info.mrNames.add(info.currentUser.getName());
-            info.mrIds.add(info.currentUser.getId());
+        if (info.currentUser != null) {
+            if (info.currentUser.getRole() == UserRole.MANAGER) {
+                List<com.kavyapharm.farmatrack.user.model.User> allUsers = userRepository.findAll();
+                Set<com.kavyapharm.farmatrack.user.model.User> allSubordinates = getSubordinatesRecursively(
+                        info.currentUser, allUsers);
+                for (com.kavyapharm.farmatrack.user.model.User sub : allSubordinates) {
+                    info.mrNames.add(sub.getName());
+                    info.mrIds.add(sub.getId());
+                }
+                // Managers also track themselves if they have achievements/tasks
+                info.mrNames.add(info.currentUser.getName());
+                info.mrIds.add(info.currentUser.getId());
+            } else if (info.currentUser.getRole() == UserRole.MR) {
+                info.mrNames.add(info.currentUser.getName());
+                info.mrIds.add(info.currentUser.getId());
+            }
         }
         return info;
+    }
+
+    private Set<com.kavyapharm.farmatrack.user.model.User> getSubordinatesRecursively(
+            com.kavyapharm.farmatrack.user.model.User manager,
+            List<com.kavyapharm.farmatrack.user.model.User> allUsers) {
+        Set<com.kavyapharm.farmatrack.user.model.User> allSubordinates = new HashSet<>();
+        List<com.kavyapharm.farmatrack.user.model.User> directSubordinates = allUsers.stream()
+                .filter(u -> (Objects.equals(manager.getName(), u.getAssignedManager()) ||
+                        Objects.equals(manager.getEmail(), u.getAssignedManager())) &&
+                        !Objects.equals(manager.getEmail(), u.getEmail())) // avoid self-loop
+                .toList();
+
+        for (com.kavyapharm.farmatrack.user.model.User sub : directSubordinates) {
+            if (allSubordinates.add(sub)) {
+                allSubordinates.addAll(getSubordinatesRecursively(sub, allUsers));
+            }
+        }
+        return allSubordinates;
     }
 
     public DashboardStatsResponse getStats() {
@@ -119,15 +140,52 @@ public class DashboardService {
         int month = now.getMonthValue();
         int year = now.getYear();
 
-        long totalSalesUnits = salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
-                .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
-                .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
-                .sum();
+        long totalSalesUnits = 0;
+        int currentMonth = month;
+        int currentYear = year;
 
-        long totalVisits = dcrRepository.findAll().stream()
-                .filter(dcr -> info.mrNames.isEmpty() || info.mrNames.contains(dcr.getMrName()))
-                .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
-                .count();
+        // Calculate unified sales units (Achievements + DCR Samples)
+        if (info.mrIds.isEmpty()) {
+            // Admin view - sum everything for the period
+            totalSalesUnits += salesAchievementRepository.findByPeriodMonthAndPeriodYear(currentMonth, currentYear)
+                    .stream()
+                    .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                    .sum();
+
+            totalSalesUnits += dcrRepository.findAll().stream()
+                    .filter(dcr -> isDateInMonth(dcr.getDateTime(), currentMonth, currentYear))
+                    .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                    .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0)
+                    .sum();
+        } else {
+            // Manager/MR view - filter by subordinates
+            totalSalesUnits += salesAchievementRepository.findByPeriodMonthAndPeriodYear(currentMonth, currentYear)
+                    .stream()
+                    .filter(sa -> info.mrIds.contains(sa.getMrId()))
+                    .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                    .sum();
+
+            for (String mrName : info.mrNames) {
+                totalSalesUnits += dcrRepository.findByMrNameIgnoreCase(mrName).stream()
+                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), currentMonth, currentYear))
+                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                        .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0)
+                        .sum();
+            }
+        }
+
+        long totalVisits = 0;
+        if (info.mrNames.isEmpty()) {
+            totalVisits = dcrRepository.findAll().stream()
+                    .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                    .count();
+        } else {
+            for (String mrName : info.mrNames) {
+                totalVisits += dcrRepository.findByMrNameIgnoreCase(mrName).stream()
+                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                        .count();
+            }
+        }
 
         long pendingTasks = taskRepository.findAll().stream()
                 .filter(tk -> info.mrNames.isEmpty() || info.mrNames.contains(tk.getAssignedTo()))
@@ -159,18 +217,47 @@ public class DashboardService {
                     .sum();
             targetsByMonth.add((double) monthTargetUnits);
 
-            // Aggregate Sales Achievement
-            long monthSalesUnits = salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
-                    .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
-                    .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
-                    .sum();
+            // Aggregate Sales Achievement (Manual + DCR Samples)
+            long monthSalesUnits = 0;
+            if (info.mrIds.isEmpty()) {
+                monthSalesUnits += salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
+                        .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                        .sum();
+
+                monthSalesUnits += dcrRepository.findAll().stream()
+                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                        .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0)
+                        .sum();
+            } else {
+                monthSalesUnits += salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
+                        .filter(sa -> info.mrIds.contains(sa.getMrId()))
+                        .mapToLong(sa -> sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0)
+                        .sum();
+
+                for (String mrName : info.mrNames) {
+                    monthSalesUnits += dcrRepository.findByMrNameIgnoreCase(mrName).stream()
+                            .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                            .flatMap(dcr -> dcr.getSamplesGiven().stream())
+                            .mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0)
+                            .sum();
+                }
+            }
             salesByMonth.add((double) monthSalesUnits);
 
             // Aggregate Visits (DCRs)
-            long monthVisits = dcrRepository.findAll().stream()
-                    .filter(dcr -> info.mrNames.isEmpty() || info.mrNames.contains(dcr.getMrName()))
-                    .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
-                    .count();
+            long monthVisits = 0;
+            if (info.mrNames.isEmpty()) {
+                monthVisits = dcrRepository.findAll().stream()
+                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                        .count();
+            } else {
+                for (String mrName : info.mrNames) {
+                    monthVisits += dcrRepository.findByMrNameIgnoreCase(mrName).stream()
+                            .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                            .count();
+                }
+            }
             visitsByMonth.add(monthVisits);
         }
 
@@ -192,6 +279,7 @@ public class DashboardService {
             int year = date.getYear();
 
             final int index = 5 - i;
+            // 1. Manual Achievements
             salesAchievementRepository.findByPeriodMonthAndPeriodYear(month, year).stream()
                     .filter(sa -> info.mrIds.isEmpty() || info.mrIds.contains(sa.getMrId()))
                     .forEach(sa -> {
@@ -201,6 +289,36 @@ public class DashboardService {
                         productSalesByMonth.get(pName).set(index,
                                 currentVal + (sa.getAchievedUnits() != null ? sa.getAchievedUnits() : 0));
                     });
+
+            // 2. DCR Samples
+            if (info.mrNames.isEmpty()) {
+                dcrRepository.findAll().stream()
+                        .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                        .forEach(dcr -> {
+                            dcr.getSamplesGiven().forEach(item -> {
+                                String pName = item.getProductName();
+                                productSalesByMonth.putIfAbsent(pName, new ArrayList<>(Collections.nCopies(6, 0.0)));
+                                double currentVal = productSalesByMonth.get(pName).get(index);
+                                productSalesByMonth.get(pName).set(index,
+                                        currentVal + (item.getQuantity() != null ? item.getQuantity() : 0));
+                            });
+                        });
+            } else {
+                for (String mrName : info.mrNames) {
+                    dcrRepository.findByMrNameIgnoreCase(mrName).stream()
+                            .filter(dcr -> isDateInMonth(dcr.getDateTime(), month, year))
+                            .forEach(dcr -> {
+                                dcr.getSamplesGiven().forEach(item -> {
+                                    String pName = item.getProductName();
+                                    productSalesByMonth.putIfAbsent(pName,
+                                            new ArrayList<>(Collections.nCopies(6, 0.0)));
+                                    double currentVal = productSalesByMonth.get(pName).get(index);
+                                    productSalesByMonth.get(pName).set(index,
+                                            currentVal + (item.getQuantity() != null ? item.getQuantity() : 0));
+                                });
+                            });
+                }
+            }
         }
 
         return new DashboardChartsResponse(salesByMonth, visitsByMonth, targetsByMonth, monthLabels, expenseByCategory,

@@ -210,10 +210,10 @@ function renderMyTargetsTable(targets) {
             <td>${target.achievedUnits || 0}</td>
             <td><strong>${achievement.toFixed(1)}%</strong></td>
             <td>
-                <button class="btn btn-sm btn-primary me-1" onclick="editTarget('${targetId}')" title="Edit Achievement">
+                <button class="btn btn-sm btn-primary me-1" onclick="editTarget('${targetId}')" title="${achievement >= 100 ? 'Achieved targets cannot be edited' : 'Edit Achievement'}" ${achievement >= 100 ? 'disabled' : ''}>
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteTarget('${targetId}')" title="Delete Target">
+                <button class="btn btn-sm btn-danger" onclick="deleteTarget('${targetId}')" title="${achievement >= 100 ? 'Achieved targets cannot be deleted' : 'Delete Target'}" ${achievement >= 100 ? 'disabled' : ''}>
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -247,10 +247,10 @@ function renderMrTargetsTable(targets) {
             <td>${target.achievedUnits || 0}</td>
             <td><strong>${achievement.toFixed(1)}%</strong></td>
             <td>
-                <button class="btn btn-sm btn-primary me-1" onclick="editTarget('${targetId}')" title="Edit Achievement">
+                <button class="btn btn-sm btn-primary me-1" onclick="editTarget('${targetId}')" title="${achievement >= 100 ? 'Achieved targets cannot be edited' : 'Edit Achievement'}" ${achievement >= 100 ? 'disabled' : ''}>
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteTarget('${targetId}')" title="Delete Target">
+                <button class="btn btn-sm btn-danger" onclick="deleteTarget('${targetId}')" title="${achievement >= 100 ? 'Achieved targets cannot be deleted' : 'Delete Target'}" ${achievement >= 100 ? 'disabled' : ''}>
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
