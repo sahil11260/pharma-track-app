@@ -141,6 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return await apiJson(TARGETS_API_BASE, {
       method: "POST",
       body: JSON.stringify({
+        id: t.id || null,
         mrId: manager ? manager.id : 0,
         mrName: t.mrName,
         productId: product ? product.id : 0,
@@ -434,21 +435,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return false;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (new Date(given) < today) {
-      alert("⚠️ Target Given Date cannot be in the past.");
-      return false;
-    }
-
-    if (new Date(deadline) < today) {
-      alert("⚠️ Deadline Date cannot be in the past.");
-      return false;
-    }
-
+    // Date validation for sequence
     if (new Date(deadline) < new Date(given)) {
-      alert("âš  Deadline cannot be before Given Date.");
+      alert("⚠️ Deadline cannot be before Given Date.");
       return false;
     }
 
@@ -600,7 +589,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const targetGivenDateInput = document.getElementById("targetGivenDate");
     const targetDeadlineInput = document.getElementById("targetDeadline");
     if (targetGivenDateInput) {
-      targetGivenDateInput.min = today;
       targetGivenDateInput.addEventListener("change", () => {
         if (targetGivenDateInput.value && targetDeadlineInput.value && new Date(targetGivenDateInput.value) > new Date(targetDeadlineInput.value)) {
           alert("Target Given Date cannot be later than Deadline Date.");
@@ -609,7 +597,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
     if (targetDeadlineInput) {
-      targetDeadlineInput.min = today;
       targetDeadlineInput.addEventListener("change", () => {
         if (targetGivenDateInput.value && targetDeadlineInput.value && new Date(targetGivenDateInput.value) > new Date(targetDeadlineInput.value)) {
           alert("Deadline Date cannot be earlier than Given Date.");

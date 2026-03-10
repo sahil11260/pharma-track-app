@@ -21,9 +21,7 @@
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle">
         <i class="bi bi-list"></i>
       </button>
-
       <div class="d-flex ms-auto">
-
         <button class="btn btn-outline-secondary me-2 position-relative" id="notifyBtn" data-bs-toggle="modal"
           data-bs-target="#notificationsModal">
           <i class="bi bi-bell"></i>
@@ -53,7 +51,6 @@
       </div>
     </div>
   </nav>
-
   <!-- SIDEBAR -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header text-center py-3">
@@ -69,14 +66,12 @@
       <li><a href="expenses.html"><i class="bi bi-cash-stack"></i> Expense Management</a></li>
       <li class="active"><a href="reports.html"><i class="bi bi-cash-stack"></i> Reports & Feedbacks</a></li>
       <li><a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a></li>
-
       <li><a href="notifications.html"><i class="bi bi-bell"></i> Notifications</a></li>
       <li>
         <a href="setting.html"><i class="bi bi-gear"></i> Settings</a>
       </li>
     </ul>
   </div>
-
   <!-- MAIN CONTENT -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
@@ -93,7 +88,6 @@
             placeholder="Search reports by MR name or Doctor name" />
         </div>
       </div>
-
       <!-- REPORTS LIST -->
       <div class="table-responsive">
         <table class="table table-hover" id="reportsTable">
@@ -111,7 +105,6 @@
           </tbody>
         </table>
       </div>
-
       <!-- PAGINATION -->
       <nav aria-label="Reports pagination">
         <ul id="reportsPagination" class="pagination justify-content-center mt-3"></ul>
@@ -215,20 +208,20 @@
   <script src="assets/js/navbar-notifications.js"></script>
   <script>
     // CSS class-based sidebar toggle - most reliable method
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const toggleBtn = document.getElementById('sidebarToggle');
       const sidebar = document.getElementById('sidebar');
       const mainContent = document.getElementById('mainContent');
-      
+
       if (toggleBtn && sidebar && mainContent) {
-        toggleBtn.addEventListener('click', function(e) {
+        toggleBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Toggle CSS classes
           sidebar.classList.toggle('sidebar-hidden');
           mainContent.classList.toggle('main-content-expanded');
-          
+
           // Also set inline styles as backup to ensure no white space
           if (sidebar.classList.contains('sidebar-hidden')) {
             mainContent.style.marginLeft = '0px';
