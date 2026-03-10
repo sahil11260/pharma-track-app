@@ -14,6 +14,9 @@ public class SalesAchievement {
     @Column(name = "mr_id", nullable = false)
     private Long mrId;
 
+    @Column(name = "target_id")
+    private Long targetId;
+
     @Column(name = "mr_name", nullable = false)
     private String mrName;
 
@@ -58,6 +61,14 @@ public class SalesAchievement {
 
     public void setMrId(Long mrId) {
         this.mrId = mrId;
+    }
+
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    public void setTargetId(Long targetId) {
+        this.targetId = targetId;
     }
 
     public String getMrName() {

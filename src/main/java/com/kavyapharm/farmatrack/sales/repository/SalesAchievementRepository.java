@@ -28,4 +28,6 @@ public interface SalesAchievementRepository extends JpaRepository<SalesAchieveme
 
         List<SalesAchievement> findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
                         Long mrId, Long productId, Integer month, Integer year);
+
+        List<SalesAchievement> findByTargetId(Long targetId);
 }

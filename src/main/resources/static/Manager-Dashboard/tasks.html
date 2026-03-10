@@ -391,23 +391,23 @@
   <script src="assets/js/tasks.js?v=20260225"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
-  
+
   <!-- CSS class-based sidebar toggle - most reliable method -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const toggleBtn = document.getElementById('sidebarToggle');
       const sidebar = document.getElementById('sidebar');
       const mainContent = document.getElementById('mainContent');
-      
+
       if (toggleBtn && sidebar && mainContent) {
-        toggleBtn.addEventListener('click', function(e) {
+        toggleBtn.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Toggle CSS classes
           sidebar.classList.toggle('sidebar-hidden');
           mainContent.classList.toggle('main-content-expanded');
-          
+
           // Also set inline styles as backup to ensure no white space
           if (sidebar.classList.contains('sidebar-hidden')) {
             mainContent.style.marginLeft = '0px';

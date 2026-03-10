@@ -85,13 +85,11 @@ public class SalesServiceImpl implements SalesService {
             }
         }
 
-        // Check for existing target for the same MR, product, and period
-        List<SalesTarget> existing = targetRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
-                request.mrId(), request.productId(), request.periodMonth(), request.periodYear());
-
+        // Only update if explicit target ID is provided, otherwise always create new
         SalesTarget target;
-        if (!existing.isEmpty()) {
-            target = existing.get(0);
+        if (request.id() != null) {
+            target = targetRepository.findById(request.id())
+                    .orElseGet(() -> new SalesTarget());
         } else {
             target = new SalesTarget();
         }
@@ -140,10 +138,15 @@ public class SalesServiceImpl implements SalesService {
         List<SalesTarget> targets = isAdmin ? allTargets
                 : allTargets.stream().filter(t -> finalAssignedMrIds.contains(t.getMrId())).toList();
 
-        // Build response list with calculated achievements
-        List<TargetWithAchievementResponse> targetResponses = targets.stream()
-                .map(target -> calculateTargetAchievement(target, month, year))
-                .collect(Collectors.toList());
+        // Build response list with calculated cumulative waterfall achievements
+        List<TargetWithAchievementResponse> targetResponses = new ArrayList<>();
+        Map<String, List<SalesTarget>> groupedTargets = targets.stream()
+                .collect(Collectors.groupingBy(t -> t.getMrId() + "-" + t.getProductId() + "-"
+                        + (t.getCategory() == null ? "Product" : t.getCategory())));
+
+        for (List<SalesTarget> group : groupedTargets.values()) {
+            targetResponses.addAll(calculateWaterfallForGroup(group, month, year));
+        }
 
         // Calculate totals
         int totalTarget = targetResponses.stream().mapToInt(TargetWithAchievementResponse::targetUnits).sum();
@@ -200,64 +203,155 @@ public class SalesServiceImpl implements SalesService {
                 topPerformer, targetResponses, topPerformers);
     }
 
-    private TargetWithAchievementResponse calculateTargetAchievement(SalesTarget target, Integer month, Integer year) {
-        // Find all subordinates recursively to rollup their achievements
-        Set<com.kavyapharm.farmatrack.user.model.User> subordinates = new HashSet<>();
-        // 1. Get the user for this target
-        userRepository.findById(target.getMrId()).ifPresent(user -> {
-            subordinates.add(user);
-            subordinates.addAll(getSubordinatesRecursively(user));
-        });
+    private static class SaleEvent {
+        LocalDate date;
+        int quantity;
+        Long targetId;
 
-        int totalAchieved = 0;
-        for (com.kavyapharm.farmatrack.user.model.User sub : subordinates) {
-            String subName = sub.getName();
-            String subEmail = sub.getEmail();
-            Long subId = sub.getId();
+        SaleEvent(LocalDate date, int quantity) {
+            this.date = date;
+            this.quantity = quantity;
+            this.targetId = null;
+        }
 
-            // Fetch DCRs for this subordinate once per subordinate to avoid repetitive
-            // findAll()
+        SaleEvent(LocalDate date, int quantity, Long targetId) {
+            this.date = date;
+            this.quantity = quantity;
+            this.targetId = targetId;
+        }
+    }
+
+    private List<TargetWithAchievementResponse> calculateWaterfallForGroup(List<SalesTarget> groupTargets,
+            Integer month, Integer year) {
+        if (groupTargets.isEmpty())
+            return Collections.emptyList();
+
+        // 1. Sort targets: startDate ASC, assignedDate ASC, id ASC
+        List<SalesTarget> sortedTargets = new ArrayList<>(groupTargets);
+        sortedTargets
+                .sort(Comparator.comparing(SalesTarget::getStartDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(SalesTarget::getAssignedDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(SalesTarget::getId, Comparator.nullsFirst(Comparator.naturalOrder())));
+
+        // 2. Aggregate Sales (DCR + Manual Achievements)
+        Set<Long> mrIdsInGroup = sortedTargets.stream().map(SalesTarget::getMrId).collect(Collectors.toSet());
+        Set<com.kavyapharm.farmatrack.user.model.User> allPotentialUsers = new HashSet<>();
+        for (Long mrId : mrIdsInGroup) {
+            userRepository.findById(mrId).ifPresent(u -> {
+                allPotentialUsers.add(u);
+                allPotentialUsers.addAll(getSubordinatesRecursively(u));
+            });
+        }
+
+        List<SaleEvent> allSales = new ArrayList<>();
+        SalesTarget rep = sortedTargets.get(0);
+        String category = rep.getCategory();
+        Long productId = rep.getProductId();
+
+        for (com.kavyapharm.farmatrack.user.model.User sub : allPotentialUsers) {
+            // DCR Samples
             List<com.kavyapharm.farmatrack.dcr.model.DcrReport> dcrList = new ArrayList<>();
-            if (subName != null) {
-                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subName));
+            if (sub.getName() != null)
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(sub.getName()));
+            if (sub.getEmail() != null && !sub.getEmail().equalsIgnoreCase(sub.getName())) {
+                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(sub.getEmail()));
             }
-            if (subEmail != null && !subEmail.equalsIgnoreCase(subName)) {
-                dcrList.addAll(dcrRepository.findByMrNameIgnoreCase(subEmail));
-            }
-            // Deduplicate if needed (though findByMrName should be distinct in practice)
-            List<com.kavyapharm.farmatrack.dcr.model.DcrReport> distinctDcrs = dcrList.stream().distinct().toList();
+            dcrList.stream().distinct().forEach(dcr -> {
+                if (dcr.getDateTime() == null || dcr.getDateTime().length() < 10)
+                    return;
+                try {
+                    LocalDate dDate = LocalDate.parse(dcr.getDateTime().substring(0, 10));
+                    if (dDate.getMonthValue() == month && dDate.getYear() == year) {
+                        if ("Visit".equalsIgnoreCase(category)) {
+                            allSales.add(new SaleEvent(dDate, 1));
+                        } else {
+                            int qty = dcr.getSamplesGiven().stream()
+                                    .filter(item -> isProductMatch(rep, item))
+                                    .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
+                                    .sum();
+                            if (qty > 0)
+                                allSales.add(new SaleEvent(dDate, qty));
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            });
 
-            if ("Visit".equalsIgnoreCase(target.getCategory())) {
-                totalAchieved += (int) distinctDcrs.stream()
-                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
-                        .count();
-            } else {
-                // Sum DCR Reported Samples for this subordinate
-                int dcrSum = distinctDcrs.stream()
-                        .filter(dcr -> isWithinTargetRange(dcr.getDateTime(), target))
-                        .flatMap(dcr -> dcr.getSamplesGiven().stream())
-                        .filter(item -> isProductMatch(target, item))
-                        .mapToInt(com.kavyapharm.farmatrack.dcr.model.DcrSampleItem::getQuantity)
-                        .sum();
-
-                // Sum Manual entry achievements for this subordinate
-                int manualSum = achievementRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
-                        subId, target.getProductId(), month, year).stream()
-                        .filter(ach -> isProductMatchForAchievement(target, ach))
-                        .filter(ach -> ach.getAchievementDate() != null
-                                && isDateWithinTargetRange(ach.getAchievementDate(), target))
-                        .mapToInt(SalesAchievement::getAchievedUnits)
-                        .sum();
-
-                totalAchieved += (dcrSum + manualSum);
+            // Manual Achievements
+            if (!"Visit".equalsIgnoreCase(category)) {
+                achievementRepository.findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
+                        sub.getId(), productId, month, year).stream()
+                        .filter(ach -> isProductMatchForAchievement(rep, ach))
+                        .forEach(ach -> {
+                            if (ach.getAchievementDate() != null && ach.getAchievedUnits() != null) {
+                                allSales.add(new SaleEvent(ach.getAchievementDate(), ach.getAchievedUnits(),
+                                        ach.getTargetId()));
+                            }
+                        });
             }
         }
 
-        return TargetWithAchievementResponse.from(
-                target.getId(), target.getMrId(), target.getMrName(), target.getProductName(),
-                target.getCategory(), target.getTargetType().name(), target.getTargetUnits(),
-                totalAchieved, target.getAssignedDate(), target.getStartDate(), target.getEndDate(),
-                target.getPeriodMonth(), target.getPeriodYear());
+        // Sort SaleEvents by date
+        allSales.sort(Comparator.comparing(s -> s.date));
+
+        // 3. Waterfall Distribution
+        Map<Long, Integer> distribution = new HashMap<>();
+        for (SalesTarget t : sortedTargets)
+            distribution.put(t.getId(), 0);
+
+        for (SaleEvent sale : allSales) {
+            int remaining = sale.quantity;
+
+            // 0. Priority: If sale is bound to a specific target
+            if (sale.targetId != null) {
+                if (distribution.containsKey(sale.targetId)) {
+                    distribution.put(sale.targetId, distribution.get(sale.targetId) + remaining);
+                    remaining = 0;
+                }
+            }
+
+            // 1. First pass: Fill targets that have capacity and cover the date
+            if (remaining > 0) {
+                for (SalesTarget t : sortedTargets) {
+                    if (remaining <= 0)
+                        break;
+                    if (isDateWithinTargetRange(sale.date, t)) {
+                        int assigned = distribution.get(t.getId());
+                        int needed = (t.getTargetUnits() != null ? t.getTargetUnits() : 0) - assigned;
+                        if (needed > 0) {
+                            int take = Math.min(remaining, needed);
+                            distribution.put(t.getId(), assigned + take);
+                            remaining -= take;
+                        }
+                    }
+                }
+            }
+
+            // 2. Second pass: Overflow goes to the latest target that covers the date
+            if (remaining > 0) {
+                SalesTarget lastCandidate = null;
+                for (SalesTarget t : sortedTargets) {
+                    if (isDateWithinTargetRange(sale.date, t)) {
+                        lastCandidate = t;
+                    }
+                }
+                if (lastCandidate != null) {
+                    distribution.put(lastCandidate.getId(), distribution.get(lastCandidate.getId()) + remaining);
+                }
+            }
+        }
+
+        // 4. Build responses
+        return sortedTargets.stream()
+                .map(t -> {
+                    int achieved = distribution.get(t.getId());
+                    return TargetWithAchievementResponse.from(
+                            t.getId(), t.getMrId(), t.getMrName(), t.getProductName(),
+                            t.getCategory(), t.getTargetType().name(), t.getTargetUnits(),
+                            achieved, t.getAssignedDate(), t.getStartDate(), t.getEndDate(),
+                            t.getPeriodMonth(), t.getPeriodYear());
+                })
+                .collect(Collectors.toList());
     }
 
     private Set<com.kavyapharm.farmatrack.user.model.User> getSubordinatesRecursively(
@@ -296,19 +390,14 @@ public class SalesServiceImpl implements SalesService {
             return false;
         }
 
-        // For Monthly targets, we typically want to count the whole month's DCRs.
-        // However, we respect explicit boundaries if they are set beyond just
-        // defaulting to today.
-        // If start date is on the 1st of the month, or not set, we allow all.
-        // For now, let's be more lenient and only use boundaries if the target is NOT
-        // monthly or if they are meaningful.
-        if (target.getTargetType() != SalesTarget.TargetType.MONTHLY) {
-            LocalDate start = target.getStartDate() != null ? target.getStartDate() : target.getAssignedDate();
-            if (date.isBefore(start))
-                return false;
-            if (target.getEndDate() != null && date.isAfter(target.getEndDate()))
-                return false;
-        }
+        // Respect explicit boundaries if they are set.
+        // This ensures that new targets don't include previously sold units
+        // if they were assigned later in the month.
+        LocalDate start = target.getStartDate() != null ? target.getStartDate() : target.getAssignedDate();
+        if (date.isBefore(start))
+            return false;
+        if (target.getEndDate() != null && date.isAfter(target.getEndDate()))
+            return false;
 
         return true;
     }
@@ -351,38 +440,50 @@ public class SalesServiceImpl implements SalesService {
 
         List<SalesTarget> allTargets = targetRepository.findAllByPeriod(month, year);
 
-        // If Admin, return all. If anonymous and we're in a global request context,
-        // return all for the dashboard.
+        // Build response list with calculated waterfall achievements
+        List<TargetWithAchievementResponse> targetResponses = new ArrayList<>();
+        List<SalesTarget> filteredTargets;
         if (isAdmin || auth == null || "anonymousUser".equals(auth.getName())) {
-            return allTargets.stream()
-                    .map(target -> calculateTargetAchievement(target, month, year))
-                    .collect(Collectors.toList());
+            filteredTargets = allTargets;
+        } else {
+            List<com.kavyapharm.farmatrack.user.model.User> trackedUsers = new ArrayList<>(userRepository
+                    .findByAssignedManagerIgnoreCase(managerIden));
+            userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
+                trackedUsers.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
+                trackedUsers.add(u);
+            });
+            List<Long> assignedMrIds = trackedUsers.stream().map(com.kavyapharm.farmatrack.user.model.User::getId)
+                    .distinct()
+                    .toList();
+            filteredTargets = allTargets.stream().filter(t -> assignedMrIds.contains(t.getMrId())).toList();
         }
 
-        // Otherwise filter by manager
-        List<com.kavyapharm.farmatrack.user.model.User> trackedUsers = new ArrayList<>(userRepository
-                .findByAssignedManagerIgnoreCase(managerIden));
-        userRepository.findByEmailIgnoreCase(managerIden).ifPresent(u -> {
-            trackedUsers.addAll(userRepository.findByAssignedManagerIgnoreCase(u.getName()));
-            trackedUsers.add(u); // Manager themselves are also included
-        });
-        List<Long> assignedMrIds = trackedUsers.stream().map(com.kavyapharm.farmatrack.user.model.User::getId)
-                .distinct()
-                .toList();
+        Map<String, List<SalesTarget>> grouped = filteredTargets.stream()
+                .collect(Collectors.groupingBy(t -> t.getMrId() + "-" + t.getProductId() + "-"
+                        + (t.getCategory() == null ? "Product" : t.getCategory())));
 
-        return allTargets.stream()
-                .filter(t -> assignedMrIds.contains(t.getMrId()))
-                .map(target -> calculateTargetAchievement(target, month, year))
-                .collect(Collectors.toList());
+        for (List<SalesTarget> group : grouped.values()) {
+            targetResponses.addAll(calculateWaterfallForGroup(group, month, year));
+        }
+
+        return targetResponses;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TargetWithAchievementResponse> getMrTargets(Long mrId, Integer month, Integer year) {
         List<SalesTarget> targets = targetRepository.findByMrIdAndPeriodMonthAndPeriodYear(mrId, month, year);
-        return targets.stream()
-                .map(target -> calculateTargetAchievement(target, month, year))
-                .collect(Collectors.toList());
+
+        List<TargetWithAchievementResponse> targetResponses = new ArrayList<>();
+        Map<String, List<SalesTarget>> grouped = targets.stream()
+                .collect(Collectors.groupingBy(t -> t.getMrId() + "-" + t.getProductId() + "-"
+                        + (t.getCategory() == null ? "Product" : t.getCategory())));
+
+        for (List<SalesTarget> group : grouped.values()) {
+            targetResponses.addAll(calculateWaterfallForGroup(group, month, year));
+        }
+
+        return targetResponses;
     }
 
     @Override
@@ -479,10 +580,8 @@ public class SalesServiceImpl implements SalesService {
             if (desiredManualSum < 0)
                 desiredManualSum = 0; // Can't be negative
 
-            // Update or create manual achievement record
-            List<SalesAchievement> existingList = achievementRepository
-                    .findByMrIdAndProductIdAndPeriodMonthAndPeriodYear(
-                            target.getMrId(), target.getProductId(), target.getPeriodMonth(), target.getPeriodYear());
+            // Update or create target-specific manual achievement record
+            List<SalesAchievement> existingList = achievementRepository.findByTargetId(target.getId());
 
             SalesAchievement achievement;
             if (!existingList.isEmpty()) {
@@ -491,6 +590,7 @@ public class SalesServiceImpl implements SalesService {
             } else {
                 achievement = new SalesAchievement();
                 achievement.setMrId(target.getMrId());
+                achievement.setTargetId(target.getId());
                 achievement.setMrName(target.getMrName());
                 achievement.setProductId(target.getProductId());
                 achievement.setProductName(target.getProductName());
@@ -498,7 +598,7 @@ public class SalesServiceImpl implements SalesService {
                 achievement.setPeriodMonth(target.getPeriodMonth());
                 achievement.setPeriodYear(target.getPeriodYear());
                 achievement.setAchievementDate(LocalDate.now());
-                achievement.setRemarks("Manager Override");
+                achievement.setRemarks("Manager Override (Target " + target.getId() + ")");
             }
             achievementRepository.save(achievement);
         }
