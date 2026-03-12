@@ -35,25 +35,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Robust User Identification ---
     function getMRName() {
-        const userStr = localStorage.getItem("kavya_user");
-        let user = null;
-        try { if (userStr) user = JSON.parse(userStr); } catch (e) { }
-        return (user && user.name) ? user.name : (localStorage.getItem("signup_name") || "");
+        try {
+            const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+            const name = (userObj.name || localStorage.getItem("signup_name") || "").trim();
+            if (name) return name;
+            const email = (userObj.email || localStorage.getItem("signup_email") || "").trim();
+            if (email) return email;
+        } catch (e) { }
+        const fallback = (localStorage.getItem("signup_name") || "").trim();
+        return fallback || "anonymous";
     }
 
     // --- Calculations ---
     function calculateTotalReceived(productId) {
-        return stockReceivedHistory
-            .filter(item => String(item.productId) === String(productId))
-            .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+        const id = String(productId || "").trim();
+        const filtered = stockReceivedHistory.filter(item => String(item.productId || "").trim() === id);
+        return filtered.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
     }
 
     function calculateTotalDistributed(productId) {
+        const id = String(productId || "").trim();
         let distributed = 0;
         submittedDCRs.forEach(dcr => {
             if (dcr && Array.isArray(dcr.samplesGiven)) {
                 dcr.samplesGiven.forEach(s => {
-                    if (s && String(s.productId) === String(productId)) {
+                    if (s && String(s.productId || "").trim() === id) {
                         distributed += (Number(s.quantity) || 0);
                     }
                 });
@@ -80,10 +86,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         productsList.forEach((product, index) => {
-            const received = calculateTotalReceived(product.id);
             const distributed = calculateTotalDistributed(product.id);
-            let remaining = received - distributed;
-            if (remaining < 0) remaining = 0;
+            // Remaining: always from live backend DB (single source of truth)
+            const remaining = Number(product.stock) || 0;
+            // Total Received: sum of all stock-received history with matching productId.
+            // If no specific history entries exist (old null-id legacy records),
+            // compute as remaining + distributed (what we know was used + what's left)
+            const receivedFromHistory = calculateTotalReceived(product.id);
+            const received = receivedFromHistory > 0 ? receivedFromHistory : (remaining + distributed);
 
             const stockStatus = remaining <= 0 ?
                 '<span class="badge bg-danger">Out of Stock</span>' :

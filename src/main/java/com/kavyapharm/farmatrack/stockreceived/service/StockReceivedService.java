@@ -24,12 +24,18 @@ public class StockReceivedService {
     }
 
     public List<StockReceivedEntryResponse> list(String productId, String userName) {
-        // Simple manual filter for now to avoid repo changes if possible,
-        // but it's better to update repo for scalability.
+        if (productId != null && !productId.isBlank() && userName != null && !userName.isBlank()) {
+            return repository.findAllByProductIdIgnoreCaseAndUserNameIgnoreCaseOrderByDateDesc(productId, userName)
+                    .stream().map(StockReceivedService::toResponse).toList();
+        } else if (productId != null && !productId.isBlank()) {
+            return repository.findAllByProductIdIgnoreCaseOrderByDateDesc(productId)
+                    .stream().map(StockReceivedService::toResponse).toList();
+        } else if (userName != null && !userName.isBlank()) {
+            return repository.findAllByUserNameIgnoreCaseOrderByDateDesc(userName)
+                    .stream().map(StockReceivedService::toResponse).toList();
+        }
         return repository.findAll(Sort.by(Sort.Direction.DESC, "date"))
                 .stream()
-                .filter(e -> productId == null || productId.isBlank() || e.getProductId().equals(productId))
-                .filter(e -> userName == null || userName.isBlank() || e.getUserName().equals(userName))
                 .map(StockReceivedService::toResponse)
                 .toList();
     }
@@ -66,7 +72,7 @@ public class StockReceivedService {
     }
 
     public static StockReceivedEntryResponse toResponse(StockReceivedEntry entry) {
-        return new StockReceivedEntryResponse(entry.getId(), entry.getProductId(), entry.getQuantity(), entry.getDate(),
-                entry.getUserName(), entry.getNotes());
+        return new StockReceivedEntryResponse(entry.getInternalId(), entry.getProductId(), entry.getQuantity(),
+                entry.getDate(), entry.getUserName(), entry.getNotes());
     }
 }

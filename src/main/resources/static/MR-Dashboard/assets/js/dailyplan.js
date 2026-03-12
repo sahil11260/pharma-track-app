@@ -411,7 +411,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (task) {
                 modalTaskTarget.textContent = `${task.doctor} (${task.clinic})`;
                 modalTaskIdInput.value = taskId;
-                newStatusSelect.value = task.status;
+                
+                // Restriction: Past due pending task should allow status to only completed
+                if (task.date < todayKey) {
+                    newStatusSelect.innerHTML = `
+                        <option value="Completed">Completed</option>
+                    `;
+                    newStatusSelect.value = "Completed";
+                } else {
+                    // Reset to default options for current/upcoming tasks
+                    newStatusSelect.innerHTML = `
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    `;
+                    newStatusSelect.value = task.status;
+                }
             }
         });
     }

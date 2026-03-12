@@ -13,9 +13,9 @@ public class StockReceivedEntry {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long internalId;
 
-    @Column(nullable = false)
+    @Column(name = "id", nullable = false)
     private String productId;
 
     @Column(nullable = false)
@@ -33,12 +33,12 @@ public class StockReceivedEntry {
     public StockReceivedEntry() {
     }
 
-    public Long getId() {
-        return id;
+    public Long getInternalId() {
+        return internalId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setInternalId(Long internalId) {
+        this.internalId = internalId;
     }
 
     public String getProductId() {

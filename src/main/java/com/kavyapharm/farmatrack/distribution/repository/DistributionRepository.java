@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DistributionRepository extends JpaRepository<Distribution, Long> {
+    java.util.List<Distribution> findAllByUserNameIgnoreCaseOrderByInternalIdDesc(String userName);
 }

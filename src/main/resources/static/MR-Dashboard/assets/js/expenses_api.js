@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function createToastContainer() {
         const container = document.createElement("div");
-        container.className = "toast-container position-fixed top-0 end-0 p-3";
+        container.className = "toast-container position-fixed top-0 start-50 translate-middle-x p-3";
         container.style.zIndex = "9999";
         document.body.appendChild(container);
         return container;
@@ -227,7 +227,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const fileInput = document.getElementById("expAttachmentFile");
 
         const amountError = document.getElementById("expAmountError");
+        const fileError = document.getElementById("expFileError");
         if (amountError) amountError.textContent = "";
+        if (fileError) fileError.textContent = "";
 
         if (!category || !amount || !date) {
             showToast("Please fill all required fields", "error");
@@ -247,6 +249,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (!fileInput.files || fileInput.files.length === 0) {
+            if (fileError) fileError.textContent = "Please upload a proof attachment";
             showToast("Please upload a proof attachment (image or PDF)", "error");
             return false;
         }
@@ -345,7 +348,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const date = document.getElementById("editDate").value;
 
         const amountError = document.getElementById("editAmountError");
+        const fileError = document.getElementById("editFileError");
         if (amountError) amountError.textContent = "";
+        if (fileError) fileError.textContent = "";
 
         if (!category || !amount || !date) {
             showToast("Please fill all required fields", "error");

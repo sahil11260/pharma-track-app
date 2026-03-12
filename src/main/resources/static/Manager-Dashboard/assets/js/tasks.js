@@ -852,13 +852,17 @@ function renderTaskTable(data, page = 1) {
     const statusBadge = getStatusBadge(task.status);
     const priorityBadge = getPriorityBadge(task.priority);
     const isCompleted = normalizeTaskStatus(task.status) === "completed";
+    const isOverdue = normalizeTaskStatus(task.status) === "overdue";
 
     // Find MR name from email for display
     const mr = mrData.find((m) => m.email === task.assignedTo);
     const displayName = mr ? mr.name : (task.assignedTo || "-");
 
+    // Edit is disabled for completed OR overdue tasks
+    const editDisabled = isCompleted || isOverdue;
+    const updateDisabled = isCompleted;
+
     const row = document.createElement("tr");
-    // Removed the Type <td> here (Type column removed from table)
     row.innerHTML = `
           <td><i class="${typeIcon} me-2"></i>${escapeHtml(task.title)}</td>
           <td>${escapeHtml(displayName)}</td>
@@ -868,10 +872,10 @@ function renderTaskTable(data, page = 1) {
         <td>${task.location ? escapeHtml(task.location) : "-"}</td>
         <td>
           <div class="d-flex flex-row flex-nowrap align-items-center justify-content-center">
-            <button aria-label="Edit task" class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${task.id}" ${isCompleted ? "disabled aria-disabled=\"true\"" : ""}>
+            <button aria-label="Edit task" class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${task.id}" ${editDisabled ? "disabled aria-disabled=\"true\" title=\"Cannot edit overdue/completed tasks\"" : ""}>
               <i class="bi bi-pencil"></i>
             </button>
-            <button aria-label="Update status" class="btn btn-outline-success btn-sm btn-update me-1" data-id="${task.id}" ${isCompleted ? "disabled aria-disabled=\"true\"" : ""}>
+            <button aria-label="Update status" class="btn btn-outline-success btn-sm btn-update me-1" data-id="${task.id}" ${updateDisabled ? "disabled aria-disabled=\"true\"" : ""}>
               <i class="bi bi-check-circle"></i>
             </button>
             <button aria-label="Delete task" class="btn btn-outline-danger btn-sm btn-delete" data-id="${task.id}">
@@ -1046,13 +1050,13 @@ function onEditClick(e) {
 function onUpdateClick(e) {
   const id = Number(e.currentTarget.dataset.id);
   const task = tasksData.find((t) => t.id === Number(id));
-  if (task && normalizeTaskStatus(task.status) === "completed") {
+  if (!task) return;
+  const status = normalizeTaskStatus(task.status);
+  if (status === "completed") {
     showToast("Read-only", "Completed tasks cannot be updated.");
     return;
   }
-  // Get current status to pre-select in modal
-  const currentStatus = tasksData.find((t) => t.id === id)?.status;
-  updateTaskStatus(id, currentStatus);
+  updateTaskStatus(id, task.status);
 }
 function onDeleteClick(e) {
   const id = Number(e.currentTarget.dataset.id);
@@ -1072,6 +1076,11 @@ function editTask(taskId) {
 
   if (normalizeTaskStatus(task.status) === "completed") {
     showToast("Read-only", "Completed tasks cannot be edited.");
+    return;
+  }
+
+  if (normalizeTaskStatus(task.status) === "overdue") {
+    showToast("Read-only", "Overdue tasks cannot be edited. Update their status to Completed first.");
     return;
   }
 
@@ -1157,11 +1166,73 @@ function editTask(taskId) {
 function updateTaskStatus(taskId, currentStatus) {
   // open small status modal
   ensureStatusModalExists();
-  document.getElementById("updateStatus_taskId").value = String(taskId);
+  const taskIdInput = document.getElementById("updateStatus_taskId");
+  const select = document.getElementById("updateStatus_select");
+  if (!taskIdInput || !select) return;
+
+  taskIdInput.value = String(taskId);
+  
+  const task = tasksData.find(t => t.id === Number(taskId));
+  if (!task) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = parseDateSafely(task.dueDate);
+  const status = normalizeTaskStatus(task.status);
+
+  // Clear existing options
+  select.innerHTML = "";
+
+  // Define potential options
+  const options = [
+    { value: "pending", text: "Pending" },
+    { value: "in-progress", text: "In Progress" },
+    { value: "completed", text: "Completed" },
+    { value: "overdue", text: "Overdue" }
+  ];
+
+  // Apply filters based on rules
+  const filteredOptions = options.filter(opt => {
+    // 2. Overdue task should allow to change status of task only to completed
+    if (status === "overdue") {
+      return opt.value === "completed" || opt.value === "overdue"; // Keep overdue as it's current
+    }
+
+    if (dueDate) {
+      const dueStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      
+      // 3. Future due date task can not change status as overdue
+      if (dueStart >= today && opt.value === "overdue") {
+        return false;
+      }
+
+      // 4. Past duedate status can not change "In Progress". it should be overdue only and completed
+      if (dueStart < today && opt.value === "in-progress") {
+        return false;
+      }
+      
+      // If it's past due, typically it should be Pending, Overdue or Completed
+      // But rule 4 says it should be overdue only and completed for "past due date status"
+      // Wait, "Past duedate status can not change In Progress... it should be overdue only and completed"
+      if (dueStart < today && opt.value === "pending") {
+          return false;
+      }
+    }
+
+    return true;
+  });
+
+  filteredOptions.forEach(opt => {
+    const el = document.createElement("option");
+    el.value = opt.value;
+    el.textContent = opt.text;
+    select.appendChild(el);
+  });
+
   if (currentStatus) {
-    const sel = document.getElementById("updateStatus_select");
-    if (sel) sel.value = currentStatus;
+    select.value = normalizeTaskStatus(currentStatus);
   }
+
   const modal = new bootstrap.Modal(
     document.getElementById("updateStatusModal")
   );

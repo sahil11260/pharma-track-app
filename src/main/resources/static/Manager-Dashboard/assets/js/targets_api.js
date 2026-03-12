@@ -336,16 +336,25 @@ function wireSetTargets() {
         });
     }
 
-    if (startDateEl && endDateEl) {
-        startDateEl.addEventListener('change', () => {
-            endDateEl.min = startDateEl.value || '';
-            if (endDateEl.value && startDateEl.value && endDateEl.value < startDateEl.value) {
-                endDateEl.value = '';
-            }
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
+    if (startDateEl) {
+        startDateEl.min = today;
+        if (!startDateEl.value) startDateEl.value = today;
+        
+        startDateEl.addEventListener('change', () => {
+            if (startDateEl.value && startDateEl.value !== today) {
+                showToast('Start date must be today only', 'error');
+                startDateEl.value = today;
+            }
+            endDateEl.min = startDateEl.value || today;
             validateDateRangeOrReport();
         });
+    }
 
+    if (endDateEl) {
+        endDateEl.min = today;
         endDateEl.addEventListener('change', () => {
             validateDateRangeOrReport();
         });
@@ -359,8 +368,22 @@ function wireSetTargets() {
             const category = categoryEl.value;
 
             if (form.checkValidity() && targetMrEl.value) {
+                const now = new Date();
+                const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
                 const startDate = startDateEl ? (startDateEl.value || '') : '';
                 const endDate = endDateEl ? (endDateEl.value || '') : '';
+
+                if (startDate !== today) {
+                    showToast('Start date must be today only', 'error');
+                    if (startDateEl) startDateEl.value = today;
+                    return;
+                }
+
+                if (endDate && endDate < today) {
+                    showToast('End date cannot be in the past', 'error');
+                    return;
+                }
 
                 if (!validateDateRangeOrReport()) {
                     showToast('End Date cannot be earlier than Start Date', 'error');

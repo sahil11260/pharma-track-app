@@ -81,8 +81,9 @@
         <div class="dropdown me-2">
           <button class="btn btn-outline-secondary position-relative" data-bs-toggle="dropdown">
             <i class="bi bi-bell"></i>
-            <span
-              class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+            <span id="notificationBadge"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light"
+              style="display: none; font-size: 0.65rem;">0</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width:280px;" id="notificationsList">
             <li class="dropdown-header fw-bold">Recent Alerts</li>

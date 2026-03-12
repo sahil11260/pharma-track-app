@@ -25,6 +25,13 @@
       font-size: 0.8rem;
       margin-top: 4px;
     }
+
+    .toast-container {
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+      top: 20px !important;
+    }
   </style>
 </head>
 
@@ -135,12 +142,15 @@
           </table>
         </div>
       </div>
-      <div class="card-footer d-flex justify-content-between align-items-center">
-        <small id="paginationInfo" class="text-muted">Showing 0 to 0 of 0 entries</small>
-        <nav>
-          <ul class="pagination pagination-sm mb-0" id="expensePagination">
-          </ul>
-        </nav>
+      <div class="card-footer py-3">
+        <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3">
+          <small id="paginationInfo" class="text-muted order-2 order-md-1">Showing 0 to 0 of 0 entries</small>
+          <nav class="order-1 order-md-2">
+            <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap" id="expensePagination">
+              <!-- Pagination links will be injected here -->
+            </ul>
+          </nav>
+        </div>
       </div>
     </div>
   </div>
@@ -183,6 +193,7 @@
             <div class="col-md-6">
               <label class="form-label">Attachment (Proof)</label>
               <input type="file" class="form-control" id="expAttachmentFile" accept="image/*,application/pdf" />
+              <div id="expFileError" class="text-danger error-msg"></div>
             </div>
 
             <div class="col-12">
@@ -240,6 +251,7 @@
             <div class="col-md-6">
               <label class="form-label">Attachment (New Proof)</label>
               <input type="file" class="form-control" id="editAttachmentFile" accept="image/*,application/pdf" />
+              <div id="editFileError" class="text-danger error-msg"></div>
             </div>
 
             <div class="col-12">

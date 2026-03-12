@@ -467,6 +467,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const visitDateError = document.getElementById('visitDateError');
         if (visitDateInput) visitDateInput.classList.remove('is-invalid');
         if (visitDateError) visitDateError.classList.add('d-none');
+
+        const visitTitleInput = document.getElementById('visitTitle');
+        const visitTitleError = document.getElementById('visitTitleError');
+        if (visitTitleInput) visitTitleInput.classList.remove('is-invalid');
+        if (visitTitleError) visitTitleError.classList.add('d-none');
     }
 
     // Function to Load a DCR for Editing
@@ -498,10 +503,15 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSamplesTable();
 
         // Clear validation errors
-        const visitDateInput = document.getElementById('visitDate');
-        const visitDateError = document.getElementById('visitDateError');
-        if (visitDateInput) visitDateInput.classList.remove('is-invalid');
-        if (visitDateError) visitDateError.classList.add('d-none');
+        const vDateInput = document.getElementById('visitDate');
+        const vDateError = document.getElementById('visitDateError');
+        if (vDateInput) vDateInput.classList.remove('is-invalid');
+        if (vDateError) vDateError.classList.add('d-none');
+
+        const vTitleInput = document.getElementById('visitTitle');
+        const vTitleError = document.getElementById('visitTitleError');
+        if (vTitleInput) vTitleInput.classList.remove('is-invalid');
+        if (vTitleError) vTitleError.classList.add('d-none');
     }
 
     function updateVisitDateMax() {
@@ -594,6 +604,18 @@ document.addEventListener("DOMContentLoaded", () => {
             clinicNameInput.value = clinic;
         }
     });
+
+    const visitTitleInput = document.getElementById('visitTitle');
+    if (visitTitleInput) {
+        visitTitleInput.addEventListener('input', () => {
+            const regex = /^[A-Za-z\s]+$/;
+            const visitTitleError = document.getElementById('visitTitleError');
+            if (regex.test(visitTitleInput.value) || visitTitleInput.value === "") {
+                if (visitTitleError) visitTitleError.classList.add('d-none');
+                visitTitleInput.classList.remove('is-invalid');
+            }
+        });
+    }
 
     const visitDateInput = document.getElementById('visitDate');
     if (visitDateInput) {
@@ -711,6 +733,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- FORM SUBMISSION (Add/Edit Logic) ---
     dcrForm.addEventListener('submit', (event) => {
         event.preventDefault();
+
+        // 0. Validate Visit Title (Letters and spaces only)
+        const visitTitleInput = document.getElementById('visitTitle');
+        const visitTitleError = document.getElementById('visitTitleError');
+        const visitTitleValue = visitTitleInput.value.trim();
+        const letterRegex = /^[A-Za-z\s]+$/;
+
+        if (!letterRegex.test(visitTitleValue)) {
+            if (visitTitleError) visitTitleError.classList.remove('d-none');
+            visitTitleInput.classList.add('is-invalid');
+            visitTitleInput.focus();
+            return;
+        } else {
+            if (visitTitleError) visitTitleError.classList.add('d-none');
+            visitTitleInput.classList.remove('is-invalid');
+        }
 
         // 1. Validate Visit Date (Must not be in the future)
         const visitDateInput = document.getElementById('visitDate');

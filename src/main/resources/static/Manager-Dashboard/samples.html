@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -69,7 +69,7 @@
         <a href="mrs.html"><i class="bi bi-person-badge"></i> My MRs</a>
       </li>
       <li>
-        <a href="tasks.html"><i class="bi bi-people"></i> Task / Assignment</a>
+        <a href="tasks.html"><i class="bi bi-clipboard-check"></i> Task / Assignment</a>
       </li>
       <li>
         <a href="doctors.html"><i class="bi bi-hospital"></i> Doctors</a>
@@ -78,13 +78,16 @@
         <a href="samples.html"><i class="bi bi-box-seam"></i> Product Samples</a>
       </li>
       <li>
-        <a href="expenses.html"><i class="bi bi-cash-stack"></i> Expense Management</a>
+        <a href="expenses.html"><i class="bi bi-wallet2"></i> Expense Management</a>
       </li>
       <li>
-        <a href="reports.html"><i class="bi bi-cash-stack"></i> Reports & Feedbacks</a>
+        <a href="reports.html"><i class="bi bi-journal-text"></i> Reports & Feedbacks</a>
       </li>
       <li>
         <a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a>
+      </li>
+      <li>
+        <a href="tracking.html"><i class="bi bi-geo-alt"></i> MR Live Tracking</a>
       </li>
 
       <li>
@@ -220,7 +223,7 @@
               <div class="col-md-4">
                 <div class="mb-3">
                   <label class="form-label">Unit Price (&#8377;)</label>
-                  <input type="number" class="form-control" id="unitPrice" step="0.01" min="0" required />
+                  <input type="number" class="form-control" id="unitPrice" step="0.01" min="1.01" required />
                 </div>
               </div>
               <div class="col-md-4">
@@ -412,10 +415,25 @@
       // 1. Set min date for expiry date input
       const expiryDateInput = document.getElementById('expiryDate');
       if (expiryDateInput) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        expiryDateInput.setAttribute('min', tomorrowStr);
+        const minDate = new Date();
+        minDate.setMonth(minDate.getMonth() + 1);
+        const minDateStr = minDate.toISOString().split('T')[0];
+        expiryDateInput.setAttribute('min', minDateStr);
+
+        expiryDateInput.addEventListener('change', function() {
+          if (this.value) {
+            const selected = new Date(this.value);
+            const today = new Date();
+            const minBoundary = new Date(today);
+            minBoundary.setMonth(minBoundary.getMonth() + 1);
+            minBoundary.setHours(0, 0, 0, 0);
+
+            if (selected < minBoundary) {
+              alert("Expiry date must be at least one month in the future from today.");
+              this.value = minDateStr; // Reset to min valid date
+            }
+          }
+        });
       }
 
       // 2. CSS class-based sidebar toggle - most reliable method

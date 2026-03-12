@@ -54,7 +54,7 @@ public class SalesServiceImpl implements SalesService {
 
                 // 1. DEDUCT from Manager
                 com.kavyapharm.farmatrack.mrstock.model.MrStockItem managerStock = mrStockRepository
-                        .findByIdAndUserNameIgnoreCase(productId, managerIdentifier)
+                        .findByProductIdAndUserNameIgnoreCase(productId, managerIdentifier)
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "Manager stock item not found for product " + productId));
 
@@ -70,10 +70,10 @@ public class SalesServiceImpl implements SalesService {
 
                 // 2. ADD to MR
                 com.kavyapharm.farmatrack.mrstock.model.MrStockItem mrStock = mrStockRepository
-                        .findByIdAndUserNameIgnoreCase(productId, request.mrName())
+                        .findByProductIdAndUserNameIgnoreCase(productId, request.mrName())
                         .orElseGet(() -> {
                             com.kavyapharm.farmatrack.mrstock.model.MrStockItem newItem = new com.kavyapharm.farmatrack.mrstock.model.MrStockItem();
-                            newItem.setId(productId);
+                            newItem.setProductId(productId);
                             newItem.setUserName(request.mrName());
                             newItem.setName(managerStock.getName());
                             newItem.setStock(0);

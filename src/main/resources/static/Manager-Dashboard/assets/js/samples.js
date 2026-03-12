@@ -6,6 +6,7 @@ let productsData;
 let recentActivities;
 let alertsData;
 let pendingDistributeProductName = null;
+let pendingDistributeProductId = null;
 
 // --- Persistence Functions ---
 
@@ -146,7 +147,7 @@ async function refreshSamplesFromApiOrFallback() {
     const metaByProductId = loadSampleMetaByProductId();
 
     samplesData = stockItems.map((it, idx) => {
-      const productId = String(it.id);
+      const productId = String(it.id || "").trim(); // Normalize ID
       const prev = localByProductId.get(productId);
       const remaining = Number(it.stock) || 0;
       const meta = metaByProductId[productId] || {};
@@ -157,7 +158,7 @@ async function refreshSamplesFromApiOrFallback() {
         productId: productId,
         productName: it.name,
         batchNumber: meta.batchNumber || (prev ? prev.batchNumber : productId),
-        totalStock: remaining,
+        totalStock: remaining, // Will be updated by applyDistributionsToSamples
         distributed: 0,
         remaining: remaining,
         unitPrice: !isNaN(metaUnitPrice) ? metaUnitPrice : (prev ? prev.unitPrice : 0),
@@ -198,6 +199,7 @@ async function refreshDistributionsFromApiOrFallback() {
       .map((d) => ({
         id: d.id,
         date: d.date,
+        productId: String(d.productId || d.product || "").trim(), // Use string ID or fallback to name for older records
         product: d.product,
         mr: d.mr,
         quantity: d.quantity,
@@ -222,29 +224,30 @@ function applyDistributionsToSamples() {
   const byProduct = new Map();
 
   (Array.isArray(distributionHistory) ? distributionHistory : []).forEach((d) => {
-    const productName = String(d.product || "");
-    if (!productName) return;
+    const pid = String(d.productId || "").trim().toLowerCase(); 
+    if (!pid) return;
     const qty = Number(d.quantity) || 0;
-    const mr = String(d.mr || "");
+    const mrKey = String(d.mr || "").trim().toLowerCase(); 
 
-    if (!byProduct.has(productName)) {
-      byProduct.set(productName, { distributed: 0, mrStocks: {} });
+    if (!byProduct.has(pid)) {
+      byProduct.set(pid, { distributed: 0, mrStocks: {} });
     }
-    const agg = byProduct.get(productName);
+    const agg = byProduct.get(pid);
     agg.distributed += qty;
-    if (mr) {
-      agg.mrStocks[mr] = (Number(agg.mrStocks[mr]) || 0) + qty;
+    if (mrKey) {
+      agg.mrStocks[mrKey] = (Number(agg.mrStocks[mrKey]) || 0) + qty;
     }
   });
 
   samplesData.forEach((s) => {
-    const agg = byProduct.get(String(s.productName || ""));
+    const pid = String(s.productId || s.id || "").trim().toLowerCase();
+    const agg = byProduct.get(pid);
     const distributed = agg ? Number(agg.distributed) || 0 : 0;
     s.distributed = distributed;
     s.mrStocks = agg ? (agg.mrStocks || {}) : {};
-    const remaining = Number(s.remaining) || 0;
-    // Total stock should reflect CURRENT stock (remaining), not historical (remaining + distributed)
-    s.totalStock = remaining;
+    const remainingInStock = Number(s.remaining) || 0;
+    // Total Stock = CURRENT (Remaining) + DISTRIBUTED (Historical)
+    s.totalStock = remainingInStock + distributed;
   });
 
   saveData("samplesData", samplesData);
@@ -453,7 +456,7 @@ document.addEventListener("DOMContentLoaded", () => {
     filterProduct.innerHTML = '<option value="">All Products</option>'; // Reset and add 'All' option
     productsData.forEach((product) => {
       const option = document.createElement("option");
-      option.value = product.name;
+      option.value = String(product.id);
       option.textContent = product.name;
       filterProduct.appendChild(option);
     });
@@ -473,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
     distributeProduct.innerHTML = '<option value="">Select Product</option>'; // Reset and add default option
     productsData.forEach((product) => {
       const option = document.createElement("option");
-      option.value = product.name;
+      option.value = String(product.id);
       option.textContent = product.name;
       distributeProduct.appendChild(option);
     });
@@ -509,11 +512,17 @@ document.addEventListener("DOMContentLoaded", () => {
       await refreshMrsFromApiOrFallback();
       populateDropdowns();
 
-      if (pendingDistributeProductName) {
-        const distributeProductSelect = document.getElementById("distributeProduct");
-        if (distributeProductSelect) {
-          distributeProductSelect.value = pendingDistributeProductName;
+      const distributeProductSelect = document.getElementById("distributeProduct");
+      if (distributeProductSelect && pendingDistributeProductId) {
+        // Try exact value or option's option matching text
+        const foundOption = Array.from(distributeProductSelect.options).find(o => 
+            String(o.value) === String(pendingDistributeProductId) || 
+            o.textContent === pendingDistributeProductName
+        );
+        if (foundOption) {
+            distributeProductSelect.value = foundOption.value;
         }
+        pendingDistributeProductId = null;
         pendingDistributeProductName = null;
       }
     });
@@ -557,7 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   <button class="btn btn-outline-info btn-sm me-1" onclick="viewMRStocks()">
                     <i class="bi bi-eye"></i>
                   </button>
-                  <button class="btn btn-outline-primary btn-sm" type="button" data-sample-action="distribute" data-sample-id="${String(sample.id).replace(/"/g, '&quot;')}">
+                  <button class="btn btn-outline-primary btn-sm" type="button" data-sample-action="distribute" data-sample-id="${String(sample.productId || sample.id).replace(/"/g, '&quot;')}">
                     <i class="bi bi-truck"></i>
                   </button>
                 </td>
@@ -702,13 +711,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (filterProduct.value) {
       filteredData = filteredData.filter(
-        (sample) => sample.productName === filterProduct.value
+        (sample) => String(sample.productId || sample.id) === String(filterProduct.value)
       );
     }
 
     if (filterMR.value) {
+      const mrKey = String(filterMR.value).trim().toLowerCase();
       filteredData = filteredData.filter(
-        (sample) => sample.mrStocks[filterMR.value] !== undefined
+        (sample) => sample.mrStocks[mrKey] !== undefined
       );
     }
 
@@ -754,9 +764,33 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const unitPriceEl = document.getElementById("unitPrice");
       const unitPriceValue = unitPriceEl ? parseFloat(unitPriceEl.value) : NaN;
-      const batchNumberValue = "";
+
+      // 1. Validation: Unit price must be greater than 1
+      if (isNaN(unitPriceValue) || unitPriceValue <= 1) {
+        alert("Unit Price must be greater than 1.");
+        if (unitPriceEl) unitPriceEl.focus();
+        return;
+      }
+
       const expiryDateEl = document.getElementById("expiryDate");
       const expiryDateValue = expiryDateEl ? String(expiryDateEl.value || "").trim() : "";
+
+      // 2. Validation: Expiry date must be at least one month in the future
+      if (expiryDateValue) {
+        const selectedDate = new Date(expiryDateValue);
+        const today = new Date();
+        const minDate = new Date(today);
+        minDate.setMonth(minDate.getMonth() + 1);
+        minDate.setHours(0, 0, 0, 0); // Reset time for date-only comparison
+
+        if (selectedDate < minDate) {
+          alert("Expiry date must be at least one month in the future from today.");
+          if (expiryDateEl) expiryDateEl.focus();
+          return;
+        }
+      }
+
+      const batchNumberValue = "";
       const descEl = document.getElementById("productDescription");
       const descValue = descEl ? String(descEl.value || "").trim() : "";
       const productSelect = document.getElementById("productName");
@@ -904,7 +938,7 @@ document.addEventListener("DOMContentLoaded", () => {
   distributeBtn.addEventListener("click", () => {
     const form = document.getElementById("distributeSampleForm");
     if (form.checkValidity()) {
-      const productName = document.getElementById("distributeProduct").value;
+      const productId = document.getElementById("distributeProduct").value;
       const mrName = document.getElementById("distributeMR").value;
       const quantity = parseInt(
         document.getElementById("distributeQuantity").value
@@ -913,63 +947,42 @@ document.addEventListener("DOMContentLoaded", () => {
       const notes = document.getElementById("distributionNotes").value;
 
       // Find the sample and update stock
-      const sample = samplesData.find((s) => s.productName === productName);
+      const targetId = String(productId || "");
+      if (!targetId) {
+        alert("Please select a valid product for distribution.");
+        return;
+      }
+      const sample = samplesData.find((s) => String(s.productId || s.id) === targetId);
+      const productName = sample ? sample.productName : "Unknown";
       if (sample && sample.remaining >= quantity) {
         (async function () {
           if (samplesApiMode) {
             try {
               const currentUserName = getCurrentUserIdentifier();
-              const stockItem = await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`);
-              const currentStock = Number(stockItem.stock) || 0;
-              const nextStock = currentStock - quantity;
-              if (nextStock < 0) {
-                throw new Error("Insufficient stock");
-              }
-
-              await apiJson(`${MR_STOCK_API_BASE}/${sample.productId}?userName=${encodeURIComponent(currentUserName)}`, {
-                method: "PUT",
-                body: JSON.stringify({
-                  name: stockItem.name,
-                  stock: nextStock,
-                }),
-              });
-
-              // SYNC with MR Stock
-              // Call stock-received API to increment the "field stock" for the receiving MR
-              try {
-                await apiJson(`${API_BASE}/api/stock-received`, {
-                  method: "POST",
-                  body: JSON.stringify({
-                    productId: String(sample.productId),
-                    quantity: Number(quantity),
-                    date: new Date().toISOString(),
-                    userName: mrName,
-                    notes: `Allocated to ${mrName} by Manager ${currentUserName}`
-                  })
-                });
-                console.log("Successfully synced with MR stock");
-              } catch (err) {
-                console.warn("MR stock sync failed", err);
-              }
-
-              // Save distribution record to backend
+              // Let the backend handle atomic creation of distribution, 
+              // manager stock deduction, and MR stock increment via stock-received.
               await apiJson(`${API_BASE}/api/distributions`, {
                 method: "POST",
                 body: JSON.stringify({
+                  productId: String(sample.productId || sample.id),
                   product: productName,
                   mr: mrName,
                   quantity: quantity,
                   recipient: recipientName,
+                  userName: currentUserName,
                   notes: notes,
-                  userName: currentUserName
                 }),
               });
 
-              // Re-fetch from backend so state is permanent and consistent after refresh.
-              await refreshSamplesFromApiOrFallback();
-              await refreshDistributionsFromApiOrFallback();
+              // Save locally even if next fetch fails, for immediate UI responsiveness
+              sample.distributed += quantity;
+              sample.remaining -= quantity;
+              sample.totalStock = sample.remaining + sample.distributed;
 
-              populateDropdowns();
+              // Force complete metadata and history refresh with correct sequence
+              await refreshDistributionsFromApiOrFallback();
+              await refreshSamplesFromApiOrFallback();
+
               renderSampleTable(samplesData);
               renderSummaryCards(samplesData);
               renderDistributionHistory(distributionHistory);
@@ -981,56 +994,16 @@ document.addEventListener("DOMContentLoaded", () => {
               form.reset();
               return;
             } catch (e) {
-              console.warn("Distribute API failed. Falling back to localStorage.", e);
-              samplesApiMode = false;
-              alert("Backend distribution save failed, so refresh ke baad old data aa sakta hai. Please login / restart backend and try again.\n\nError: " + (e && e.message ? e.message : e));
+              console.warn("Distribute API failed.", e);
+              alert("Distribution failed: " + (e && e.message ? e.message : e));
+              return;
             }
           }
 
+          // Fallback logic for offline mode (if needed)
           if (!samplesApiMode) {
             sample.distributed += quantity;
             sample.remaining -= quantity;
-            sample.totalStock = sample.remaining;
-          }
-
-          // Update MR stock
-          if (!sample.mrStocks[mrName]) {
-            sample.mrStocks[mrName] = 0;
-          }
-          sample.mrStocks[mrName] += quantity;
-
-          // Add to distribution history
-          const newDistribution = {
-            id: distributionHistory.length + 1,
-            date: new Date().toISOString().split("T")[0],
-            product: productName,
-            mr: mrName,
-            quantity: quantity,
-            recipient: recipientName,
-            status: "completed",
-          };
-          distributionHistory.unshift(newDistribution);
-
-          // Save updated data to localStorage
-          saveData("samplesData", samplesData);
-          saveData("distributionHistory", distributionHistory);
-
-          renderSampleTable(samplesData);
-          renderSummaryCards(samplesData);
-          renderDistributionHistory(distributionHistory);
-
-          // Close modal and reset form
-          const modal = bootstrap.Modal.getInstance(
-            document.getElementById("distributeSampleModal")
-          );
-          modal.hide();
-          form.reset();
-
-          if (samplesApiMode) {
-            await refreshSamplesFromApiOrFallback();
-            await refreshDistributionsFromApiOrFallback();
-            populateDropdowns();
-            renderSampleTable(samplesData);
             renderSummaryCards(samplesData);
             renderDistributionHistory(distributionHistory);
           }
@@ -1149,10 +1122,11 @@ function viewMRStocks() {
 
 function distributeSample(sampleId) {
   // Find the sample to pre-select the product
-  const sample = samplesData.find((s) => String(s.id) === String(sampleId));
+  const sample = samplesData.find((s) => String(s.productId || s.id) === String(sampleId));
   if (sample) {
     // Selection must happen AFTER the modal refreshes dropdowns from backend.
     pendingDistributeProductName = sample.productName;
+    pendingDistributeProductId = String(sample.productId || sample.id);
 
     const modal = new bootstrap.Modal(
       document.getElementById("distributeSampleModal")
