@@ -337,7 +337,7 @@
             ${isPending ? `<button class="btn btn-outline-success btn-sm btn-approve me-1" data-id="${exp.id}" title="Approve"><i class="bi bi-check-lg"></i></button>` : `<button class="btn btn-outline-success btn-sm me-1 disabled-btn" disabled><i class="bi bi-check-lg"></i></button>`}
             <button class="btn btn-outline-primary btn-sm btn-edit me-1" data-id="${exp.id}" title="Edit"><i class="bi bi-pencil"></i></button>
             ${isApproved ? `<button class="btn btn-outline-danger btn-sm me-1 disabled-btn" disabled title="Cannot reject approved"><i class="bi bi-x-lg"></i></button>` : `<button class="btn btn-outline-danger btn-sm btn-reject me-1" data-id="${exp.id}" title="Reject"><i class="bi bi-x-lg"></i></button>`}
-            <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-danger btn-sm btn-delete" data-id="${exp.id}" title="Delete"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
       `;

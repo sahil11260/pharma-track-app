@@ -177,7 +177,10 @@
               <div class="col-md-6 mb-3">
                 <label for="visitTitle" class="form-label fw-bold">Visit Title (Task Reference) <span
                     class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="visitTitle" required />
+                <input type="text" class="form-control" id="visitTitle" pattern="[A-Za-z\s]+"
+                  title="Visit Title should only contain letters and spaces." required />
+                <div id="visitTitleError" class="text-danger small mt-1 d-none">Visit Title should only contain letters
+                  and spaces.</div>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="visitType" class="form-label fw-bold">Visit Type <span class="text-danger">*</span></label>

@@ -39,7 +39,7 @@ public class DebugDataRunner implements CommandLineRunner {
 
         System.out.println("--- DEBUG MR STOCK DATA ---");
         mrStockRepository.findAll().forEach(s -> {
-            System.out.println("Stock Item ID: [" + s.getId() + "], Name: " + s.getName() + ", MR: [" + s.getUserName()
+            System.out.println("Stock Item ID: [" + s.getProductId() + "], Name: " + s.getName() + ", MR: [" + s.getUserName()
                     + "], Qty: " + s.getStock());
         });
         System.out.println("--- END DEBUG DATA ---");

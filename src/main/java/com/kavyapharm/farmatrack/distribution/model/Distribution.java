@@ -9,10 +9,13 @@ import java.time.LocalDate;
 public class Distribution {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long internalId;
 
     @Column(nullable = false)
     private String product;
+
+    @Column(name = "id")
+    private String productId;
 
     @Column(nullable = false)
     private String mr;
@@ -35,12 +38,12 @@ public class Distribution {
     private String userName; // Manager who made the distribution
 
     // Getters & setters
-    public Long getId() {
-        return id;
+    public Long getInternalId() {
+        return internalId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setInternalId(Long internalId) {
+        this.internalId = internalId;
     }
 
     public String getProduct() {
@@ -105,5 +108,13 @@ public class Distribution {
 
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public void setProductId(String productId) {
+        this.productId = productId;
     }
 }

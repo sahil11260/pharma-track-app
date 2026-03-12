@@ -521,9 +521,17 @@ function editDoctor(doctorId) {
         return;
       }
 
-      const phone = document.getElementById("doctorPhone").value;
-      if (phone && phone.length !== 10) {
+      const phonetVal = document.getElementById("doctorPhone").value;
+      if (phonetVal && phonetVal.length !== 10) {
         alert("Phone number must be exactly 10 digits.");
+        return;
+      }
+
+      const clinicNameVal = document.getElementById("clinicName").value.trim();
+      const hasLetter = /[a-zA-Z]/.test(clinicNameVal);
+      if (!hasLetter) {
+        alert("Clinic/Hospital name cannot be only numeric or only special characters. It must contain at least one letter.");
+        document.getElementById("clinicName").focus();
         return;
       }
       doctor.name = document.getElementById("doctorName").value;
@@ -678,6 +686,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (email && !emailRegex.test(email)) {
           alert("Please enter a valid email address.");
+          return;
+        }
+
+        const clinicNameVal = document.getElementById("clinicName").value.trim();
+        const hasLetter = /[a-zA-Z]/.test(clinicNameVal);
+        if (!hasLetter) {
+          alert("Clinic/Hospital name cannot be only numeric or only special characters. It must contain at least one letter.");
+          document.getElementById("clinicName").focus();
           return;
         }
 

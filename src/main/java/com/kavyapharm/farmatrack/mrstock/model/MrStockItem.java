@@ -10,8 +10,8 @@ public class MrStockItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long internalId;
 
-    @Column(length = 20, nullable = false)
-    private String id; // Product ID (e.g., P001 or "1")
+    @Column(name = "id", length = 20, nullable = false)
+    private String productId; // Product ID (e.g., P001 or "1")
 
     @Column(nullable = false)
     private String name;
@@ -33,12 +33,12 @@ public class MrStockItem {
         this.internalId = internalId;
     }
 
-    public String getId() {
-        return id;
+    public String getProductId() {
+        return productId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setProductId(String productId) {
+        this.productId = productId;
     }
 
     public String getName() {

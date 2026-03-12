@@ -4,14 +4,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="/assets/js/auth-check.js"></script>
-  <link rel="icon" type="image/png" href="assets/images/fevicon-icon.png" />
-  <title>KavyaPharm Manager - Reports & Feedbacks</title>
+  <script src="../assets/js/auth-check.js"></script>
+  <title>Manager Dashboard | MR Live Tracking</title>
 
   <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <script src="../config.js"></script>
+  <link href="assets/css/tracking.css" rel="stylesheet" />
   <link href="assets/css/style.css" rel="stylesheet" />
+  
+  <style>
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 0 0 12px 12px;
+        z-index: 1;
+    }
+    .map-card {
+        position: relative;
+    }
+    .map-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: white;
+        padding: 5px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .mr-status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    .status-online { background-color: #28a745; }
+    .status-offline { background-color: #6c757d; }
+  </style>
 </head>
 
 <body>
@@ -21,6 +57,7 @@
       <button class="btn btn-outline-secondary me-3" id="sidebarToggle">
         <i class="bi bi-list"></i>
       </button>
+
       <div class="d-flex ms-auto">
         <button class="btn btn-outline-secondary me-2 position-relative" id="notifyBtn" data-bs-toggle="modal"
           data-bs-target="#notificationsModal">
@@ -51,6 +88,7 @@
       </div>
     </div>
   </nav>
+
   <!-- SIDEBAR -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header text-center py-3">
@@ -61,97 +99,68 @@
       <li><a href="index.html"><i class="bi bi-house-door"></i> Dashboard</a></li>
       <li><a href="mrs.html"><i class="bi bi-person-badge"></i> My MRs</a></li>
       <li><a href="tasks.html"><i class="bi bi-clipboard-check"></i> Task / Assignment</a></li>
-      <li><a href="doctors.html"><i class="bi bi-hospital"></i> Doctors </a></li>
+      <li><a href="doctors.html"><i class="bi bi-hospital"></i> Doctors</a></li>
       <li><a href="samples.html"><i class="bi bi-box-seam"></i> Product Samples</a></li>
       <li><a href="expenses.html"><i class="bi bi-wallet2"></i> Expense Management</a></li>
-      <li class="active"><a href="reports.html"><i class="bi bi-journal-text"></i> Reports & Feedbacks</a></li>
+      <li><a href="reports.html"><i class="bi bi-journal-text"></i> Reports & Feedbacks</a></li>
       <li><a href="targets.html"><i class="bi bi-graph-up"></i> Sales & Target Tracking</a></li>
-      <li><a href="tracking.html"><i class="bi bi-geo-alt"></i> MR Live Tracking</a></li>
+      <li class="active"><a href="tracking.html"><i class="bi bi-geo-alt"></i> MR Live Tracking</a></li>
       <li><a href="notifications.html"><i class="bi bi-bell"></i> Notifications</a></li>
-      <li>
-        <a href="setting.html"><i class="bi bi-gear"></i> Settings</a>
-      </li>
+      <li><a href="setting.html"><i class="bi bi-gear"></i> Settings</a></li>
     </ul>
   </div>
+
   <!-- MAIN CONTENT -->
   <div class="main-content" id="mainContent">
     <div class="container-fluid mt-5 pt-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold mb-0">
-          <i class="bi bi-file-earmark-bar-graph"></i> Reports & Feedbacks
+          <i class="bi bi-geo-alt"></i> MR Live Tracking
         </h3>
       </div>
 
-      <!-- SEARCH -->
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <input type="text" class="form-control" id="searchReport"
-            placeholder="Search reports by MR name or Doctor name" />
+      <!-- FILTER SECTION -->
+      <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Select MR</label>
+                    <select class="form-select" id="mrSelector">
+                        <option value="all">All MRs</option>
+                        <!-- Dynamic MRs will be loaded here -->
+                    </select>
+                </div>
+                <div class="col-md-8 text-end pt-4">
+                    <span class="badge bg-light text-dark border me-2">
+                        <span class="mr-status-indicator status-online"></span> Online MRs: <span id="onlineCount">0</span>
+                    </span>
+                    <span class="badge bg-light text-dark border">
+                        <span class="mr-status-indicator status-offline"></span> Offline MRs: <span id="offlineCount">0</span>
+                    </span>
+                </div>
+            </div>
         </div>
       </div>
-      <!-- REPORTS LIST -->
-      <div class="table-responsive">
-        <table class="table table-hover" id="reportsTable">
-          <thead class="table-light">
-            <tr>
-              <th>Title</th>
-              <th>MR Name</th>
-              <th>Type</th>
-              <th>Doctor</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="reportsList">
-            <!-- Table content will be injected by JS -->
-          </tbody>
-        </table>
-      </div>
-      <!-- PAGINATION -->
-      <nav aria-label="Reports pagination">
-        <ul id="reportsPagination" class="pagination justify-content-center mt-3"></ul>
-      </nav>
-    </div>
-  </div>
 
-  <!-- REPORT DETAILS MODAL -->
-  <div class="modal fade" id="reportDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-file-earmark-text"></i> Report Details</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <!-- MAP SECTION -->
+      <div class="card shadow-sm border-0 map-card">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-map me-2"></i>Live Map View</h5>
         </div>
-        <div class="modal-body" id="reportDetailsContent">
-          <!-- Content injected by JS; attachments include per-file Download only -->
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <!-- footer View / Download / Delete removed -->
+        <div class="card-body p-0 position-relative">
+            <div class="map-controls">
+                <button class="btn btn-sm btn-light border" id="zoomInBtn" title="Zoom In"><i class="bi bi-plus"></i></button>
+                <button class="btn btn-sm btn-light border" id="zoomOutBtn" title="Zoom Out"><i class="bi bi-dash"></i></button>
+                <button class="btn btn-sm btn-light border" id="centerMapBtn" title="Center Map"><i class="bi bi-crosshair"></i> Center</button>
+            </div>
+            <div id="map"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- VIEWER MODAL (kept in case you later want inline preview) -->
-  <div class="modal fade" id="reportViewerModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Report Viewer</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div id="viewerContent" style="min-height:400px;"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROFILE MODAL -->
-  <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+  <!-- MODALS (Profile & Notifications) -->
+  <div class="modal fade" id="profileModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg rounded-4">
         <div class="modal-header bg-primary text-white">
@@ -159,8 +168,7 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center p-4">
-          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile Icon"
-            class="rounded-circle mb-3 shadow border" width="110" height="110" />
+          <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile" class="rounded-circle mb-3 shadow border" width="110" height="110" />
           <h5 id="profileName" class="fw-bold mb-1 text-dark"></h5>
           <p id="profileEmail" class="text-muted mb-3"></p>
           <div class="alert alert-light border text-start small">
@@ -175,7 +183,6 @@
     </div>
   </div>
 
-  <!-- NOTIFICATIONS MODAL -->
   <div class="modal fade" id="notificationsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 500px">
       <div class="modal-content">
@@ -183,13 +190,13 @@
           <h5 class="modal-title"><i class="bi bi-bell"></i> Notifications</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto">
-          <div id="notificationsList"></div>
+        <div class="modal-body p-0" id="notificationsList" style="max-height: 400px; overflow-y: auto">
+          <!-- Notifications will be populated here -->
+          <div class="p-3 text-center text-muted small">Loading notifications...</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" onclick="window.location.href='notifications.html'">View
-            All</button>
+          <button type="button" class="btn btn-primary" onclick="window.location.href='notifications.html'">View All</button>
         </div>
       </div>
     </div>
@@ -202,39 +209,12 @@
     </div>
   </footer>
 
-  <!-- JS -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/reports.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/navbar-notifications.js"></script>
-  <script>
-    // CSS class-based sidebar toggle - most reliable method
-    document.addEventListener('DOMContentLoaded', function () {
-      const toggleBtn = document.getElementById('sidebarToggle');
-      const sidebar = document.getElementById('sidebar');
-      const mainContent = document.getElementById('mainContent');
-
-      if (toggleBtn && sidebar && mainContent) {
-        toggleBtn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          // Toggle CSS classes
-          sidebar.classList.toggle('sidebar-hidden');
-          mainContent.classList.toggle('main-content-expanded');
-
-          // Also set inline styles as backup to ensure no white space
-          if (sidebar.classList.contains('sidebar-hidden')) {
-            mainContent.style.marginLeft = '0px';
-            console.log('Sidebar hidden, content expanded');
-          } else {
-            mainContent.style.marginLeft = '250px';
-            console.log('Sidebar shown, content normal');
-          }
-        });
-      }
-    });
-  </script>
+  <script src="assets/js/tracking.js"></script>
 </body>
 
 </html>
