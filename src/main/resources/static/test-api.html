@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test MR Location API</title>
+</head>
+<body>
+    <h1>Test MR Location API</h1>
+    <button onclick="testPost()">Test POST /api/mr-locations/me</button>
+    <button onclick="testGet()">Test GET /api/mr-locations</button>
+    <div id="result"></div>
+
+    <script>
+        async function testPost() {
+            try {
+                const response = await fetch('/api/mr-locations/me', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer test'
+                    },
+                    body: JSON.stringify({
+                        latitude: 18.488981,
+                        longitude: 73.811378,
+                        accuracy: 500
+                    })
+                });
+                
+                const result = document.getElementById('result');
+                result.innerHTML = `
+                    <h3>POST Response</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Status Text: ${response.statusText}</p>
+                    <pre>${await response.text()}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<h3>Error: ${error.message}</h3>`;
+            }
+        }
+
+        async function testGet() {
+            try {
+                const response = await fetch('/api/mr-locations?manager=', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer test'
+                    }
+                });
+                
+                const result = document.getElementById('result');
+                result.innerHTML = `
+                    <h3>GET Response</h3>
+                    <p>Status: ${response.status}</p>
+                    <p>Status Text: ${response.statusText}</p>
+                    <pre>${await response.text()}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<h3>Error: ${error.message}</h3>`;
+            }
+        }
+    </script>
+</body>
+</html>

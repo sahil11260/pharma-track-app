@@ -29,6 +29,9 @@
     MY_TARGETS: "/api/mr/me/sales-targets"
   };
 
+  const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+  const MR_LOCATION_API = `${API_BASE}/api/mr-locations/me`;
+
   function getAuthHeader() {
     const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
     if (!token) return {};
@@ -50,6 +53,96 @@
       return null;
     }
     return await res.json();
+  }
+
+  let geoWatchId = null;
+  let lastSentAt = 0;
+
+  async function postMyLocation(lat, lng, accuracy) {
+    const now = Date.now();
+    if (now - lastSentAt < 15000) {
+      return;
+    }
+    lastSentAt = now;
+
+    log(`Posting location: lat=${lat}, lng=${lng}, accuracy=${accuracy}m`);
+    log(`Token present: ${!!localStorage.getItem("kavya_auth_token") || !!localStorage.getItem("token")}`);
+
+    try {
+      await apiJson(MR_LOCATION_API, {
+        method: "POST",
+        body: JSON.stringify({ latitude: lat, longitude: lng, accuracy: accuracy })
+      });
+      log("Location posted successfully!");
+    } catch (e) {
+      warn("Location update failed:", e);
+    }
+  }
+
+  function startLiveLocationTracking() {
+    log("Starting live location tracking...");
+    const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
+    if (!token) {
+      warn("No token found, cannot start location tracking");
+      return;
+    }
+    log("Token found, proceeding with geolocation...");
+
+    if (!navigator.geolocation || typeof navigator.geolocation.watchPosition !== "function") {
+      warn("Geolocation not supported");
+      return;
+    }
+
+    if (geoWatchId != null) {
+      log("Location tracking already active");
+      return;
+    }
+
+    try {
+      const options = {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000
+      };
+
+      if (typeof navigator.geolocation.getCurrentPosition === "function") {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const c = pos && pos.coords ? pos.coords : null;
+            if (!c) return;
+            if (typeof c.latitude !== "number" || typeof c.longitude !== "number") return;
+            postMyLocation(c.latitude, c.longitude, c.accuracy);
+          },
+          (error) => {
+            if (error && error.code === 1) {
+              warn("Geolocation permission denied.");
+            } else {
+              warn("Geolocation error:", error);
+            }
+          },
+          options
+        );
+      }
+
+      geoWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const c = pos && pos.coords ? pos.coords : null;
+          if (!c) return;
+          if (typeof c.latitude !== "number" || typeof c.longitude !== "number") return;
+          postMyLocation(c.latitude, c.longitude, c.accuracy);
+        },
+        (error) => {
+          if (error && error.code === 1) {
+            warn("Geolocation permission denied.");
+            return;
+          }
+          warn("Geolocation error:", error);
+        },
+        options
+      );
+    } catch (e) {
+      warn("Unable to start geolocation:", e);
+    }
   }
 
   function formatINR(n) {
@@ -230,8 +323,14 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", async () => {
+      await startLiveLocationTracking();
+      init();
+    });
   } else {
-    setTimeout(init, 10);
+    setTimeout(async () => {
+      await startLiveLocationTracking();
+      init();
+    }, 10);
   }
 })();

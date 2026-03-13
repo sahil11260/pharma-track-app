@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MR Location Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; }
+        .success { background: #e6ffe6; }
+    </style>
+</head>
+<body>
+    <h1>MR Location Test</h1>
+    <button onclick="testLocationPost()">Test Location POST</button>
+    <button onclick="testLocationGet()">Test Location GET</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    <div id="logs"></div>
+
+    <script>
+        const API_BASE = "http://localhost:8080";
+        const MR_LOCATION_API = `${API_BASE}/api/mr-locations/me`;
+        const MR_LOCATIONS_API_BASE = `${API_BASE}/api/mr-locations`;
+
+        function getAuthHeader() {
+            const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
+            if (!token) {
+                log("No token found in localStorage!", "error");
+                return null;
+            }
+            return { Authorization: `Bearer ${token}` };
+        }
+
+        async function apiJson(url, options) {
+            const headers = getAuthHeader();
+            if (!headers) return null;
+
+            const res = await fetch(url, Object.assign({
+                headers: Object.assign({ "Content-Type": "application/json" }, headers)
+            }, options || {}));
+
+            log(`Response: ${res.status} ${res.statusText}`, res.ok ? "success" : "error");
+            
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                log(`Error details: ${text}`, "error");
+                return null;
+            }
+            if (res.status === 204) {
+                return null;
+            }
+            return await res.json();
+        }
+
+        function log(message, type = "log") {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testLocationPost() {
+            log("Testing POST /api/mr-locations/me...");
+            
+            if (!navigator.geolocation) {
+                log("Geolocation not supported!", "error");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const c = pos.coords;
+                    log(`Got location: lat=${c.latitude}, lng=${c.longitude}, accuracy=${c.accuracy}m`);
+                    
+                    try {
+                        await apiJson(MR_LOCATION_API, {
+                            method: "POST",
+                            body: JSON.stringify({ 
+                                latitude: c.latitude, 
+                                longitude: c.longitude, 
+                                accuracy: c.accuracy 
+                            })
+                        });
+                        log("Location posted successfully!", "success");
+                    } catch (e) {
+                        log(`Location post failed: ${e.message}`, "error");
+                    }
+                },
+                (error) => {
+                    log(`Geolocation error: ${error.message} (code: ${error.code})`, "error");
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        async function testLocationGet() {
+            log("Testing GET /api/mr-locations...");
+            
+            try {
+                const data = await apiJson(`${MR_LOCATIONS_API_BASE}?manager=`);
+                log(`GET response: ${JSON.stringify(data, null, 2)}`, "success");
+            } catch (e) {
+                log(`GET failed: ${e.message}`, "error");
+            }
+        }
+
+        // Check token on load
+        window.onload = () => {
+            const token = localStorage.getItem("kavya_auth_token") || localStorage.getItem("token");
+            if (token) {
+                log(`Found token: ${token.substring(0, 20)}...`, "success");
+            } else {
+                log("No token found! Please login first.", "error");
+            }
+        };
+    </script>
+</body>
+</html>

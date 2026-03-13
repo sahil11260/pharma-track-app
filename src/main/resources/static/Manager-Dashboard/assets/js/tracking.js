@@ -7,10 +7,15 @@
 
     const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
     const USERS_API_BASE = `${API_BASE}/api/users`;
+    const MR_LOCATIONS_API_BASE = `${API_BASE}/api/mr-locations`;
+
+    const REFRESH_MS = 15000;
+    const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
     let map;
     let markers = {}; // Store markers by MR ID
     let mrList = [];
+    let refreshTimer = null;
 
     // --- Auth & API Helpers ---
     function getAuthHeader() {
@@ -68,6 +73,24 @@
         });
     }
 
+    function formatLastUpdate(updatedAt) {
+        if (!updatedAt) return "Never";
+        const ts = new Date(updatedAt).getTime();
+        if (!isFinite(ts)) return "Unknown";
+        const diff = Date.now() - ts;
+        if (diff < 15000) return "Just now";
+        if (diff < 60000) return `${Math.max(1, Math.floor(diff / 1000))} sec ago`;
+        if (diff < 3600000) return `${Math.max(1, Math.floor(diff / 60000))} min ago`;
+        return `${Math.max(1, Math.floor(diff / 3600000))} hr ago`;
+    }
+
+    function isOnlineFromUpdatedAt(updatedAt) {
+        if (!updatedAt) return false;
+        const ts = new Date(updatedAt).getTime();
+        if (!isFinite(ts)) return false;
+        return (Date.now() - ts) <= ONLINE_THRESHOLD_MS;
+    }
+
     // --- MR Loading ---
     async function loadMRs() {
         try {
@@ -80,7 +103,7 @@
             if (Array.isArray(users)) {
                 mrList = users;
                 populateSelector(users);
-                mockLocations(users); // Mock initial locations since real-time API is being built
+                startRefreshingLocations(currentName || currentEmail);
             }
         } catch (e) {
             console.error("Failed to load MRs:", e);
@@ -113,38 +136,94 @@
         centerMap();
     }
 
-    // --- Mock Location Logic ---
-    function mockLocations(users) {
+    async function refreshLocations(managerIdentifier) {
+        console.log("[TRACKING] Refreshing locations for manager:", managerIdentifier);
+        const selector = document.getElementById('mrSelector');
+        const currentFilter = selector ? selector.value : 'all';
+
         let online = 0;
         let offline = 0;
 
-        users.forEach((u, index) => {
-            const isOnline = Math.random() > 0.3; // Randomly mock status
-            if (isOnline) online++; else offline++;
+        let locations = [];
+        try {
+            const url = `${MR_LOCATIONS_API_BASE}?manager=${encodeURIComponent(managerIdentifier || '')}`;
+            console.log("[TRACKING] Fetching URL:", url);
+            const res = await apiJson(url);
+            locations = Array.isArray(res) ? res : [];
+            console.log("[TRACKING] Received locations:", locations.length, locations);
+        } catch (e) {
+            console.error("Failed to load MR locations:", e);
+            locations = [];
+        }
 
-            // Mock coordinates around Nagpur
-            const lat = 21.1458 + (Math.random() - 0.5) * 0.1;
-            const lng = 79.0882 + (Math.random() - 0.5) * 0.1;
-
-            const marker = L.marker([lat, lng], {
-                icon: createCustomMarker(isOnline ? 'online' : 'offline')
-            }).bindPopup(`
-                <div class="p-1">
-                    <div class="fw-bold">${u.name}</div>
-                    <div class="text-muted small">${u.territory || 'Default Territory'}</div>
-                    <div class="mt-1 small"><span class="badge ${isOnline ? 'bg-success' : 'bg-secondary'}">${isOnline ? 'Online' : 'Offline'}</span></div>
-                    <div class="mt-1 small text-secondary">Last update: Just now</div>
-                </div>
-            `);
-
-            markers[u.id] = marker;
-            marker.addTo(map);
+        const locationMap = {};
+        locations.forEach(l => {
+            if (l && l.mrId != null) {
+                locationMap[l.mrId] = l;
+            }
         });
 
-        document.getElementById('onlineCount').textContent = online;
-        document.getElementById('offlineCount').textContent = offline;
-        
+        (mrList || []).forEach(u => {
+            const loc = locationMap[u.id] || null;
+            const hasCoords = loc && typeof loc.latitude === 'number' && typeof loc.longitude === 'number';
+            const onlineNow = loc && (loc.status === 'online' || isOnlineFromUpdatedAt(loc.updatedAt));
+
+            if (onlineNow) online++; else offline++;
+            
+            console.log(`[TRACKING] MR ${u.name} (ID: ${u.id}): hasCoords=${hasCoords}, online=${onlineNow}`);
+
+            if (!hasCoords) {
+                if (markers[u.id]) {
+                    map.removeLayer(markers[u.id]);
+                    delete markers[u.id];
+                }
+                return;
+            }
+
+            const latlng = [loc.latitude, loc.longitude];
+            const badgeClass = onlineNow ? 'bg-success' : 'bg-secondary';
+            const badgeText = onlineNow ? 'Online' : 'Offline';
+
+            const popupHtml = `
+                <div class="p-1">
+                    <div class="fw-bold">${u.name || (loc.mrName || '')}</div>
+                    <div class="text-muted small">${u.territory || loc.territory || 'Default Territory'}</div>
+                    <div class="mt-1 small"><span class="badge ${badgeClass}">${badgeText}</span></div>
+                    <div class="mt-1 small text-secondary">Last update: ${formatLastUpdate(loc.updatedAt)}</div>
+                </div>
+            `;
+
+            if (!markers[u.id]) {
+                markers[u.id] = L.marker(latlng, { icon: createCustomMarker(onlineNow ? 'online' : 'offline') })
+                    .bindPopup(popupHtml);
+            } else {
+                markers[u.id].setLatLng(latlng);
+                markers[u.id].setIcon(createCustomMarker(onlineNow ? 'online' : 'offline'));
+                markers[u.id].setPopupContent(popupHtml);
+            }
+
+            if (currentFilter === 'all' || String(u.id) === String(currentFilter)) {
+                markers[u.id].addTo(map);
+            } else {
+                map.removeLayer(markers[u.id]);
+            }
+        });
+
+        const onlineEl = document.getElementById('onlineCount');
+        const offlineEl = document.getElementById('offlineCount');
+        if (onlineEl) onlineEl.textContent = String(online);
+        if (offlineEl) offlineEl.textContent = String(offline);
+
         centerMap();
+    }
+
+    function startRefreshingLocations(managerIdentifier) {
+        if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+        }
+        refreshLocations(managerIdentifier);
+        refreshTimer = setInterval(() => refreshLocations(managerIdentifier), REFRESH_MS);
     }
 
     // --- Initialization ---
