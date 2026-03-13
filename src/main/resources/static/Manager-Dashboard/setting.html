@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -99,9 +99,7 @@
                     </div>
                     <div class="col-md-4">
                       <label for="mobileNumber" class="form-label">Mobile Number</label>
-                      <input type="tel" class="form-control" id="mobileNumber" maxlength="10" pattern="[0-9]{10}"
-                        oninput="this.value = this.value.replace(/[^0-9]/g, '');"
-                        title="Please enter a 10-digit mobile number" placeholder="10-digit number" />
+                      <input type="tel" class="form-control" id="mobileNumber" maxlength="10" placeholder="10-digit number" />
                     </div>
                   </div>
 
@@ -248,6 +246,36 @@
 
       // Mobile Number Validation & Form Submit
       const mobileInput = document.getElementById('mobileNumber');
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          if (mobileInput && mobileInput.value.length > 0 && mobileInput.value.length !== 10) {
+            e.preventDefault();
+            alert('Please enter a valid 10-digit mobile number.');
+          }
+        });
+      }
+    });
+  </script>
+
+  <script>
+    // small profile fallback and validation
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileName = document.getElementById('profileName');
+      const profileEmail = document.getElementById('profileEmail');
+      if (profileName) profileName.textContent = localStorage.getItem('signup_name') || 'Admin User';
+      if (profileEmail) profileEmail.textContent = localStorage.getItem('signup_email') || 'admin@kavyapharm.com';
+
+      // Mobile Number Validation
+      const mobileInput = document.getElementById('mobileNumber');
+      if (mobileInput) {
+        mobileInput.addEventListener('input', function (e) {
+          // Remove any non-digit characters
+          this.value = this.value.replace(/\D/g, '');
+        });
+      }
+
+      // Handle form submission (prevent default if invalid mobile)
       const form = document.querySelector('form');
       if (form) {
         form.addEventListener('submit', function (e) {
