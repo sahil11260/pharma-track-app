@@ -1,6 +1,7 @@
 package com.kavyapharm.farmatrack;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.core.annotation.Order;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @Component
 @Order(10)
+@Profile("!prod")
 public class InspectTableRunner implements CommandLineRunner {
 
     private final JdbcTemplate jdbcTemplate;
@@ -36,7 +38,9 @@ public class InspectTableRunner implements CommandLineRunner {
         try {
             List<Map<String, Object>> columns = jdbcTemplate.queryForList("DESCRIBE " + tableName);
             for (Map<String, Object> col : columns) {
-                System.out.println("Field: [" + col.get("Field") + "] | Type: [" + col.get("Type") + "] | Null: [" + col.get("Null") + "] | Key: [" + col.get("Key") + "] | Default: [" + col.get("Default") + "]");
+                System.out.println("Field: [" + col.get("Field") + "] | Type: [" + col.get("Type") + "] | Null: ["
+                        + col.get("Null") + "] | Key: [" + col.get("Key") + "] | Default: [" + col.get("Default")
+                        + "]");
             }
         } catch (Exception e) {
             System.err.println("Failed to describe table " + tableName + ": " + e.getMessage());
