@@ -321,6 +321,19 @@
             return ok;
         });
 
+        // Ensure pending comes first, then sort by date (newest first)
+        currentFiltered.sort((a, b) => {
+            const isAPending = (a.status || "").toUpperCase() === "PENDING";
+            const isBPending = (b.status || "").toUpperCase() === "PENDING";
+            
+            if (isAPending && !isBPending) return -1;
+            if (!isAPending && isBPending) return 1;
+            
+            const dateA = new Date(a.expenseDate || a.submittedDate || 0).getTime();
+            const dateB = new Date(b.expenseDate || b.submittedDate || 0).getTime();
+            return dateB - dateA;
+        });
+
         currentPage = 1;
         renderTable(currentFiltered);
     }
