@@ -144,6 +144,19 @@ document.addEventListener("DOMContentLoaded", () => {
         (statusFilter.value === "" || e.status === statusFilter.value)
     );
 
+    // Sort: Pending first, then by date (newest first)
+    filtered.sort((a, b) => {
+      const isAPending = (a.status || "").toUpperCase() === "PENDING";
+      const isBPending = (b.status || "").toUpperCase() === "PENDING";
+      
+      if (isAPending && !isBPending) return -1;
+      if (!isAPending && isBPending) return 1;
+      
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return dateB - dateA; // descending
+    });
+
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     if (currentPage > totalPages) currentPage = totalPages || 1;
 
