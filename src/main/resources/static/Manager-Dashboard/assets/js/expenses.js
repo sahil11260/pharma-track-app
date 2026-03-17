@@ -688,6 +688,29 @@
     }
     addExpenseWired = true;
     form.dataset.wired = "1";
+
+    const amountEl = document.getElementById("addAmount");
+    const amountErrEl = document.getElementById("addAmountError");
+    function setAmountError(msg) {
+      if (amountErrEl) amountErrEl.textContent = msg || "";
+      if (amountEl) {
+        if (msg) amountEl.classList.add("is-invalid");
+        else amountEl.classList.remove("is-invalid");
+      }
+    }
+
+    if (amountEl && amountEl.dataset.wired !== "1") {
+      amountEl.dataset.wired = "1";
+      amountEl.addEventListener("input", () => {
+        const v = parseFloat(amountEl.value);
+        if (!isNaN(v) && v > 1) setAmountError("");
+      });
+      amountEl.addEventListener("change", () => {
+        const v = parseFloat(amountEl.value);
+        if (!isNaN(v) && v > 1) setAmountError("");
+      });
+    }
+
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
       const mrName = document.getElementById("addMrSelect").value;
@@ -700,7 +723,14 @@
       const attachments = [];
       if (fileEl && fileEl.files && fileEl.files[0]) attachments.push(fileEl.files[0].name);
 
-      if (!mrName || !category || !expenseDate || amount <= 0) return alert("Please fill required fields correctly.");
+      setAmountError("");
+      if (amount <= 1) {
+        setAmountError("Amount must be greater than 1.");
+        if (amountEl) amountEl.focus();
+        return;
+      }
+
+      if (!mrName || !category || !expenseDate) return alert("Please fill required fields correctly.");
 
       const nextId = (expensesData.reduce((m, x) => Math.max(m, x.id), 0) || 0) + 1;
       const newExp = {
@@ -718,6 +748,7 @@
       expensesData.unshift(newExp);
       safeSet(EXPENSES_KEY, expensesData);
       form.reset();
+      setAmountError("");
       bootstrap.Modal.getInstance(document.getElementById("addExpenseModal"))?.hide();
       applyFilters();
       renderSummary();

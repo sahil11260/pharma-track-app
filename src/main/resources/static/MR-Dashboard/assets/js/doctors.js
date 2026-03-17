@@ -37,6 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    function sortDoctorsByName(list) {
+        if (!Array.isArray(list)) return list;
+        const norm = (v) => (v == null ? "" : String(v).trim());
+        return list.sort((a, b) =>
+            norm(a?.name).localeCompare(norm(b?.name), undefined, { sensitivity: "base" })
+        );
+    }
+
     // --- API Functions ---
     async function refreshDoctorsFromApi() {
         try {
@@ -50,8 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 // The backend now filters doctors based on the logged-in MR role.
                 // We map the received doctors to the UI format and sort by name.
                 assignedDoctors = allDoctors
-                    .map(mapBackendDoctorToUI)
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                    .map(mapBackendDoctorToUI);
+                sortDoctorsByName(assignedDoctors);
 
                 saveDoctors();
                 doctorsApiMode = true;
@@ -106,11 +114,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function loadDoctorsFromStorage() {
         const storedDoctors = localStorage.getItem("mrAssignedDoctors");
-        return storedDoctors ? JSON.parse(storedDoctors) : [];
+        const list = storedDoctors ? JSON.parse(storedDoctors) : [];
+        sortDoctorsByName(list);
+        return list;
     }
 
     // --- RENDERING FUNCTION ---
     function renderDoctorList() {
+        sortDoctorsByName(assignedDoctors);
         doctorListBody.innerHTML = '';
 
         if (assignedDoctors.length === 0) {
@@ -153,9 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const storedDoctors = loadDoctorsFromStorage();
             if (storedDoctors.length > 0) {
                 assignedDoctors = storedDoctors;
+                sortDoctorsByName(assignedDoctors);
                 console.log("[DOCTORS-MR] Loaded from localStorage:", assignedDoctors.length, "doctors");
             } else {
                 assignedDoctors = mockAssignedDoctors;
+                sortDoctorsByName(assignedDoctors);
                 saveDoctors();
                 console.log("[DOCTORS-MR] Using mock data");
             }

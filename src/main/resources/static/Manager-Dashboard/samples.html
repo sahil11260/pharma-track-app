@@ -15,6 +15,7 @@
   <script src="../config.js"></script>
   <link href="assets/css/samples.css" rel="stylesheet" />
   <link href="assets/css/style.css" rel="stylesheet" />
+  <link href="../assets/css/pagination.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -419,21 +420,6 @@
         minDate.setMonth(minDate.getMonth() + 1);
         const minDateStr = minDate.toISOString().split('T')[0];
         expiryDateInput.setAttribute('min', minDateStr);
-
-        expiryDateInput.addEventListener('change', function() {
-          if (this.value) {
-            const selected = new Date(this.value);
-            const today = new Date();
-            const minBoundary = new Date(today);
-            minBoundary.setMonth(minBoundary.getMonth() + 1);
-            minBoundary.setHours(0, 0, 0, 0);
-
-            if (selected < minBoundary) {
-              alert("Expiry date must be at least one month in the future from today.");
-              this.value = minDateStr; // Reset to min valid date
-            }
-          }
-        });
       }
 
       // 2. CSS class-based sidebar toggle - most reliable method

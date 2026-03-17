@@ -91,6 +91,8 @@ const initialTasksData = [
 let tasksData = []; // This will be populated from localStorage
 let filteredTasks = []; // current filtered dataset shown in table
 
+let isBootstrappingTasks = false;
+
 /* ---------------------------
    Pagination configuration
    --------------------------- */
@@ -122,6 +124,14 @@ async function apiJson(url, options) {
   }
   if (res.status === 204) return null;
   return await res.json();
+}
+
+function debounce(fn, waitMs) {
+  let t = null;
+  return function debounced(...args) {
+    if (t) clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), waitMs);
+  };
 }
 
 function toUpdatePayload(task) {
@@ -519,6 +529,13 @@ function ensureStatusModalExists() {
         ).hide();
         return;
       }
+
+      const currentStatus = normalizeTaskStatus(task.status);
+      const nextStatus = normalizeTaskStatus(newStatus);
+      if (currentStatus === "overdue" && nextStatus !== "completed" && nextStatus !== "overdue") {
+        showToast("Read-only", "Overdue tasks can only be marked as Completed.");
+        return;
+      }
       task.status = newStatus;
 
       (async function () {
@@ -582,7 +599,9 @@ function updateOverdueTasks() {
     saveTasksData();
     // Update filtered tasks and re-render
     filteredTasks = tasksData.slice();
-    applyFilters();
+    if (!isBootstrappingTasks) {
+      applyFilters();
+    }
     console.log(`[TASK] Overdue check sync: updated ${updatedCount} tasks.`);
   }
 }
@@ -629,7 +648,7 @@ async function refreshMrList() {
       // we only need to verify that the role is MR.
       mrData = users
         .filter((u) => u && u.role && String(u.role).toUpperCase().includes("MR"))
-        .map((u) => ({ id: Number(u.id), name: u.name, email: u.email }));
+        .map((u) => ({ id: Number(u.id), name: u.name, email: u.email, territory: u.territory || "" }));
 
       console.log("[TASK] Successfully loaded", mrData.length, "MRs for task assignment");
       try { hideTasksApiRetryBanner(); } catch (e) { }
@@ -1555,6 +1574,7 @@ function applyFilters() {
    Init: wire up everything & initial render
    --------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
+  isBootstrappingTasks = true;
   // Set minimum date for due date input to today
   const dueDateInput = document.getElementById("dueDate");
   if (dueDateInput) {
@@ -1574,40 +1594,37 @@ document.addEventListener("DOMContentLoaded", async () => {
   // sidebar & theme toggles are handled in script.js
 
 
-  // populate MR dropdown in create form (if present) - prefer API
+  initTasksTableDelegatedHandlers();
+
   const assignedToSelect = document.getElementById("assignedTo");
+
+  const mrPromise = assignedToSelect
+    ? refreshMrList().catch((e) => console.warn("refreshMrList failed", e))
+    : Promise.resolve();
+
+  const doctorPromise = refreshDoctorList().catch((e) => console.warn("refreshDoctorList failed", e));
+  const tasksPromise = refreshTasksFromApiOrFallback().catch((e) => console.warn("refreshTasksFromApiOrFallback failed", e));
+
+  await Promise.allSettled([mrPromise, doctorPromise, tasksPromise]);
+
   if (assignedToSelect) {
-    try {
-      await refreshMrList();
-    } catch (e) {
-      console.warn("refreshMrList failed", e);
-    }
     populateMRDropdown(assignedToSelect);
   }
 
-  // Fetch doctors and setup dynamic filtering
-  try {
-    await refreshDoctorList();
-    setupDoctorFiltering();
-  } catch (e) {
-    console.warn("refreshDoctorList failed", e);
-  }
+  setupDoctorFiltering();
 
-  (async function () {
-    await refreshTasksFromApiOrFallback();
-    // initial render (use filteredTasks so pagination works)
-    filteredTasks = tasksData.slice();
-    renderTaskTable(filteredTasks, currentPage);
-    renderSummaryCards(tasksData);
-  })();
+  filteredTasks = tasksData.slice();
+  renderTaskTable(filteredTasks, currentPage);
+  renderSummaryCards(tasksData);
 
-  initTasksTableDelegatedHandlers();
+  isBootstrappingTasks = false;
 
   // search
   const searchInput = document.getElementById("searchTask");
   if (searchInput) {
+    const debouncedApply = debounce(() => applyFilters(), 150);
     searchInput.addEventListener("input", () => {
-      applyFilters();
+      debouncedApply();
     });
   }
 
