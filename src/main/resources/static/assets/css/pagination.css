@@ -26,6 +26,16 @@
   width: 100%;
 }
 
+/* Alias wrapper used by some pages */
+.pagination-wrap {
+  display: block !important;
+  visibility: visible !important;
+  margin: 2rem 0 1rem 0;
+  text-align: center;
+  clear: both;
+  width: 100%;
+}
+
 .pagination .page-item {
   margin: 0;
 }

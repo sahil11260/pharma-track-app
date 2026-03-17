@@ -63,6 +63,30 @@ document.addEventListener("DOMContentLoaded", () => {
     // Doctors will be loaded from API
     let assignedDoctors = [];
 
+    function normalizeDoctorName(v) {
+        return (v == null ? "" : String(v).trim());
+    }
+
+    function sortDoctorsByName(list) {
+        if (!Array.isArray(list)) return list;
+        return list.sort((a, b) => normalizeDoctorName(a?.name).localeCompare(normalizeDoctorName(b?.name), undefined, { sensitivity: "base" }));
+    }
+
+    function mergeDoctors(primary, fallback) {
+        const map = new Map();
+        (Array.isArray(primary) ? primary : []).forEach(d => {
+            const key = String(d?.id ?? "").trim();
+            if (!key) return;
+            map.set(key, d);
+        });
+        (Array.isArray(fallback) ? fallback : []).forEach(d => {
+            const key = String(d?.id ?? "").trim();
+            if (!key) return;
+            if (!map.has(key)) map.set(key, d);
+        });
+        return Array.from(map.values());
+    }
+
     let mrStock = JSON.parse(localStorage.getItem(stockStorageKey())) || [];
 
     // --- STATE MANAGEMENT ---
@@ -159,8 +183,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 }));
 
                 // The backend now filters doctors based on the logged-in MR role.
-                assignedDoctors.sort((a, b) => a.name.localeCompare(b.name));
+                sortDoctorsByName(assignedDoctors);
                 console.log('[DCR] Loaded doctors:', assignedDoctors.length);
+
+                // If API list looks incomplete, merge localStorage backup too (prevents dropdown showing only one doctor)
+                const storedDoctorsRaw = localStorage.getItem("mrAssignedDoctors");
+                if (storedDoctorsRaw) {
+                    try {
+                        const stored = JSON.parse(storedDoctorsRaw);
+                        const backupList = Array.isArray(stored)
+                            ? stored.map(d => ({
+                                id: d.id || d.doctorId || d.id,
+                                name: d.name || d.doctorName || 'Unknown Doctor',
+                                clinic: d.clinicName || d.clinic || 'Default Clinic',
+                                assignedMR: d.assignedMR || d.assignedMr || ''
+                            }))
+                            : [];
+                        assignedDoctors = mergeDoctors(assignedDoctors, backupList);
+                        sortDoctorsByName(assignedDoctors);
+                    } catch (e) { }
+                }
+
                 populateDoctors();
                 doctorsLoaded = true;
             }
@@ -173,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const storedDoctors = localStorage.getItem("mrAssignedDoctors");
             if (storedDoctors) {
                 assignedDoctors = JSON.parse(storedDoctors);
+                sortDoctorsByName(assignedDoctors);
                 console.log('[DCR] Loaded doctors from localStorage backup:', assignedDoctors.length);
                 populateDoctors();
             }
@@ -439,9 +483,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <button type="button" class="btn btn-outline-primary edit-dcr-btn" data-id="${dcr.reportId}" data-bs-toggle="modal" data-bs-target="#dcrModal">
                             <i class="bi bi-pencil-square"></i> Edit
                         </button>
-                        <button type="button" class="btn btn-outline-danger delete-dcr-btn" data-id="${dcr.reportId}">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
                     </div>
                 </td>
             `;
@@ -521,9 +562,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const maxString = `${year}-${month}-${day}T${hours}:${minutes}`;
+            const minString = `${year}-${month}-${day}T00:00`;
+            const maxString = `${year}-${month}-${day}T23:59`;
+            visitDateInput.setAttribute('min', minString);
             visitDateInput.setAttribute('max', maxString);
         }
     }
@@ -556,42 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const reportId = parseInt(target.dataset.id);
 
-        if (target.classList.contains('delete-dcr-btn')) {
-            if (!confirm("Are you sure you want to delete this submitted DCR? Stock will be refunded.")) return;
-
-            const dcrIndex = submittedDCRs.findIndex(d => d.reportId === reportId);
-            if (dcrIndex === -1) return;
-
-            (async function () {
-                if (apiMode) {
-                    try {
-                        await apiJson(`${API.DCRS}/${reportId}`, { method: 'DELETE' });
-                        await refreshFromApiOrFallback();
-                        currentPage = 1;
-                        renderSubmittedDCRTable();
-                        return;
-                    } catch (e) {
-                        console.warn('Delete DCR API failed. Falling back to localStorage.', e);
-                        apiMode = false;
-                    }
-                }
-
-                // Fallback: local stock refund + remove DCR
-                const dcr = submittedDCRs[dcrIndex];
-                const samples = Array.isArray(dcr.samplesGiven) ? dcr.samplesGiven : [];
-                samples.forEach(item => {
-                    const product = mrStock.find(p => p.id === item.productId);
-                    if (product) {
-                        product.stock += (Number(item.quantity) || 0);
-                    }
-                });
-
-                submittedDCRs.splice(dcrIndex, 1);
-                saveStock();
-                saveDCRs();
-                renderSubmittedDCRTable();
-            })();
-        }
+        // Delete action removed by requirement.
     });
 
 
@@ -653,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const maxStock = getProductStock(productId);
 
         if (!productId) {
-            alert("Please select a product.");
+            alert("Please select a sample name (product).");
             return;
         }
         if (isNaN(quantity) || quantity <= 0) {
@@ -750,25 +756,36 @@ document.addEventListener("DOMContentLoaded", () => {
             visitTitleInput.classList.remove('is-invalid');
         }
 
-        // 1. Validate Visit Date (Must not be in the future)
+        // 1. Validate Visit Date (Must be today only)
         const visitDateInput = document.getElementById('visitDate');
         const visitDateError = document.getElementById('visitDateError');
-        const visitDate = new Date(visitDateInput.value);
+        const visitDateVal = (visitDateInput && visitDateInput.value) ? String(visitDateInput.value) : "";
+        const visitDateKey = visitDateVal ? visitDateVal.split('T')[0] : "";
         const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        if (visitDate > now) {
-            if (visitDateError) visitDateError.classList.remove('d-none');
-            visitDateInput.classList.add('is-invalid');
-            visitDateInput.focus();
+        if (!visitDateVal || visitDateKey !== todayKey) {
+            if (visitDateError) {
+                visitDateError.textContent = "Only current date is allowed.";
+                visitDateError.classList.remove('d-none');
+            }
+            if (visitDateInput) {
+                visitDateInput.classList.add('is-invalid');
+                visitDateInput.focus();
+            }
             return;
-        } else {
-            if (visitDateError) visitDateError.classList.add('d-none');
-            visitDateInput.classList.remove('is-invalid');
         }
+
+        if (visitDateError) visitDateError.classList.add('d-none');
+        if (visitDateInput) visitDateInput.classList.remove('is-invalid');
 
         // AUTO-ADD HELPER: If user filled in sample fields but forgot to click '+', add it now
         const pendingPid = sampleProductSelect.value;
         const pendingQty = parseInt(sampleQuantityInput.value);
+        if (!pendingPid && !isNaN(pendingQty) && pendingQty > 0) {
+            alert("Please select a sample name (product) for the entered quantity.");
+            return;
+        }
         if (pendingPid && !isNaN(pendingQty) && pendingQty > 0) {
             console.log("[DCR] Auto-adding pending sample before submission...");
             addSampleBtn.click();

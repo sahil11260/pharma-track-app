@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!pagination) return;
     let html = `
             <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Prev</a>
             </li>`;
 
     for (let i = 1; i <= totalPages; i++) {

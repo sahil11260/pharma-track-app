@@ -236,9 +236,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             return false;
         }
 
-        if (parseFloat(amount) <= 0) {
-            if (amountError) amountError.textContent = "Amount must be greater than 0";
-            else showToast("Amount must be greater than 0", "error");
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum) || amountNum <= 1) {
+            if (amountError) amountError.textContent = "Amount must be greater than 1";
+            else showToast("Amount must be greater than 1", "error");
+            const amountEl = document.getElementById("expAmount");
+            if (amountEl) amountEl.focus();
             return false;
         }
 

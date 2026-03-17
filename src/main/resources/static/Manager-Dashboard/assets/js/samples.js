@@ -56,6 +56,19 @@ const STOCK_RECEIVED_API_BASE = `${API_BASE}/api/stock-received`;
 const DISTRIBUTIONS_API_BASE = `${API_BASE}/api/distributions`;
 let samplesApiMode = true;
 
+function getMinExpiryDateStr() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+function applyExpiryMinAttr() {
+  const expiryDateEl = document.getElementById("expiryDate");
+  if (!expiryDateEl) return;
+  expiryDateEl.setAttribute("min", getMinExpiryDateStr());
+  expiryDateEl.setCustomValidity("");
+}
+
 function getCurrentUserIdentifier() {
   try {
     const userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
@@ -534,6 +547,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addStockModal.addEventListener('show.bs.modal', async () => {
       await refreshSamplesFromApiOrFallback();
       populateDropdowns();
+      applyExpiryMinAttr();
     });
   }
 
@@ -758,6 +772,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveStockBtn = document.getElementById("saveStockBtn");
   saveStockBtn.addEventListener("click", () => {
     const form = document.getElementById("addStockForm");
+    applyExpiryMinAttr();
     if (form.checkValidity()) {
       const quantityAdded = parseInt(
         document.getElementById("quantityAdded").value
@@ -778,14 +793,19 @@ document.addEventListener("DOMContentLoaded", () => {
       // 2. Validation: Expiry date must be at least one month in the future
       if (expiryDateValue) {
         const selectedDate = new Date(expiryDateValue);
-        const today = new Date();
-        const minDate = new Date(today);
-        minDate.setMonth(minDate.getMonth() + 1);
-        minDate.setHours(0, 0, 0, 0); // Reset time for date-only comparison
+        const selectedStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
 
-        if (selectedDate < minDate) {
-          alert("Expiry date must be at least one month in the future from today.");
-          if (expiryDateEl) expiryDateEl.focus();
+        const today = new Date();
+        const minBoundary = new Date(today);
+        minBoundary.setMonth(minBoundary.getMonth() + 1);
+        const minStart = new Date(minBoundary.getFullYear(), minBoundary.getMonth(), minBoundary.getDate());
+
+        if (selectedStart < minStart) {
+          if (expiryDateEl) {
+            expiryDateEl.setCustomValidity("Expiry date must be at least one month in the future from today.");
+            expiryDateEl.reportValidity();
+            expiryDateEl.focus();
+          }
           return;
         }
       }

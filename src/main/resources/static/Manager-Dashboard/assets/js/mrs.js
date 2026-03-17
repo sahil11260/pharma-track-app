@@ -377,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Previous
     const prevLi = document.createElement("li");
     prevLi.className = "page-item " + (currentPage === 1 ? "disabled" : "");
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Previous</a>`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="prev">Prev</a>`;
     pagination.appendChild(prevLi);
 
     for (let i = 1; i <= totalPages; i++) {

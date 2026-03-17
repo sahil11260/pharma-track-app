@@ -90,12 +90,22 @@ document.addEventListener("DOMContentLoaded", () => {
             return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
         };
 
+        const rawStatus = backendTask.status || "Pending";
+        const normStatus = String(rawStatus)
+            .trim()
+            .toLowerCase()
+            .replace(/[_\s]+/g, "-");
+
+        const displayStatus = (taskDate > todayKey && normStatus === "overdue")
+            ? "Pending"
+            : rawStatus;
+
         return {
             id: backendTask.id,
             type: capitalizeFirst(backendTask.type) || "Task",
             clinic: clinic,
             doctor: doctor,
-            status: capitalizeFirst(backendTask.status) || "Pending",
+            status: capitalizeFirst(displayStatus) || "Pending",
             date: taskDate
         };
     }
@@ -331,6 +341,13 @@ document.addEventListener("DOMContentLoaded", () => {
             row.dataset.taskId = task.id;
 
             const completed = normalizeTaskStatus(task.status) === 'completed';
+            const isPastDue = task.date < todayKey;
+            const clinicMissing = !String(task.clinic || "").trim();
+            const disableUpdate = completed || (mode === "past") || clinicMissing;
+
+            let updateBtnLabel = completed ? 'Done' : 'Update';
+            if (!completed && mode === "past") updateBtnLabel = 'Locked';
+            if (!completed && clinicMissing) updateBtnLabel = 'Add Clinic';
 
             // Show date if not today
             const firstColContent = (task.date !== todayKey) ? task.date : (index + 1);
@@ -348,8 +365,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             data-task-id="${task.id}"
                             data-bs-toggle="modal" 
                             data-bs-target="#statusUpdateModal"
-                            ${completed ? 'disabled' : ''}>
-                            <i class="bi bi-pencil-square"></i> ${completed ? 'Done' : 'Update'}
+                            ${disableUpdate ? 'disabled' : ''}>
+                            <i class="bi bi-pencil-square"></i> ${updateBtnLabel}
                         </button>
                     </div>
                 </td>
@@ -409,6 +426,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const task = tasks.find(t => t.id === taskId);
 
             if (task) {
+                const clinicMissing = !String(task.clinic || "").trim();
+                if (task.date < todayKey) {
+                    event.preventDefault();
+                    alert("Past due pending tasks cannot be updated.");
+                    return;
+                }
+                if (clinicMissing) {
+                    event.preventDefault();
+                    alert("Clinic Name is mandatory. Please contact your manager to add the Clinic Name before updating status.");
+                    return;
+                }
                 modalTaskTarget.textContent = `${task.doctor} (${task.clinic})`;
                 modalTaskIdInput.value = taskId;
                 
@@ -436,6 +464,19 @@ document.addEventListener("DOMContentLoaded", () => {
         saveStatusBtn.addEventListener('click', async () => {
             const taskId = parseInt(modalTaskIdInput.value);
             const newStatus = newStatusSelect.value;
+
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                const clinicMissing = !String(task.clinic || "").trim();
+                if (task.date < todayKey) {
+                    alert("Past due pending tasks cannot be updated.");
+                    return;
+                }
+                if (clinicMissing) {
+                    alert("Clinic Name is mandatory. Please contact your manager to add the Clinic Name before updating status.");
+                    return;
+                }
+            }
 
             const taskIndex = tasks.findIndex(t => t.id === taskId);
             if (taskIndex !== -1) {
