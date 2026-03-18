@@ -21,7 +21,7 @@ public class DatabaseFixConfig implements CommandLineRunner {
     @Override
     public void run(String... args) {
         logger.info("Running Database Migration and Constraint Fixer...");
-        String[] tables = {"app_distribution", "app_stock_received", "app_mr_stock_items"};
+        String[] tables = {"app_distribution", "app_stock_received", "app_mr_stock_items", "app_task"};
 
         for (String table : tables) {
             // 0. Ensure product_id exists if ddl-auto failed (e.g. in tests)

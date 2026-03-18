@@ -33,7 +33,7 @@ public class TaskService {
             return List.of(); // Secure by default
         }
 
-        String currentEmail = auth.getName();
+        String currentEmail = auth.getName() != null ? auth.getName().trim() : "";
         boolean isManager = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
         boolean isMR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MR"));
         boolean isAdmin = auth.getAuthorities().stream()
@@ -71,14 +71,20 @@ public class TaskService {
             // Fetch tasks for all matching MR identifiers
             java.util.Set<Task> taskSet = new java.util.HashSet<>();
             for (String mrId : myMrIdentifiers) {
-                taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(mrId));
+                // Use the enhanced trimmed/ignore-case query
+                taskSet.addAll(taskRepository.findByAssignedToSpecific(mrId.trim()));
             }
 
             System.out.println("[TASK_DEBUG] Manager found tasks: " + taskSet.size());
 
             return taskSet.stream()
                     .sorted((t1, t2) -> {
-                        int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
+                        LocalDate d1 = t1.getCreatedDate();
+                        LocalDate d2 = t2.getCreatedDate();
+                        if (d1 == null && d2 == null) return t2.getId().compareTo(t1.getId());
+                        if (d1 == null) return 1;
+                        if (d2 == null) return -1;
+                        int res = d2.compareTo(d1);
                         return res != 0 ? res : t2.getId().compareTo(t1.getId());
                     })
                     .map(TaskService::toResponse)
@@ -92,14 +98,20 @@ public class TaskService {
 
             java.util.Set<Task> taskSet = new java.util.HashSet<>();
             for (String mrId : mrIdentifiers) {
-                taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(mrId.trim()));
+                // Use the enhanced trimmed/ignore-case query for robust matching on Postgres
+                taskSet.addAll(taskRepository.findByAssignedToSpecific(mrId.trim()));
             }
 
             System.out.println("[TASK_DEBUG] Total tasks found for MR " + currentEmail + ": " + taskSet.size());
 
             return taskSet.stream()
                     .sorted((t1, t2) -> {
-                        int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
+                        LocalDate d1 = t1.getCreatedDate();
+                        LocalDate d2 = t2.getCreatedDate();
+                        if (d1 == null && d2 == null) return t2.getId().compareTo(t1.getId());
+                        if (d1 == null) return 1;
+                        if (d2 == null) return -1;
+                        int res = d2.compareTo(d1);
                         return res != 0 ? res : t2.getId().compareTo(t1.getId());
                     })
                     .map(TaskService::toResponse)
@@ -114,10 +126,11 @@ public class TaskService {
         List<String> ids = new ArrayList<>();
         if (currentEmail == null)
             return ids;
-        ids.add(currentEmail);
-        userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
+        String trimmedEmail = currentEmail.trim();
+        ids.add(trimmedEmail);
+        userRepository.findByEmailIgnoreCase(trimmedEmail).ifPresent(u -> {
             if (u.getName() != null)
-                ids.add(u.getName());
+                ids.add(u.getName().trim());
         });
         return ids.stream().distinct().toList();
     }
