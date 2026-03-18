@@ -16,6 +16,30 @@ document.addEventListener("DOMContentLoaded", function () {
   const assignMR = document.getElementById("assignMR");
   const doctorModal = new bootstrap.Modal(document.getElementById("doctorModal"));
 
+  function getOrCreateFieldErrorEl(inputEl) {
+    if (!inputEl || !inputEl.id) return null;
+    const errorId = `${inputEl.id}Error`;
+    let el = document.getElementById(errorId);
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = errorId;
+    el.className = "text-danger small mt-1";
+    inputEl.insertAdjacentElement("afterend", el);
+    return el;
+  }
+
+  function setFieldError(inputEl, message) {
+    const errorEl = getOrCreateFieldErrorEl(inputEl);
+    if (errorEl) errorEl.textContent = message || "";
+    if (inputEl) inputEl.classList.add("is-invalid");
+  }
+
+  function clearFieldError(inputEl) {
+    const errorEl = inputEl && inputEl.id ? document.getElementById(`${inputEl.id}Error`) : null;
+    if (errorEl) errorEl.textContent = "";
+    if (inputEl) inputEl.classList.remove("is-invalid");
+  }
+
   let doctors = [];
   let mrs = [];
   let filteredDoctors = [];
@@ -140,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     renderPagination();
-  }
+  } 
 
   function renderPagination() {
     paginationEl.innerHTML = "";
@@ -244,6 +268,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const name = document.getElementById("doctorName").value;
     const phone = document.getElementById("doctorPhone").value;
     const specialty = document.getElementById("doctorSpecialty").value;
+    const cityEl = document.getElementById("doctorCity");
+    const city = cityEl ? cityEl.value.trim() : "";
 
     if (!name || !name.trim()) {
       alert("Doctor Name is required.");
@@ -254,6 +280,12 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Specialty is required.");
       return;
     }
+
+    if (city && /^\d+$/.test(city)) {
+      if (cityEl) setFieldError(cityEl, "City name cannot be numbers only.");
+      return;
+    }
+    if (cityEl) clearFieldError(cityEl);
 
     // Phone validation: Must be exactly 10 digits
     if (phone && phone.length !== 10) {
@@ -277,7 +309,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const payload = {
       name: name,
       specialty: document.getElementById("doctorSpecialty").value,
-      city: document.getElementById("doctorCity").value,
+      city: city,
       phone: phone,
       email: email,
       assignedMR: assignMR.value,
@@ -315,6 +347,16 @@ document.addEventListener("DOMContentLoaded", function () {
   if (phoneInput) {
     phoneInput.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
+
+  const cityInput = document.getElementById("doctorCity");
+  if (cityInput) {
+    cityInput.addEventListener("input", function () {
+      const v = (this.value || "").trim();
+      if (!v || !/^\d+$/.test(v)) {
+        clearFieldError(this);
+      }
     });
   }
 

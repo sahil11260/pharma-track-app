@@ -49,8 +49,9 @@ public class MrLocationService {
             throw new IllegalArgumentException("Only MR can update location");
         }
 
-        MrLocation entity = mrLocationRepository.findById(current.getId()).orElseGet(MrLocation::new);
-        entity.setMrId(current.getId());
+        Long currentId = Objects.requireNonNull(current.getId(), "current user id");
+        MrLocation entity = mrLocationRepository.findById(currentId).orElseGet(MrLocation::new);
+        entity.setMrId(currentId);
         entity.setMrName(current.getName());
         entity.setTerritory(current.getTerritory());
         entity.setLatitude(request.latitude());

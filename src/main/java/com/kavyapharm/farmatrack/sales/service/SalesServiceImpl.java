@@ -87,13 +87,13 @@ public class SalesServiceImpl implements SalesService {
 
         // Only update if explicit target ID is provided, otherwise always create new
         SalesTarget target;
-        if (request.id() != null) {
-            target = targetRepository.findById(request.id())
+        Long requestId = request.id();
+        if (requestId != null) {
+            target = targetRepository.findById(requestId)
                     .orElseGet(() -> new SalesTarget());
         } else {
             target = new SalesTarget();
         }
-
         target.setMrId(request.mrId());
         target.setMrName(request.mrName());
         target.setProductId(request.productId());
@@ -178,7 +178,6 @@ public class SalesServiceImpl implements SalesService {
                             Math.round(pct * 100.0) / 100.0, status);
                 })
                 .collect(Collectors.toList());
-
         // Determine top performer - only show if there are actual achievements
         String topPerformer = "No Top Performer";
         if (!topPerformers.isEmpty()) {
@@ -187,7 +186,6 @@ public class SalesServiceImpl implements SalesService {
                     ", achievement: " + best.achievement() +
                     ", percentage: " + best.achievementPercentage() +
                     ", total MRs: " + mrPerformanceMap.size());
-
             // Only show a top performer if they have some achievement (> 0% or > 0 units)
             if (best.achievementPercentage() > 0 || (best.achievement() != null && best.achievement() > 0)) {
                 topPerformer = best.mrName();
@@ -225,7 +223,6 @@ public class SalesServiceImpl implements SalesService {
             Integer month, Integer year) {
         if (groupTargets.isEmpty())
             return Collections.emptyList();
-
         // 1. Sort targets: startDate ASC, assignedDate ASC, id ASC
         List<SalesTarget> sortedTargets = new ArrayList<>(groupTargets);
         sortedTargets
@@ -234,10 +231,14 @@ public class SalesServiceImpl implements SalesService {
                         .thenComparing(SalesTarget::getId, Comparator.nullsFirst(Comparator.naturalOrder())));
 
         // 2. Aggregate Sales (DCR + Manual Achievements)
-        Set<Long> mrIdsInGroup = sortedTargets.stream().map(SalesTarget::getMrId).collect(Collectors.toSet());
+        Set<Long> mrIdsInGroup = sortedTargets.stream()
+                .map(SalesTarget::getMrId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         Set<com.kavyapharm.farmatrack.user.model.User> allPotentialUsers = new HashSet<>();
         for (Long mrId : mrIdsInGroup) {
-            userRepository.findById(mrId).ifPresent(u -> {
+            Long safeMrId = Objects.requireNonNull(mrId, "mrId");
+            userRepository.findById(safeMrId).ifPresent(u -> {
                 allPotentialUsers.add(u);
                 allPotentialUsers.addAll(getSubordinatesRecursively(u));
             });
@@ -522,12 +523,14 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional(readOnly = true)
     public SalesTarget getTargetById(Long id) {
+        Objects.requireNonNull(id, "id is required");
         return targetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Target not found with id: " + id));
     }
 
     @Override
     public void deleteTarget(Long id) {
+        Objects.requireNonNull(id, "id is required");
         targetRepository.deleteById(id);
     }
 
@@ -539,6 +542,7 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     public SalesTarget updateTargetAndAchievement(Long id, UpdateAchievementRequest request) {
+        Objects.requireNonNull(id, "id is required");
         SalesTarget target = targetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Target not found with id: " + id));
 
@@ -552,7 +556,8 @@ public class SalesServiceImpl implements SalesService {
         if (request.achievedUnits() != null) {
             // Find current DCR sum (which we can't change)
             int dcrSum = 0;
-            com.kavyapharm.farmatrack.user.model.User mrUser = userRepository.findById(target.getMrId()).orElse(null);
+            Long mrId = target.getMrId();
+            com.kavyapharm.farmatrack.user.model.User mrUser = mrId != null ? userRepository.findById(mrId).orElse(null) : null;
             String subName = target.getMrName();
             String subEmail = mrUser != null ? mrUser.getEmail() : subName;
 

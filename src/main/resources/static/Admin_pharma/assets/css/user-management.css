@@ -13,6 +13,19 @@
   border: 1px solid rgba(255, 255, 255, 0.125); /* Subtle light border */
 }
 
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+}
+
 /* 2. Ensure the text inside the modal body is light */
 [data-bs-theme="dark"] #viewUserModal .modal-body {
   color: #f8f9fa !important;
