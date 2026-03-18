@@ -15,35 +15,40 @@ public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false)
     private String type;
 
-    @Column(nullable = false)
+    @Column(name = "assigned_to", nullable = false)
     private String assignedTo;
 
-    @Column(nullable = false)
+    @Column(name = "priority", nullable = false)
     private String priority;
 
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private String status;
 
+    @Column(name = "due_date")
     private LocalDate dueDate;
 
+    @Column(name = "location")
     private String location;
 
+    @Column(name = "clinic_name")
     private String clinicName;
 
+    @Column(name = "doctor_name")
     private String doctorName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "created_date", nullable = false)
     private LocalDate createdDate;
 
     public Task() {
