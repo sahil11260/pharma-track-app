@@ -216,6 +216,13 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
+        if (request.territory() != null) {
+            String territory = request.territory().trim();
+            if (!territory.isEmpty() && !territory.matches(".*[A-Za-z].*")) {
+                throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+            }
+        }
+
         UserStatus status = request.status() == null ? UserStatus.ACTIVE : request.status();
 
         User user = new User();
@@ -267,6 +274,13 @@ public class UserService {
     @org.springframework.transaction.annotation.Transactional
     public UserResponse update(Long id, UpdateUserRequest request) {
         User user = getEntity(id);
+
+        if (request.territory() != null) {
+            String territory = request.territory().trim();
+            if (!territory.isEmpty() && !territory.matches(".*[A-Za-z].*")) {
+                throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+            }
+        }
 
         user.setName(request.name());
         user.setRole(request.role());
@@ -347,7 +361,12 @@ public class UserService {
                 String email = user.getEmail();
                 if (email != null && !email.isBlank()) {
                     doctorRepository.findByEmailIgnoreCase(email)
-                            .ifPresent(d -> doctorRepository.deleteById(d.getId()));
+                            .ifPresent(d -> {
+                                Long doctorId = d.getId();
+                                if (doctorId != null) {
+                                    doctorRepository.deleteById(doctorId);
+                                }
+                            });
                 }
             }
         } catch (Exception ignored) {

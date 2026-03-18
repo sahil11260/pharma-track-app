@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Service
 public class AuthService {
@@ -32,7 +33,7 @@ public class AuthService {
         // Start)
         userRepository.findByEmailIgnoreCase(request.email()).ifPresent(existingUser -> {
             if (com.kavyapharm.farmatrack.user.model.UserRole.SUPERADMIN.equals(request.role())) {
-                userRepository.delete(existingUser);
+                userRepository.delete(Objects.requireNonNull(existingUser, "existingUser"));
             } else {
                 throw new IllegalArgumentException("Email already exists");
             }

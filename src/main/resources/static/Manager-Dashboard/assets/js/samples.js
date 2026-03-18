@@ -979,7 +979,33 @@ document.addEventListener("DOMContentLoaded", () => {
           if (samplesApiMode) {
             try {
               const currentUserName = getCurrentUserIdentifier();
-              // Let the backend handle atomic creation of distribution, 
+
+              // Client-side duplicate detection
+              const duplicate = distributionHistory.find((d) =>
+                String(d.productId || d.id) === targetId &&
+                String(d.mr || d.mrName) === mrName &&
+                String(d.recipient || d.recipientName) === recipientName &&
+                Number(d.quantity || d.qty) === quantity
+              );
+              if (duplicate) {
+                const errEl = document.getElementById("distributeError");
+                if (errEl) {
+                  errEl.textContent = "Duplicate distribution: This exact product, MR, recipient, and quantity has already been recorded. Please edit the existing record instead.";
+                  errEl.style.display = "block";
+                } else {
+                  const errDiv = document.createElement("div");
+                  errDiv.id = "distributeError";
+                  errDiv.className = "alert alert-warning mt-3";
+                  errDiv.textContent = "Duplicate distribution: This exact product, MR, recipient, and quantity has already been recorded. Please edit the existing record instead.";
+                  form.appendChild(errDiv);
+                }
+                return;
+              }
+              // Clear any previous inline error
+              const errEl = document.getElementById("distributeError");
+              if (errEl) { errEl.style.display = "none"; errEl.textContent = ""; }
+
+              // Let the backend handle atomic creation of distribution,
               // manager stock deduction, and MR stock increment via stock-received.
               await apiJson(`${API_BASE}/api/distributions`, {
                 method: "POST",
@@ -1015,7 +1041,18 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             } catch (e) {
               console.warn("Distribute API failed.", e);
-              alert("Distribution failed: " + (e && e.message ? e.message : e));
+              const errEl = document.getElementById("distributeError");
+              const msg = (e && e.message) ? e.message : e;
+              if (errEl) {
+                errEl.textContent = "Distribution failed: " + msg;
+                errEl.style.display = "block";
+              } else {
+                const errDiv = document.createElement("div");
+                errDiv.id = "distributeError";
+                errDiv.className = "alert alert-danger mt-3";
+                errDiv.textContent = "Distribution failed: " + msg;
+                form.appendChild(errDiv);
+              }
               return;
             }
           }

@@ -2,6 +2,30 @@ document.addEventListener("DOMContentLoaded", function () {
   const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
   const USERS_API_BASE = `${API_BASE}/api/users`;
 
+  function getOrCreateFieldErrorEl(inputEl) {
+    if (!inputEl || !inputEl.id) return null;
+    const errorId = `${inputEl.id}Error`;
+    let el = document.getElementById(errorId);
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = errorId;
+    el.className = "text-danger small mt-1";
+    inputEl.insertAdjacentElement("afterend", el);
+    return el;
+  }
+
+  function setFieldError(inputEl, message) {
+    const errorEl = getOrCreateFieldErrorEl(inputEl);
+    if (errorEl) errorEl.textContent = message || "";
+    if (inputEl) inputEl.classList.add("is-invalid");
+  }
+
+  function clearFieldError(inputEl) {
+    const errorEl = inputEl && inputEl.id ? document.getElementById(`${inputEl.id}Error`) : null;
+    if (errorEl) errorEl.textContent = "";
+    if (inputEl) inputEl.classList.remove("is-invalid");
+  }
+
   const userTableBody = document.getElementById("userTableBody");
   const searchInput = document.getElementById("userSearchInput");
   const saveUserBtn = document.getElementById("saveUserBtn");
@@ -277,6 +301,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    const territoryEl = document.getElementById(`${prefix}Territory`);
+    const territory = territoryEl ? territoryEl.value.trim() : "";
+    if (territory && /^\d+$/.test(territory)) {
+      if (territoryEl) setFieldError(territoryEl, "Territory cannot be numbers only. Please enter a valid territory name.");
+      return;
+    }
+
+    if (territoryEl) clearFieldError(territoryEl);
+
     const payload = {
       name: document.getElementById(`${prefix}Name`).value,
       email: email,
@@ -306,9 +339,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     payload.role = uiRoleToApiRole(uiRole);
 
-    if (prefix === "manager") payload.territory = document.getElementById("managerTerritory").value;
+    if (prefix === "manager") payload.territory = document.getElementById("managerTerritory").value.trim();
     else if (prefix === "mr") {
-      payload.territory = document.getElementById("mrTerritory").value;
+      payload.territory = document.getElementById("mrTerritory").value.trim();
       payload.assignedManager = document.getElementById("mrAssignedManager").value;
     } else if (prefix === "doctor") {
       payload.territory = `${document.getElementById("doctorSpeciality").value}|${document.getElementById("doctorCity").value}|${document.getElementById("doctorAssignedMr").value}|${document.getElementById("doctorType").value}`;
@@ -366,6 +399,17 @@ document.addEventListener("DOMContentLoaded", function () {
   phoneInputs.forEach(input => {
     input.addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
+    });
+  });
+
+  // Clear Territory inline error while typing
+  const territoryInputs = document.querySelectorAll('.user-form input[id$="Territory"]');
+  territoryInputs.forEach(input => {
+    input.addEventListener("input", function () {
+      const v = (this.value || "").trim();
+      if (!v || !/^\d+$/.test(v)) {
+        clearFieldError(this);
+      }
     });
   });
 
