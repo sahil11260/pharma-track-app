@@ -87,12 +87,17 @@ public class TaskService {
 
         if (isMR) {
             System.out.println("[TASK_DEBUG] MR Login: " + currentEmail);
-            // STRICT: Only match tasks assigned to the MR's email address
-            List<Task> mrTasks = taskRepository.findByAssignedToIgnoreCase(currentEmail.trim());
-            System.out.println("[TASK_DEBUG] Found " + mrTasks.size() + " tasks by email for: " + currentEmail);
-            System.out.println("[TASK_DEBUG] Total tasks for MR " + currentEmail + ": " + mrTasks.size());
+            List<String> mrIdentifiers = getUserIdentifiers(currentEmail);
+            System.out.println("[TASK_DEBUG] MR Identifiers: " + mrIdentifiers);
 
-            return mrTasks.stream()
+            java.util.Set<Task> taskSet = new java.util.HashSet<>();
+            for (String mrId : mrIdentifiers) {
+                taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(mrId.trim()));
+            }
+
+            System.out.println("[TASK_DEBUG] Total tasks found for MR " + currentEmail + ": " + taskSet.size());
+
+            return taskSet.stream()
                     .sorted((t1, t2) -> {
                         int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
                         return res != 0 ? res : t2.getId().compareTo(t1.getId());

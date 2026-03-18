@@ -10,7 +10,7 @@ public class MrStockItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long internalId;
 
-    @Column(name = "id", length = 20, nullable = false)
+    @Column(name = "product_id", length = 20)
     private String productId; // Product ID (e.g., P001 or "1")
 
     @Column(nullable = false)
