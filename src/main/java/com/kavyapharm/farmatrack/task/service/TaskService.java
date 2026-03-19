@@ -39,10 +39,12 @@ public class TaskService {
         boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
-        System.out.println("[TASK_DEBUG] User: " + currentEmail + " | Roles: Admin=" + isAdmin + ", Manager=" + isManager + ", MR=" + isMR);
+        System.out.println("[TASK_DEBUG] User: " + currentEmail + " | Roles: Admin=" + isAdmin + ", Manager="
+                + isManager + ", MR=" + isMR);
 
         if (isAdmin) {
-            List<Task> allTasks = taskRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate").and(Sort.by(Sort.Direction.DESC, "id")));
+            List<Task> allTasks = taskRepository
+                    .findAll(Sort.by(Sort.Direction.DESC, "createdDate").and(Sort.by(Sort.Direction.DESC, "id")));
             System.out.println("[TASK_DEBUG] Admin fetching all tasks. Count: " + allTasks.size());
             return allTasks.stream().map(TaskService::toResponse).toList();
         }
@@ -86,13 +88,19 @@ public class TaskService {
         }
 
         if (isMR) {
-            System.out.println("[TASK_DEBUG] MR Login: " + currentEmail);
-            // STRICT: Only match tasks assigned to the MR's email address
-            List<Task> mrTasks = taskRepository.findByAssignedToIgnoreCase(currentEmail.trim());
-            System.out.println("[TASK_DEBUG] Found " + mrTasks.size() + " tasks by email for: " + currentEmail);
-            System.out.println("[TASK_DEBUG] Total tasks for MR " + currentEmail + ": " + mrTasks.size());
+            List<String> mrIdentifiers = getUserIdentifiers(currentEmail);
+            System.out.println("[TASK_DEBUG] MR Login: " + currentEmail + " | Identifiers: " + mrIdentifiers);
 
-            return mrTasks.stream()
+            java.util.Set<Task> taskSet = new java.util.HashSet<>();
+            for (String identifier : mrIdentifiers) {
+                if (identifier != null && !identifier.isBlank()) {
+                    taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(identifier.trim()));
+                }
+            }
+
+            System.out.println("[TASK_DEBUG] Total tasks for MR " + currentEmail + ": " + taskSet.size());
+
+            return taskSet.stream()
                     .sorted((t1, t2) -> {
                         int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
                         return res != 0 ? res : t2.getId().compareTo(t1.getId());
