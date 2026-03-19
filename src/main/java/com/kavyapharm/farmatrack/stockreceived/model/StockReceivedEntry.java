@@ -15,7 +15,7 @@ public class StockReceivedEntry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long internalId;
 
-    @Column(name = "id", nullable = false)
+    @Column(name = "product_id")
     private String productId;
 
     @Column(nullable = false)

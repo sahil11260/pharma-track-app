@@ -410,6 +410,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const given = form.targetGivenDate.value;
     const deadline = form.targetDeadline.value;
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
     const productObj = allProducts.find(p => p.name === product);
     const totalStock = productObj ? (Number(productObj.stock) || 0) : 0;
 
@@ -433,6 +436,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const msg = `⚠️ Insufficient stock. \n\nTotal Stock: ${totalStock} \nAssigned to others: ${prevAssignedTotal} \nAvailable to assign: ${availableToAssign} \n\nYou are trying to assign ${qty} units, which exceeds the remaining stock.`;
       alert(msg);
       return false;
+    }
+
+    // Date validation: past dates are not allowed
+    if (given) {
+      const givenDate = new Date(given);
+      givenDate.setHours(0, 0, 0, 0);
+      if (givenDate < todayStart) {
+        alert("⚠️ Target Given Date cannot be a past date.");
+        return false;
+      }
+    }
+    if (deadline) {
+      const deadlineDate = new Date(deadline);
+      deadlineDate.setHours(0, 0, 0, 0);
+      if (deadlineDate < todayStart) {
+        alert("⚠️ Deadline Date cannot be a past date.");
+        return false;
+      }
     }
 
     // Date validation for sequence
@@ -588,6 +609,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const today = new Date().toISOString().split('T')[0];
     const targetGivenDateInput = document.getElementById("targetGivenDate");
     const targetDeadlineInput = document.getElementById("targetDeadline");
+    if (targetGivenDateInput) targetGivenDateInput.min = today;
+    if (targetDeadlineInput) targetDeadlineInput.min = today;
     if (targetGivenDateInput) {
       targetGivenDateInput.addEventListener("change", () => {
         if (targetGivenDateInput.value && targetDeadlineInput.value && new Date(targetGivenDateInput.value) > new Date(targetDeadlineInput.value)) {

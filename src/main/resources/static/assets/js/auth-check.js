@@ -26,3 +26,38 @@
     }
 
 })();
+
+(function () {
+    document.addEventListener("keydown", function (e) {
+        if (!e || e.defaultPrevented) return;
+        if (e.key !== "Enter") return;
+        if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+
+        const el = e.target;
+        if (!el || !el.closest) return;
+        const tag = (el.tagName || "").toLowerCase();
+        if (tag === "textarea") return;
+        if (tag === "button") return;
+        if (tag !== "input" && tag !== "select") return;
+
+        const type = (el.getAttribute("type") || "").toLowerCase();
+        if (type === "submit" || type === "button" || type === "reset") return;
+
+        const scope = el.closest("form") || document;
+        const focusables = Array.from(scope.querySelectorAll(
+            "input:not([type=hidden]):not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly])"
+        )).filter(function (node) {
+            const style = window.getComputedStyle(node);
+            return style && style.visibility !== "hidden" && style.display !== "none";
+        });
+        const idx = focusables.indexOf(el);
+        if (idx < 0) return;
+        const next = focusables.slice(idx + 1).find(function (node) {
+            return node && typeof node.focus === "function";
+        });
+        if (!next) return;
+
+        e.preventDefault();
+        next.focus();
+    }, true);
+})();

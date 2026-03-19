@@ -30,77 +30,59 @@ public class TaskService {
     public List<TaskResponse> list() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            return List.of(); // Secure by default
+            return List.of();
         }
 
-        String currentEmail = auth.getName();
+        String currentEmail = auth.getName() != null ? auth.getName().trim().toLowerCase() : "";
         boolean isManager = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
         boolean isMR = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MR"));
         boolean isAdmin = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
-        System.out.println("[TASK_DEBUG] User: " + currentEmail + " | Roles: Admin=" + isAdmin + ", Manager="
-                + isManager + ", MR=" + isMR);
+        System.out.println("[TASK_DEBUG] User: " + currentEmail + " | Roles: Admin=" + isAdmin + ", Manager=" + isManager + ", MR=" + isMR);
 
         if (isAdmin) {
-            List<Task> allTasks = taskRepository
-                    .findAll(Sort.by(Sort.Direction.DESC, "createdDate").and(Sort.by(Sort.Direction.DESC, "id")));
+            List<Task> allTasks = taskRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate").and(Sort.by(Sort.Direction.DESC, "id")));
             System.out.println("[TASK_DEBUG] Admin fetching all tasks. Count: " + allTasks.size());
             return allTasks.stream().map(TaskService::toResponse).toList();
         }
 
+        // AGGRESSIVE COLLECTION: We'll gather matching tasks from ANY role-based identifier
+        java.util.Set<Task> finalTaskSet = new java.util.HashSet<>();
+
+        // 1. PERSONAL TASK FETCH: Always look for tasks assigned directly to the current user (Email or Name)
+        List<String> myIdentifiers = getUserIdentifiers(currentEmail);
+        System.out.println("[TASK_DEBUG] Personal Identifiers for " + currentEmail + ": " + myIdentifiers);
+        for (String id : myIdentifiers) {
+           finalTaskSet.addAll(taskRepository.findByAssignedToSpecific(id));
+        }
+
+        // 2. MANAGER SCOPE FETCH: If user is a manager, also include all tasks for their subordinates (MRs)
         if (isManager) {
-            List<String> managerIds = getUserIdentifiers(currentEmail);
-            System.out.println("[TASK_DEBUG] Manager IDs: " + managerIds);
-            if (managerIds.isEmpty())
-                return List.of();
-
-            // Get all MRs belonging to this manager to define the scope
-            java.util.Set<String> myMrIdentifiers = new java.util.HashSet<>();
-            for (String managerId : managerIds) {
+            List<String> myManagerRecords = getUserIdentifiers(currentEmail);
+            java.util.Set<String> subMrIdentifiers = new java.util.HashSet<>();
+            for (String mId : myManagerRecords) {
                 userRepository
-                        .findByRoleAndAssignedManagerIgnoreCase(com.kavyapharm.farmatrack.user.model.UserRole.MR,
-                                managerId.trim())
-                        .forEach(u -> {
-                            if (u.getName() != null)
-                                myMrIdentifiers.add(u.getName().trim().toLowerCase());
-                            if (u.getEmail() != null)
-                                myMrIdentifiers.add(u.getEmail().trim().toLowerCase());
-                        });
+                    .findByRoleAndAssignedManagerIgnoreCase(com.kavyapharm.farmatrack.user.model.UserRole.MR, mId)
+                    .forEach(u -> {
+                        if (u.getName() != null) subMrIdentifiers.add(u.getName().trim().toLowerCase());
+                        if (u.getEmail() != null) subMrIdentifiers.add(u.getEmail().trim().toLowerCase());
+                    });
             }
-            System.out.println("[TASK_DEBUG] Manager's MR identifiers: " + myMrIdentifiers);
-
-            // Fetch tasks for all matching MR identifiers
-            java.util.Set<Task> taskSet = new java.util.HashSet<>();
-            for (String mrId : myMrIdentifiers) {
-                taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(mrId));
+            System.out.println("[TASK_DEBUG] Manager " + currentEmail + " - subordinate MRs found: " + subMrIdentifiers);
+            for (String mrId : subMrIdentifiers) {
+                finalTaskSet.addAll(taskRepository.findByAssignedToSpecific(mrId));
             }
-
-            System.out.println("[TASK_DEBUG] Manager found tasks: " + taskSet.size());
-
-            return taskSet.stream()
-                    .sorted((t1, t2) -> {
-                        int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
-                        return res != 0 ? res : t2.getId().compareTo(t1.getId());
-                    })
-                    .map(TaskService::toResponse)
-                    .toList();
         }
 
         if (isMR) {
-            List<String> mrIdentifiers = getUserIdentifiers(currentEmail);
-            System.out.println("[TASK_DEBUG] MR Login: " + currentEmail + " | Identifiers: " + mrIdentifiers);
+            System.out.println("[TASK_DEBUG] MR Login: " + currentEmail);
+            // STRICT: Only match tasks assigned to the MR's email address
+            List<Task> mrTasks = taskRepository.findByAssignedToIgnoreCase(currentEmail.trim());
+            System.out.println("[TASK_DEBUG] Found " + mrTasks.size() + " tasks by email for: " + currentEmail);
+            System.out.println("[TASK_DEBUG] Total tasks for MR " + currentEmail + ": " + mrTasks.size());
 
-            java.util.Set<Task> taskSet = new java.util.HashSet<>();
-            for (String identifier : mrIdentifiers) {
-                if (identifier != null && !identifier.isBlank()) {
-                    taskSet.addAll(taskRepository.findByAssignedToIgnoreCase(identifier.trim()));
-                }
-            }
-
-            System.out.println("[TASK_DEBUG] Total tasks for MR " + currentEmail + ": " + taskSet.size());
-
-            return taskSet.stream()
+            return mrTasks.stream()
                     .sorted((t1, t2) -> {
                         int res = t2.getCreatedDate().compareTo(t1.getCreatedDate());
                         return res != 0 ? res : t2.getId().compareTo(t1.getId());
@@ -115,13 +97,19 @@ public class TaskService {
 
     private List<String> getUserIdentifiers(String currentEmail) {
         List<String> ids = new ArrayList<>();
-        if (currentEmail == null)
+        if (currentEmail == null || currentEmail.isBlank())
             return ids;
-        ids.add(currentEmail);
-        userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
-            if (u.getName() != null)
-                ids.add(u.getName());
+        
+        String trimmed = currentEmail.trim().toLowerCase();
+        ids.add(trimmed);
+        
+        // Lookup name by email from current session
+        userRepository.findByEmailIgnoreCase(trimmed).ifPresent(u -> {
+            if (u.getName() != null && !u.getName().isBlank()) {
+                ids.add(u.getName().trim().toLowerCase());
+            }
         });
+        
         return ids.stream().distinct().toList();
     }
 

@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -94,6 +95,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional(readOnly = true)
     public ExpenseResponse getExpenseById(Long id) {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
         return ExpenseResponse.from(expense);
@@ -101,6 +103,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public ExpenseResponse updateExpense(Long id, UpdateExpenseRequest request) {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
 
@@ -149,6 +152,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     public ExpenseResponse updateExpenseWithReceipt(Long id, UpdateExpenseRequest request, MultipartFile receipt)
             throws IOException {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
 
@@ -182,6 +186,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public ExpenseResponse approveExpense(Long id, String approvedBy) {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
 
@@ -196,6 +201,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public ExpenseResponse rejectExpense(Long id, String rejectedBy, String reason) {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
 
@@ -210,6 +216,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public void deleteExpense(Long id) {
+        Objects.requireNonNull(id, "id is required");
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found with id: " + id));
 

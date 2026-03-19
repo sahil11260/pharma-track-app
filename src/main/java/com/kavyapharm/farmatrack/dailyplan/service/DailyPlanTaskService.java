@@ -51,6 +51,7 @@ public class DailyPlanTaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Daily plan task not found"));
     }
 
+    @SuppressWarnings("null")
     private void ensureInitialized() {
         if (repository.count() > 0) {
             return;

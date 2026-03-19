@@ -14,7 +14,7 @@ public class Distribution {
     @Column(nullable = false)
     private String product;
 
-    @Column(name = "id")
+    @Column(name = "product_id")
     private String productId;
 
     @Column(nullable = false)
