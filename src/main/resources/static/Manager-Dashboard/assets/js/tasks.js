@@ -150,44 +150,56 @@ function toUpdatePayload(task) {
 }
 
 async function refreshTasksFromApiOrFallback() {
-  try {
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('API timeout')), 3000)
-    );
+  // Render free tier cold-starts can take 15-30s; use generous timeout
+  const API_TIMEOUT_MS = 30000;
+  const MAX_RETRIES = 2;
 
-    const dataPromise = apiJson(TASKS_API_BASE);
-    const data = await Promise.race([dataPromise, timeoutPromise]);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[TASK] API fetch attempt ${attempt}/${MAX_RETRIES}...`);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('API timeout')), API_TIMEOUT_MS)
+      );
 
-    if (Array.isArray(data)) {
-      tasksData = data.map((t) => ({
-        id: Number(t.id),
-        title: t.title,
-        type: t.type,
-        assignedTo: t.assignedTo,
-        priority: t.priority,
-        status: t.status,
-        dueDate: t.dueDate || null,
-        location: t.location,
-        description: t.description,
-        createdDate: t.createdDate,
-        clinicName: t.clinicName || "",
-        doctorName: t.doctorName || ""
-      }));
-      saveTasksData();
-      filteredTasks = tasksData.slice();
-      // Ensure local overdue check runs after loading from server
-      updateOverdueTasks();
-      tasksApiMode = true;
-      // Hide any retry banner if previously shown
-      try { hideTasksApiRetryBanner(); } catch (e) { }
-      return;
+      const dataPromise = apiJson(TASKS_API_BASE);
+      const data = await Promise.race([dataPromise, timeoutPromise]);
+
+      if (Array.isArray(data)) {
+        tasksData = data.map((t) => ({
+          id: Number(t.id),
+          title: t.title,
+          type: t.type,
+          assignedTo: t.assignedTo,
+          priority: t.priority,
+          status: t.status,
+          dueDate: t.dueDate || null,
+          location: t.location,
+          description: t.description,
+          createdDate: t.createdDate,
+          clinicName: t.clinicName || "",
+          doctorName: t.doctorName || ""
+        }));
+        saveTasksData();
+        filteredTasks = tasksData.slice();
+        // Ensure local overdue check runs after loading from server
+        updateOverdueTasks();
+        tasksApiMode = true;
+        // Hide any retry banner if previously shown
+        try { hideTasksApiRetryBanner(); } catch (e) { }
+        console.log(`[TASK] API fetch succeeded on attempt ${attempt}. Tasks: ${tasksData.length}`);
+        return;
+      }
+      tasksApiMode = false;
+    } catch (e) {
+      console.warn(`[TASK] API attempt ${attempt} failed:`, e.message);
+      if (attempt < MAX_RETRIES) {
+        // Brief pause before retry
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      tasksApiMode = false;
+      try { showTasksApiRetryBanner(); } catch (err) { }
     }
-    tasksApiMode = false;
-  } catch (e) {
-    console.warn("Tasks API unavailable or slow, using localStorage.", e);
-    tasksApiMode = false;
-    try { showTasksApiRetryBanner(); } catch (err) { }
   }
 }
 
@@ -1190,7 +1202,7 @@ function updateTaskStatus(taskId, currentStatus) {
   if (!taskIdInput || !select) return;
 
   taskIdInput.value = String(taskId);
-  
+
   const task = tasksData.find(t => t.id === Number(taskId));
   if (!task) return;
 
@@ -1219,7 +1231,7 @@ function updateTaskStatus(taskId, currentStatus) {
 
     if (dueDate) {
       const dueStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-      
+
       // 3. Future due date task can not change status as overdue
       if (dueStart >= today && opt.value === "overdue") {
         return false;
@@ -1229,12 +1241,12 @@ function updateTaskStatus(taskId, currentStatus) {
       if (dueStart < today && opt.value === "in-progress") {
         return false;
       }
-      
+
       // If it's past due, typically it should be Pending, Overdue or Completed
       // But rule 4 says it should be overdue only and completed for "past due date status"
       // Wait, "Past duedate status can not change In Progress... it should be overdue only and completed"
       if (dueStart < today && opt.value === "pending") {
-          return false;
+        return false;
       }
     }
 

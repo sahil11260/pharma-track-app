@@ -129,31 +129,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- API Functions ---
     async function refreshTasksFromApi() {
-        try {
-            console.log("[DAILYPLAN] Fetching tasks from API...");
-            const data = await apiJson(TASKS_API_BASE);
-            console.log("[DAILYPLAN] API response received:", Array.isArray(data) ? data.length : 0, "tasks");
+        // Render free tier cold-starts can take 15-30s; use generous timeout
+        const API_TIMEOUT_MS = 30000;
+        const MAX_RETRIES = 2;
 
-            if (Array.isArray(data)) {
-                // Trusting backend filtering - removing redundant frontend identity check
-                const myTasks = data;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`[DAILYPLAN] API fetch attempt ${attempt}/${MAX_RETRIES}...`);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('API timeout')), API_TIMEOUT_MS)
+                );
 
-                // Map to UI format
-                tasks = myTasks.map(mapBackendTaskToUI);
-                backendTasks = myTasks;
+                const dataPromise = apiJson(TASKS_API_BASE);
+                const data = await Promise.race([dataPromise, timeoutPromise]);
+                console.log("[DAILYPLAN] API response received:", Array.isArray(data) ? data.length : 0, "tasks");
 
-                saveTasks();
-                tasksApiMode = true;
-                hideApiRetryBanner();
-                console.log("[DAILYPLAN] Successfully processed", tasks.length, "tasks");
-                return;
+                if (Array.isArray(data)) {
+                    // Trusting backend filtering - removing redundant frontend identity check
+                    const myTasks = data;
+
+                    // Map to UI format
+                    tasks = myTasks.map(mapBackendTaskToUI);
+                    backendTasks = myTasks;
+
+                    saveTasks();
+                    tasksApiMode = true;
+                    hideApiRetryBanner();
+                    console.log(`[DAILYPLAN] Successfully processed ${tasks.length} tasks on attempt ${attempt}`);
+                    return;
+                }
+                console.warn("[DAILYPLAN] API returned non-array response");
+                tasksApiMode = false;
+            } catch (e) {
+                console.error(`[DAILYPLAN] API attempt ${attempt} failed:`, e.message);
+                if (attempt < MAX_RETRIES) {
+                    // Brief pause before retry
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue;
+                }
+                tasksApiMode = false;
+                showApiRetryBanner();
             }
-            console.warn("[DAILYPLAN] API returned non-array response");
-            tasksApiMode = false;
-        } catch (e) {
-            console.error("[DAILYPLAN] API call failed:", e);
-            tasksApiMode = false;
-            showApiRetryBanner();
         }
     }
 
@@ -439,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 modalTaskTarget.textContent = `${task.doctor} (${task.clinic})`;
                 modalTaskIdInput.value = taskId;
-                
+
                 // Restriction: Past due pending task should allow status to only completed
                 if (task.date < todayKey) {
                     newStatusSelect.innerHTML = `
