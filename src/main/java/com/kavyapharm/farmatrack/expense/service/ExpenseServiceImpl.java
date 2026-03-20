@@ -6,10 +6,13 @@ import com.kavyapharm.farmatrack.expense.dto.UpdateExpenseRequest;
 import com.kavyapharm.farmatrack.expense.model.Expense;
 import com.kavyapharm.farmatrack.expense.model.Expense.ExpenseStatus;
 import com.kavyapharm.farmatrack.expense.repository.ExpenseRepository;
+import com.kavyapharm.farmatrack.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,10 +29,12 @@ import java.util.stream.Collectors;
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final UserRepository userRepository;
     private static final String UPLOAD_DIR = "uploads/receipts/";
 
-    public ExpenseServiceImpl(ExpenseRepository expenseRepository) {
+    public ExpenseServiceImpl(ExpenseRepository expenseRepository, UserRepository userRepository) {
         this.expenseRepository = expenseRepository;
+        this.userRepository = userRepository;
         // Create upload directory if it doesn't exist
         try {
             Files.createDirectories(Paths.get(UPLOAD_DIR));
@@ -76,9 +81,50 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> getAllExpenses() {
-        return expenseRepository.findAllByOrderBySubmittedDateDesc()
-                .stream()
+    public List<ExpenseResponse> getAllExpenses(String managerName) {
+        List<Expense> allExpenses;
+        
+        // Use robust identification logic similar to UserService
+        java.util.Set<String> identifiers = new java.util.HashSet<>();
+        if (managerName != null && !managerName.isBlank()) {
+            identifiers.add(managerName.trim());
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            String currentEmail = auth.getName();
+            if (currentEmail != null) identifiers.add(currentEmail.trim());
+            
+            userRepository.findByEmailIgnoreCase(currentEmail).ifPresent(u -> {
+                if (u.getName() != null && !u.getName().isBlank()) {
+                    identifiers.add(u.getName().trim());
+                }
+            });
+        }
+
+        boolean isAdmin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
+
+        if (!identifiers.isEmpty() && !isAdmin) {
+            // Find all MR names assigned to ANY of these identifiers
+            java.util.Set<String> mrNames = new java.util.HashSet<>();
+            for (String id : identifiers) {
+                userRepository.findByAssignedManagerIgnoreCase(id)
+                        .stream()
+                        .map(u -> u.getName())
+                        .forEach(mrNames::add);
+            }
+
+            allExpenses = expenseRepository.findAllByOrderBySubmittedDateDesc()
+                    .stream()
+                    .filter(e -> mrNames.contains(e.getMrName()))
+                    .collect(Collectors.toList());
+        } else {
+            // If no identifiers (e.g. Admin or no manager param), or if user is Admin/SuperAdmin, return all
+            allExpenses = expenseRepository.findAllByOrderBySubmittedDateDesc();
+        }
+
+        return allExpenses.stream()
                 .map(ExpenseResponse::from)
                 .collect(Collectors.toList());
     }

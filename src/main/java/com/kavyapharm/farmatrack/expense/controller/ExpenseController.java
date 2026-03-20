@@ -72,8 +72,8 @@ public class ExpenseController {
      * Get all expenses (for Manager)
      */
     @GetMapping
-    public ResponseEntity<List<ExpenseResponse>> getAllExpenses() {
-        List<ExpenseResponse> expenses = expenseService.getAllExpenses();
+    public ResponseEntity<List<ExpenseResponse>> getAllExpenses(@RequestParam(value = "manager", required = false) String managerName) {
+        List<ExpenseResponse> expenses = expenseService.getAllExpenses(managerName);
         return ResponseEntity.ok(expenses);
     }
 

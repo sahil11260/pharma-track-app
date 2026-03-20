@@ -101,8 +101,14 @@
     // Load expenses from API
     async function loadExpenses() {
         try {
-            console.log("[Manager Expenses] Loading expenses from API...");
-            const data = await apiJson(EXPENSES_API);
+            let userObj = {};
+            try {
+                userObj = JSON.parse(localStorage.getItem("kavya_user") || "{}");
+            } catch (e) { }
+
+            const currentManager = userObj.name || localStorage.getItem("signup_name") || localStorage.getItem("signup_email") || "";
+            console.log("[Manager Expenses] Loading expenses from API for manager identifiers:", currentManager);
+            const data = await apiJson(`${EXPENSES_API}?manager=${encodeURIComponent(currentManager)}`);
             expensesData = Array.isArray(data) ? data : [];
             console.log("[Manager Expenses] Loaded", expensesData.length, "expenses");
             return expensesData;

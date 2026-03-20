@@ -14,7 +14,7 @@ public interface ExpenseService {
 
     ExpenseResponse createExpenseWithReceipt(CreateExpenseRequest request, MultipartFile receipt) throws IOException;
 
-    List<ExpenseResponse> getAllExpenses();
+    List<ExpenseResponse> getAllExpenses(String managerName);
 
     List<ExpenseResponse> getExpensesByMr(String mrName);
 
