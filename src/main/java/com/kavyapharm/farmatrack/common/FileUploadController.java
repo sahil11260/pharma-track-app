@@ -23,7 +23,7 @@ public class FileUploadController {
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         String filename = storageService.store(file);
         // "/uploads/" is mapped in WebConfig to "file:uploads/"
-        String url = "/uploads/" + filename;
+        String url = "/uploads/receipts/" + filename;
         return ResponseEntity.ok(Map.of("url", url, "filename", filename));
     }
 }
