@@ -145,6 +145,17 @@ public class DoctorService {
         doctor.setEmail(request.email());
         doctor.setClinicName(request.clinicName());
         doctor.setAddress(request.address());
+        if (request.city() != null) {
+            String city = request.city().trim();
+            if (!city.isEmpty()) {
+                if (!city.matches("^[A-Za-z0-9\\s]+$")) {
+                    throw new IllegalArgumentException("City name should only contain letters and numbers.");
+                }
+                if (!city.matches(".*[A-Za-z].*")) {
+                    throw new IllegalArgumentException("City name cannot be numbers only.");
+                }
+            }
+        }
         doctor.setCity(request.city());
         doctor.setAssignedMR(request.assignedMR());
         doctor.setNotes(request.notes());
@@ -163,6 +174,17 @@ public class DoctorService {
         doctor.setEmail(request.email());
         doctor.setClinicName(request.clinicName());
         doctor.setAddress(request.address());
+        if (request.city() != null) {
+            String city = request.city().trim();
+            if (!city.isEmpty()) {
+                if (!city.matches("^[A-Za-z0-9\\s]+$")) {
+                    throw new IllegalArgumentException("City name should only contain letters and numbers.");
+                }
+                if (!city.matches(".*[A-Za-z].*")) {
+                    throw new IllegalArgumentException("City name cannot be numbers only.");
+                }
+            }
+        }
         doctor.setCity(request.city());
         doctor.setAssignedMR(request.assignedMR());
         doctor.setNotes(request.notes());

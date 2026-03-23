@@ -541,7 +541,20 @@ function editDoctor(doctorId) {
       doctor.email = email;
       doctor.clinicName = document.getElementById("clinicName").value;
       const doctorCityEl = document.getElementById("doctorCity");
-      doctor.city = doctorCityEl ? doctorCityEl.value : (doctor.city || "");
+      const cityVal = doctorCityEl ? doctorCityEl.value.trim() : "";
+      if (cityVal) {
+        if (!/^[A-Za-z0-9\s]+$/.test(cityVal)) {
+          alert("City name should only contain letters and numbers.");
+          if (doctorCityEl) doctorCityEl.focus();
+          return;
+        }
+        if (/^\d+$/.test(cityVal)) {
+          alert("City name cannot be numbers only.");
+          if (doctorCityEl) doctorCityEl.focus();
+          return;
+        }
+      }
+      doctor.city = cityVal;
       doctor.assignedMR = document.getElementById("assignToMR").value;
 
       (async function () {
@@ -643,6 +656,13 @@ document.addEventListener("DOMContentLoaded", () => {
       this.value = this.value.replace(/\D/g, "").slice(0, 10);
     });
   }
+  
+  const cityInput = document.getElementById("doctorCity");
+  if (cityInput) {
+    cityInput.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z0-9\s]/g, "");
+    });
+  }
 
   populateMRDropdowns();
 
@@ -707,7 +727,18 @@ document.addEventListener("DOMContentLoaded", () => {
           email: email,
           clinicName: document.getElementById("clinicName").value,
           address: "",
-          city: (document.getElementById("doctorCity") ? document.getElementById("doctorCity").value : ""),
+          city: (function() {
+            const cityVal = (document.getElementById("doctorCity") ? document.getElementById("doctorCity").value.trim() : "");
+            if (cityVal && !/^[A-Za-z0-9\s]+$/.test(cityVal)) {
+              alert("City name should only contain letters and numbers.");
+              throw new Error("Invalid City");
+            }
+            if (cityVal && /^\d+$/.test(cityVal)) {
+               alert("City name cannot be numbers only.");
+               throw new Error("Invalid City");
+            }
+            return cityVal;
+          })(),
           assignedMR: document.getElementById("assignToMR").value,
           notes: "",
           status: "active",

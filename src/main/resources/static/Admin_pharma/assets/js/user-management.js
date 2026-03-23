@@ -424,10 +424,16 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Territory validation: should not be numbers only
-    if (territory && /^\d+$/.test(territory)) {
-      if (territoryEl) setFieldError(territoryEl, "Territory cannot be numbers only. Please enter a valid territory name.");
-      return;
+    // Territory validation: alphanumeric only and should not be numbers only
+    if (territory) {
+      if (!/^[A-Za-z0-9\s]+$/.test(territory)) {
+        if (territoryEl) setFieldError(territoryEl, "Territory should only contain letters and numbers.");
+        return;
+      }
+      if (/^\d+$/.test(territory)) {
+        if (territoryEl) setFieldError(territoryEl, "Territory cannot be numbers only. Please enter a valid territory name.");
+        return;
+      }
     }
 
     if (territoryEl) clearFieldError(territoryEl);
@@ -599,12 +605,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Clear Territory inline error while typing
+  // Fix for Territory: alphanumeric and spaces only
   const territoryInputs = document.querySelectorAll('.user-form input[id$="Territory"]');
   territoryInputs.forEach(input => {
     input.addEventListener("input", function () {
+      // Remove any characters that are not letters, numbers, or spaces
+      this.value = this.value.replace(/[^A-Za-z0-9\s]/g, "");
       const v = (this.value || "").trim();
-      if (!v || !/^\d+$/.test(v)) {
+      if (v) {
         clearFieldError(this);
       }
     });

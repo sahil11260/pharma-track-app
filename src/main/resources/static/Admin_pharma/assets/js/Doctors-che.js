@@ -281,9 +281,16 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (city && /^\d+$/.test(city)) {
-      if (cityEl) setFieldError(cityEl, "City name cannot be numbers only.");
-      return;
+    // City validation: alphanumeric only and should not be numbers only
+    if (city) {
+      if (!/^[A-Za-z0-9\s]+$/.test(city)) {
+        if (cityEl) setFieldError(cityEl, "City name should only contain letters and numbers.");
+        return;
+      }
+      if (/^\d+$/.test(city)) {
+        if (cityEl) setFieldError(cityEl, "City name cannot be numbers only.");
+        return;
+      }
     }
     if (cityEl) clearFieldError(cityEl);
 
@@ -350,11 +357,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Fix for City: alphanumeric and spaces only
   const cityInput = document.getElementById("doctorCity");
   if (cityInput) {
     cityInput.addEventListener("input", function () {
+      // Remove any characters that are not letters, numbers, or spaces
+      this.value = this.value.replace(/[^A-Za-z0-9\s]/g, "");
       const v = (this.value || "").trim();
-      if (!v || !/^\d+$/.test(v)) {
+      if (v) {
         clearFieldError(this);
       }
     });

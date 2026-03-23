@@ -263,10 +263,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const territory = document.getElementById("mrTerritory").value.trim();
-    // Territory validation: should not be numbers only
-    if (territory && /^\d+$/.test(territory)) {
-      alert("Territory cannot be numbers only. Please enter a valid territory name.");
-      return;
+    // Territory validation: alphanumeric only and should not be numbers only
+    if (territory) {
+      if (!/^[A-Za-z0-9\s]+$/.test(territory)) {
+        alert("Territory should only contain letters and numbers.");
+        return;
+      }
+      if (/^\d+$/.test(territory)) {
+        alert("Territory cannot be numbers only. Please enter a valid territory name.");
+        return;
+      }
     }
 
     const email = document.getElementById("mrEmail").value.trim();
@@ -367,6 +373,13 @@ document.addEventListener("DOMContentLoaded", function () {
   if (nameInput) {
     nameInput.addEventListener("input", function () {
       this.value = this.value.replace(/[^A-Za-z\s]/g, "");
+    });
+  }
+  // Fix for Territory: alphanumeric and spaces only
+  const territoryField = document.getElementById("mrTerritory");
+  if (territoryField) {
+    territoryField.addEventListener("input", function () {
+      this.value = this.value.replace(/[^A-Za-z0-9\s]/g, "");
     });
   }
 });

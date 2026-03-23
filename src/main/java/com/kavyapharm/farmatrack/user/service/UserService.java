@@ -218,8 +218,13 @@ public class UserService {
 
         if (request.territory() != null) {
             String territory = request.territory().trim();
-            if (!territory.isEmpty() && !territory.matches(".*[A-Za-z].*")) {
-                throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+            if (!territory.isEmpty()) {
+                if (!territory.matches("^[A-Za-z0-9\\s]+$")) {
+                    throw new IllegalArgumentException("Territory should only contain letters and numbers.");
+                }
+                if (!territory.matches(".*[A-Za-z].*")) {
+                    throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+                }
             }
         }
 
@@ -277,8 +282,13 @@ public class UserService {
 
         if (request.territory() != null) {
             String territory = request.territory().trim();
-            if (!territory.isEmpty() && !territory.matches(".*[A-Za-z].*")) {
-                throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+            if (!territory.isEmpty()) {
+                if (!territory.matches("^[A-Za-z0-9\\s]+$")) {
+                    throw new IllegalArgumentException("Territory should only contain letters and numbers.");
+                }
+                if (!territory.matches(".*[A-Za-z].*")) {
+                    throw new IllegalArgumentException("Territory cannot be numbers only. Please enter a valid territory name.");
+                }
             }
         }
 
