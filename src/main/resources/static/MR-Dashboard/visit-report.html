@@ -209,9 +209,8 @@
                 <input type="text" class="form-control" id="clinicName" required />
               </div>
               <div class="col-md-4 mb-3">
-                <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span
-                    class="text-danger">*</span></label>
-                <input type="datetime-local" class="form-control" id="visitDate" required>
+                <label for="visitDate" class="form-label fw-bold">Visit Date & Time <span id="visitDateRequired" class="text-danger">*</span></label>
+                <input type="datetime-local" class="form-control" id="visitDate">
                 <div id="visitDateError" class="text-danger small mt-1 d-none">Visit date & time cannot be in the
                   future.</div>
               </div>
@@ -333,11 +332,11 @@
   <script src="assets/js/visit-report.js?v=2.2"></script>
   <script src="assets/js/notifications.js"></script>
 
-  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+  <div class="toast-container position-fixed top-50 start-50 translate-middle" style="z-index: 2000;">
     <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="toast-header">
-        <strong class="me-auto">DCR</strong>
-        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      <div class="toast-header bg-success text-white">
+        <strong class="me-auto">DCR Success</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
       <div class="toast-body" id="toastBody"></div>
     </div>

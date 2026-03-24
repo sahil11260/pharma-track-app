@@ -50,9 +50,31 @@ async function loadNotifications() {
         // Show/hide badge
         if (unreadCount > 0 && notificationBadge) {
             notificationBadge.style.display = 'block';
-            if (notificationBadge.classList.contains('badge')) {
-                notificationBadge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+            
+            // Always show count number instead of dot
+            if (unreadCount > 99) {
+                notificationBadge.innerText = '99+';
+                notificationBadge.style.fontSize = '0.6rem';
+                notificationBadge.style.padding = '0.2rem 0.4rem';
+            } else if (unreadCount > 9) {
+                notificationBadge.innerText = unreadCount.toString();
+                notificationBadge.style.fontSize = '0.7rem';
+                notificationBadge.style.padding = '0.2rem 0.3rem';
+            } else {
+                notificationBadge.innerText = unreadCount.toString();
+                notificationBadge.style.fontSize = '0.75rem';
+                notificationBadge.style.padding = '0.2rem 0.3rem';
             }
+            
+            // Ensure badge has proper styling for count display
+            notificationBadge.style.minWidth = '1.5rem';
+            notificationBadge.style.height = '1.5rem';
+            notificationBadge.style.borderRadius = '50%';
+            notificationBadge.style.display = 'flex';
+            notificationBadge.style.alignItems = 'center';
+            notificationBadge.style.justifyContent = 'center';
+            notificationBadge.style.color = 'white';
+            notificationBadge.style.fontWeight = 'bold';
         } else if (notificationBadge) {
             notificationBadge.style.display = 'none';
         }
@@ -70,13 +92,16 @@ async function loadNotifications() {
             const maxItems = isDropdown ? 30 : 50;
             const recentNotifications = notifications.slice(0, maxItems);
 
-            notificationList.innerHTML = recentNotifications.map(notification => {
+            notificationList.innerHTML = recentNotifications.map((notification, index) => {
                 const icon = getNotificationIcon(notification.type);
                 const iconColor = getNotificationColor(notification.type);
                 const isUnread = notification.status === 'Unread';
 
                 const itemContent = `
-                    <div class="dropdown-item p-3 border-bottom ${isUnread ? 'bg-light' : ''}" style="white-space: normal; cursor: pointer;">
+                    <div class="dropdown-item p-3 border-bottom ${isUnread ? 'bg-light' : ''}" 
+                         style="white-space: normal; cursor: pointer;" 
+                         data-notification-id="${notification.id || index}"
+                         onclick="markNotificationAsRead('${notification.id || index}', this)">
                         <div class="d-flex align-items-start">
                             <div class="flex-shrink-0 mt-1">
                                 <i class="bi bi-${icon} ${iconColor} fs-5"></i>
@@ -155,3 +180,41 @@ function getNotificationColor(type) {
     };
     return colorMap[type] || 'text-secondary';
 }
+
+// Function to mark notification as read
+window.markNotificationAsRead = async function(notificationId, element) {
+    try {
+        const API_BASE = (window.location.port === "5500") ? "http://localhost:8080" : ((typeof window.API_BASE !== "undefined" && window.API_BASE !== "") ? window.API_BASE : "");
+        const token = localStorage.getItem('token') || localStorage.getItem('kavya_auth_token');
+
+        // Call API to mark as read
+        await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Update UI immediately
+        element.classList.remove('bg-light');
+        const badge = element.querySelector('.badge');
+        if (badge) {
+            badge.remove();
+        }
+
+        // Reload notifications to update badge count
+        setTimeout(() => {
+            loadNotifications();
+        }, 500);
+
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        // Still update UI even if API fails
+        element.classList.remove('bg-light');
+        const badge = element.querySelector('.badge');
+        if (badge) {
+            badge.remove();
+        }
+    }
+};

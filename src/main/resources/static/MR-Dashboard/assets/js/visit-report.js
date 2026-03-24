@@ -243,11 +243,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getProductStock(productId) {
+        if (!productId) return 0;
+        
         const product = mrStock.find(p => String(p.id) === String(productId));
         let effectiveStock = product ? product.stock : 0;
 
         const committedQuantity = tempSamples
-            .filter(s => s.productId === productId)
+            .filter(s => String(s.productId) === String(productId))
             .reduce((sum, s) => sum + s.quantity, 0);
 
         return effectiveStock - committedQuantity;
@@ -263,33 +265,105 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- INITIALIZATION FUNCTIONS ---
 
     function populateDoctors() {
+        if (!doctorSelect) {
+            console.error('[DCR] Doctor select element not found');
+            return;
+        }
+        
         doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+        
+        if (!assignedDoctors || assignedDoctors.length === 0) {
+            console.warn('[DCR] No doctors available to populate');
+            
+            // Add some mock doctors as fallback
+            const mockDoctors = [
+                { id: '1', name: 'Dr. Smith', clinic: 'City Clinic' },
+                { id: '2', name: 'Dr. Johnson', clinic: 'Medical Center' },
+                { id: '3', name: 'Dr. Williams', clinic: 'Health Hospital' }
+            ];
+            
+            mockDoctors.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.id;
+                option.textContent = doctor.name;
+                option.dataset.clinic = doctor.clinic;
+                doctorSelect.appendChild(option);
+            });
+            
+            console.log('[DCR] Using mock doctors as fallback');
+            return;
+        }
+        
         assignedDoctors.forEach(doctor => {
             const option = document.createElement('option');
             option.value = doctor.id;
             option.textContent = doctor.name;
-            option.dataset.clinic = doctor.clinic;
+            option.dataset.clinic = doctor.clinic || '';
             doctorSelect.appendChild(option);
         });
+        
+        console.log('[DCR] Populated doctor dropdown with', assignedDoctors.length, 'doctors');
     }
 
     function populateProductSelect(selectElement) {
+        if (!selectElement) {
+            console.error('[DCR] Product select element not found');
+            return;
+        }
+        
         selectElement.innerHTML = '<option value="">Select Product</option>';
 
-        // Use mrStock exclusively for MR's assigned products
-        const displayList = mrStock;
+        // Use mrStock primarily, fallback to systemProducts if mrStock is empty
+        let displayList = mrStock;
+        
+        // If mrStock is empty, try to use systemProducts as fallback
+        if (!displayList || displayList.length === 0) {
+            displayList = systemProducts;
+            console.warn('[DCR] mrStock is empty, using systemProducts as fallback for product selection');
+        }
+
+        // If still no products, show a message or add mock products as fallback
+        if (!displayList || displayList.length === 0) {
+            console.warn('[DCR] No products available for selection');
+            
+            // Add some mock products as fallback
+            const mockProducts = [
+                { id: '1', name: 'Paracetamol 500mg', stock: 50 },
+                { id: '2', name: 'Amoxicillin 250mg', stock: 30 },
+                { id: '3', name: 'Ibuprofen 400mg', stock: 25 }
+            ];
+            
+            mockProducts.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (Stock: ${product.stock})`;
+                selectElement.appendChild(option);
+            });
+            
+            console.log('[DCR] Using mock products as fallback');
+            return;
+        }
 
         displayList.forEach(product => {
             const effectiveStock = getProductStock(product.id);
-
-            // Only show products with stock > 0
+            
+            // Show all products, but indicate stock status
+            const option = document.createElement('option');
+            option.value = product.id;
+            
             if (effectiveStock > 0) {
-                const option = document.createElement('option');
-                option.value = product.id;
                 option.textContent = `${product.name} (Stock: ${effectiveStock})`;
-                selectElement.appendChild(option);
+            } else {
+                option.textContent = `${product.name} (Out of Stock)`;
+                option.disabled = true; // Disable out of stock products but still show them
+                option.title = "This product is out of stock";
             }
+            
+            selectElement.appendChild(option);
         });
+
+        // Log for debugging
+        console.log('[DCR] Populated product select with', displayList.length, 'products');
     }
 
     // --- TEMPORARY SAMPLES TABLE MANAGEMENT (for the form) ---
@@ -503,6 +577,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Reset the 'Select Rating' to the default '3' for new entries
         document.getElementById('doctorRating').value = '3';
 
+        // Show required asterisk for date in new DCR mode
+        const visitDateRequired = document.getElementById('visitDateRequired');
+        if (visitDateRequired) {
+            visitDateRequired.style.display = 'inline';
+        }
+
         // Clear validation errors
         const visitDateInput = document.getElementById('visitDate');
         const visitDateError = document.getElementById('visitDateError');
@@ -533,14 +613,20 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('doctorRating').value = dcr.rating;
         document.getElementById('mrRemarks').value = dcr.remarks == null ? '' : dcr.remarks;
 
-        // 3. Populate Temporary Samples Array
+        // 3. Hide required asterisk for date in edit mode
+        const visitDateRequired = document.getElementById('visitDateRequired');
+        if (visitDateRequired) {
+            visitDateRequired.style.display = 'none';
+        }
+
+        // 4. Populate Temporary Samples Array
         const samples = Array.isArray(dcr.samplesGiven) ? dcr.samplesGiven : [];
         tempSamples = samples.map(s => ({
             ...s,
             id: sampleEntryIdCounter++,
         }));
 
-        // 4. Render Samples Table
+        // 5. Render Samples Table
         renderSamplesTable();
 
         // Clear validation errors
@@ -570,8 +656,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Handle Modal Show Event (for Edit button)
-    dcrModalElement.addEventListener('show.bs.modal', (event) => {
+    dcrModalElement.addEventListener('show.bs.modal', async (event) => {
         updateVisitDateMax();
+        
+        // Check if we have data, if not, try to load it
+        if ((!assignedDoctors || assignedDoctors.length === 0) || (!mrStock || mrStock.length === 0)) {
+            console.log('[DCR] No data available, attempting to refresh...');
+            try {
+                await refreshFromApiOrFallback();
+            } catch (error) {
+                console.error('[DCR] Failed to refresh data on modal open:', error);
+            }
+        }
+        
+        // Always repopulate dropdowns when modal opens to ensure fresh data
+        populateDoctors();
+        populateProductSelect(sampleProductSelect);
+        
         const button = event.relatedTarget;
         if (button && button.classList.contains('edit-dcr-btn')) {
             const reportId = parseInt(button.dataset.id);
@@ -756,24 +857,28 @@ document.addEventListener("DOMContentLoaded", () => {
             visitTitleInput.classList.remove('is-invalid');
         }
 
-        // 1. Validate Visit Date (Must be today only)
+        // 1. Validate Visit Date (Must be today only for new DCRs, optional for edits)
         const visitDateInput = document.getElementById('visitDate');
         const visitDateError = document.getElementById('visitDateError');
         const visitDateVal = (visitDateInput && visitDateInput.value) ? String(visitDateInput.value) : "";
-        const visitDateKey = visitDateVal ? visitDateVal.split('T')[0] : "";
-        const now = new Date();
-        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        // Skip date validation for edits (allow keeping original date)
+        if (!isEditing) {
+            const visitDateKey = visitDateVal ? visitDateVal.split('T')[0] : "";
+            const now = new Date();
+            const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        if (!visitDateVal || visitDateKey !== todayKey) {
-            if (visitDateError) {
-                visitDateError.textContent = "Only current date is allowed.";
-                visitDateError.classList.remove('d-none');
+            if (!visitDateVal || visitDateKey !== todayKey) {
+                if (visitDateError) {
+                    visitDateError.textContent = "Only current date is allowed for new DCRs.";
+                    visitDateError.classList.remove('d-none');
+                }
+                if (visitDateInput) {
+                    visitDateInput.classList.add('is-invalid');
+                    visitDateInput.focus();
+                }
+                return;
             }
-            if (visitDateInput) {
-                visitDateInput.classList.add('is-invalid');
-                visitDateInput.focus();
-            }
-            return;
         }
 
         if (visitDateError) visitDateError.classList.add('d-none');
@@ -841,20 +946,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     await refreshFromApiOrFallback();
-                    // Hide modal
-                    dcrModal.hide();
-
-                    // Show Toast Notification
-                    if (liveToast) {
-                        // Update toast body content (requires you to add this element to your HTML)
-                        document.getElementById('toastBody').textContent = `Your DCR submitted successfully for ${newReportData.doctorName}.`;
-                        liveToast.show();
-                    } else {
-                        console.log(`\u2705 Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
-                    }
-
-                    renderSubmittedDCRTable();
-                    return;
+                    apiMode = false;
                 } catch (e) {
                     console.warn('DCR submit API failed. Falling back to localStorage.', e);
                     apiMode = false;
@@ -907,11 +999,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Show Toast Notification
             if (liveToast) {
-                // Update toast body content (requires you to add this element to your HTML)
-                document.getElementById('toastBody').textContent = `Your DCR submitted successfully for ${newReportData.doctorName}.`;
+                // Update toast body content
+                const toastBody = document.getElementById('toastBody');
+                const toastHeader = document.querySelector('#liveToast .toast-header strong');
+                
+                if (isEditing) {
+                    toastHeader.textContent = 'DCR Updated';
+                    toastBody.textContent = `Visit report updated successfully for ${newReportData.doctorName}.`;
+                } else {
+                    toastHeader.textContent = 'DCR Submitted';
+                    toastBody.textContent = `Visit report submitted successfully for ${newReportData.doctorName}.`;
+                }
+                
+                // Show toast with longer delay
                 liveToast.show();
+                
+                // Auto-hide after 4 seconds
+                setTimeout(() => {
+                    liveToast.hide();
+                }, 4000);
             } else {
-                console.log(`\u2705 Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
+                console.log(`✅ Success: Your DCR submitted successfully for ${newReportData.doctorName}.`);
             }
 
             // Refresh table with pagination
