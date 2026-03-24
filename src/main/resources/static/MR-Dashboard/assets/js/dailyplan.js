@@ -359,10 +359,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const completed = normalizeTaskStatus(task.status) === 'completed';
             const isPastDue = task.date < todayKey;
             const clinicMissing = !String(task.clinic || "").trim();
-            const disableUpdate = completed || (mode === "past") || clinicMissing;
+            const disableUpdate = completed || clinicMissing;
 
             let updateBtnLabel = completed ? 'Done' : 'Update';
-            if (!completed && mode === "past") updateBtnLabel = 'Locked';
             if (!completed && clinicMissing) updateBtnLabel = 'Add Clinic';
 
             // Show date if not today
@@ -443,33 +442,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (task) {
                 const clinicMissing = !String(task.clinic || "").trim();
-                if (task.date < todayKey) {
+                
+                // For past due tasks, only allow adding clinic info, not status updates
+                if (task.date < todayKey && !clinicMissing) {
                     event.preventDefault();
-                    alert("Past due pending tasks cannot be updated.");
+                    alert("Past due pending tasks can only be marked as completed.");
                     return;
                 }
-                if (clinicMissing) {
-                    event.preventDefault();
-                    alert("Clinic Name is mandatory. Please contact your manager to add the Clinic Name before updating status.");
-                    return;
-                }
-                modalTaskTarget.textContent = `${task.doctor} (${task.clinic})`;
+                
+                modalTaskTarget.textContent = `${task.doctor} (${task.clinic || 'No Clinic'})`;
                 modalTaskIdInput.value = taskId;
 
-                // Restriction: Past due pending task should allow status to only completed
-                if (task.date < todayKey) {
-                    newStatusSelect.innerHTML = `
-                        <option value="Completed">Completed</option>
+                // If clinic is missing, show clinic input field
+                if (clinicMissing) {
+                    // Change modal to allow adding clinic info
+                    document.querySelector('#statusUpdateModalLabel').textContent = 'Add Clinic Information';
+                    document.querySelector('#modalTaskTarget').parentElement.innerHTML = `
+                        <p class="mb-3">Adding clinic for: <strong id="modalTaskTarget">${task.doctor}</strong></p>
+                        <div class="mb-3">
+                            <label for="clinicName" class="form-label">Clinic Name *</label>
+                            <input type="text" class="form-control" id="clinicName" placeholder="Enter clinic name" required>
+                        </div>
+                        <input type="hidden" id="modalTaskId" value="${taskId}">
                     `;
-                    newStatusSelect.value = "Completed";
+                    
+                    // Change save button text
+                    saveStatusBtn.textContent = 'Add Clinic';
+                    
+                    // Hide status select since we're only adding clinic
+                    newStatusSelect.style.display = 'none';
+                    newStatusSelect.parentElement.style.display = 'none';
                 } else {
-                    // Reset to default options for current/upcoming tasks
-                    newStatusSelect.innerHTML = `
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
+                    // Reset to normal status update modal
+                    document.querySelector('#statusUpdateModalLabel').textContent = 'Update Task Status';
+                    document.querySelector('#modalTaskTarget').parentElement.innerHTML = `
+                        <p class="mb-3">Updating status for: <strong id="modalTaskTarget">${task.doctor} (${task.clinic})</strong></p>
+                        <input type="hidden" id="modalTaskId">
+                        <div class="mb-3">
+                            <label for="newStatus" class="form-label">New Status</label>
+                            <select class="form-select" id="newStatus">
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
                     `;
-                    newStatusSelect.value = task.status;
+                    
+                    saveStatusBtn.textContent = 'Save Status';
+                    newStatusSelect.style.display = 'block';
+                    newStatusSelect.parentElement.style.display = 'block';
+                    
+                    // Restriction: Past due pending task should allow status to only completed
+                    if (task.date < todayKey) {
+                        newStatusSelect.innerHTML = `
+                            <option value="Completed">Completed</option>
+                        `;
+                        newStatusSelect.value = "Completed";
+                    } else {
+                        newStatusSelect.value = task.status;
+                    }
                 }
             }
         });
@@ -479,23 +510,70 @@ document.addEventListener("DOMContentLoaded", () => {
     if (saveStatusBtn) {
         saveStatusBtn.addEventListener('click', async () => {
             const taskId = parseInt(modalTaskIdInput.value);
-            const newStatus = newStatusSelect.value;
-
             const task = tasks.find(t => t.id === taskId);
-            if (task) {
-                const clinicMissing = !String(task.clinic || "").trim();
-                if (task.date < todayKey) {
-                    alert("Past due pending tasks cannot be updated.");
-                    return;
-                }
-                if (clinicMissing) {
-                    alert("Clinic Name is mandatory. Please contact your manager to add the Clinic Name before updating status.");
-                    return;
-                }
-            }
+            
+            if (!task) return;
 
-            const taskIndex = tasks.findIndex(t => t.id === taskId);
-            if (taskIndex !== -1) {
+            // Check if this is a clinic addition or status update
+            const isClinicAddition = saveStatusBtn.textContent === 'Add Clinic';
+            
+            if (isClinicAddition) {
+                // Handle clinic addition
+                const clinicNameInput = document.getElementById('clinicName');
+                const clinicName = clinicNameInput ? clinicNameInput.value.trim() : '';
+                
+                if (!clinicName) {
+                    alert('Please enter a clinic name.');
+                    return;
+                }
+
+                const originalBtnText = saveStatusBtn.textContent;
+                saveStatusBtn.disabled = true;
+                saveStatusBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+                try {
+                    if (tasksApiMode) {
+                        // Update via API - find original backend task
+                        const backendTask = backendTasks.find(t => t.id === taskId);
+                        if (backendTask) {
+                            const updatedTask = {
+                                ...backendTask,
+                                clinicName: clinicName
+                            };
+                            await apiJson(`${TASKS_API_BASE}/${taskId}`, {
+                                method: "PUT",
+                                body: JSON.stringify(updatedTask)
+                            });
+                        }
+                        
+                        // Refresh from API to get latest data
+                        await refreshTasksFromApi();
+                    } else {
+                        // Fallback: update locally
+                        console.warn("[DAILYPLAN] API mode is OFF - updating locally only");
+                        const taskIndex = tasks.findIndex(t => t.id === taskId);
+                        if (taskIndex !== -1) {
+                            tasks[taskIndex].clinic = clinicName;
+                            saveTasks();
+                        }
+                    }
+
+                    renderAllTasks();
+
+                    // Close modal
+                    const modalInstance = bootstrap.Modal.getInstance(statusUpdateModal) || new bootstrap.Modal(statusUpdateModal);
+                    modalInstance.hide();
+                } catch (err) {
+                    console.error("[DAILYPLAN] Clinic addition error:", err);
+                    alert("Failed to add clinic. Please try again.");
+                } finally {
+                    saveStatusBtn.disabled = false;
+                    saveStatusBtn.textContent = originalBtnText;
+                }
+            } else {
+                // Handle status update
+                const newStatus = newStatusSelect.value;
+
                 const originalBtnText = saveStatusBtn.textContent;
                 saveStatusBtn.disabled = true;
                 saveStatusBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
@@ -510,8 +588,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         // Fallback: update locally
                         console.warn("[DAILYPLAN] API mode is OFF - updating locally only");
-                        tasks[taskIndex].status = newStatus;
-                        saveTasks();
+                        const taskIndex = tasks.findIndex(t => t.id === taskId);
+                        if (taskIndex !== -1) {
+                            tasks[taskIndex].status = newStatus;
+                            saveTasks();
+                        }
                     }
 
                     renderAllTasks();
