@@ -857,6 +857,9 @@ document.addEventListener("DOMContentLoaded", () => {
             visitTitleInput.classList.remove('is-invalid');
         }
 
+        const isEditing = reportIdField.value !== '';
+        const reportId = isEditing ? parseInt(reportIdField.value) : Date.now();
+
         // 1. Validate Visit Date (Must be today only for new DCRs, optional for edits)
         const visitDateInput = document.getElementById('visitDate');
         const visitDateError = document.getElementById('visitDateError');
@@ -887,17 +890,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // AUTO-ADD HELPER: If user filled in sample fields but forgot to click '+', add it now
         const pendingPid = sampleProductSelect.value;
         const pendingQty = parseInt(sampleQuantityInput.value);
-        if (!pendingPid && !isNaN(pendingQty) && pendingQty > 0) {
-            alert("Please select a sample name (product) for the entered quantity.");
-            return;
-        }
         if (pendingPid && !isNaN(pendingQty) && pendingQty > 0) {
             console.log("[DCR] Auto-adding pending sample before submission...");
             addSampleBtn.click();
         }
-
-        const isEditing = reportIdField.value !== '';
-        const reportId = isEditing ? parseInt(reportIdField.value) : Date.now();
 
         if (tempSamples.length === 0 && !confirm("No samples added. Submit report anyway?")) {
             return;
@@ -946,53 +942,58 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     await refreshFromApiOrFallback();
-                    apiMode = false;
+                    // DO NOT set apiMode = false here!
                 } catch (e) {
-                    console.warn('DCR submit API failed. Falling back to localStorage.', e);
-                    apiMode = false;
+                    console.error('DCR submit API failed:', e);
+                    alert(`Failed to save DCR: ${e.message}`);
+                    apiMode = false; // Fallback to local only if truly unreachable or fatal
+                    return; // Stop here if it failed
                 }
             }
 
             // Fallback mode: preserve existing local behavior with local stock updates
-            if (isEditing) {
-                // EDIT LOGIC
-                const oldDCRIndex = submittedDCRs.findIndex(d => d.reportId === reportId);
-                if (oldDCRIndex === -1) return;
+            // Only run this if we are NOT in apiMode (or if it just failed)
+            if (!apiMode) {
+                if (isEditing) {
+                    // EDIT LOGIC
+                    const oldDCRIndex = submittedDCRs.findIndex(d => d.reportId === reportId);
+                    if (oldDCRIndex === -1) return;
 
-                const oldDCR = submittedDCRs[oldDCRIndex];
-                const oldSamples = Array.isArray(oldDCR.samplesGiven) ? oldDCR.samplesGiven : [];
-                const newSamples = Array.isArray(newReportData.samplesGiven) ? newReportData.samplesGiven : [];
+                    const oldDCR = submittedDCRs[oldDCRIndex];
+                    const oldSamples = Array.isArray(oldDCR.samplesGiven) ? oldDCR.samplesGiven : [];
+                    const newSamples = Array.isArray(newReportData.samplesGiven) ? newReportData.samplesGiven : [];
 
-                // 1. Refund Old Stock
-                oldSamples.forEach(item => {
-                    const product = mrStock.find(p => p.id === item.productId);
-                    if (product) {
-                        product.stock += (Number(item.quantity) || 0);
-                    }
-                });
+                    // 1. Refund Old Stock
+                    oldSamples.forEach(item => {
+                        const product = mrStock.find(p => p.id === item.productId);
+                        if (product) {
+                            product.stock += (Number(item.quantity) || 0);
+                        }
+                    });
 
-                // 2. Re-deduct New Stock
-                newSamples.forEach(item => {
-                    updateStock(item.productId, item.quantity);
-                });
+                    // 2. Re-deduct New Stock
+                    newSamples.forEach(item => {
+                        updateStock(item.productId, item.quantity);
+                    });
 
-                // 3. Update the DCR in the array
-                submittedDCRs[oldDCRIndex] = newReportData;
+                    // 3. Update the DCR in the array
+                    submittedDCRs[oldDCRIndex] = newReportData;
 
-            } else {
-                // ADD LOGIC
-                // 1. Deduct Stock
-                newReportData.samplesGiven.forEach(item => {
-                    updateStock(item.productId, item.quantity);
-                });
-                // 2. Add to Submitted DCRs
-                submittedDCRs.unshift(newReportData); // Add to the top
-                currentPage = 1; // Always go to the first page for new entry
+                } else {
+                    // ADD LOGIC
+                    // 1. Deduct Stock
+                    newReportData.samplesGiven.forEach(item => {
+                        updateStock(item.productId, item.quantity);
+                    });
+                    // 2. Add to Submitted DCRs
+                    submittedDCRs.unshift(newReportData); // Add to the top
+                    currentPage = 1; // Always go to the first page for new entry
+                }
+
+                // --- FINAL COMMIT & UI UPDATE (Local only) ---
+                saveStock();
+                saveDCRs();
             }
-
-            // --- FINAL COMMIT & UI UPDATE ---
-            saveStock();
-            saveDCRs();
 
             // Hide modal
             dcrModal.hide();

@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             // If no specific history entries exist (old null-id legacy records),
             // compute as remaining + distributed (what we know was used + what's left)
             const receivedFromHistory = calculateTotalReceived(product.id);
-            const received = receivedFromHistory > 0 ? receivedFromHistory : (remaining + distributed);
+            const received = Math.max(receivedFromHistory, remaining + distributed);
 
             const stockStatus = remaining <= 0 ?
                 '<span class="badge bg-danger">Out of Stock</span>' :
