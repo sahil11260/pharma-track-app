@@ -333,4 +333,69 @@
       init();
     }, 10);
   }
+
+  /* ================= MR LIVE TRACKING ================= */
+
+let markers = [];
+
+async function fetchMRLocations() {
+  try {
+    const res = await fetch('/api/tracking/all');
+    const data = await res.json();
+
+    console.log("MR Locations:", data);
+
+    updateMapMarkers(data);
+
+  } catch (e) {
+    console.log("Tracking error:", e);
+  }
+}
+
+function isOnline(updatedAt) {
+  const last = new Date(updatedAt);
+  const now = new Date();
+
+  return (now - last) < 60000; // 1 min
+}
+
+function updateMapMarkers(data) {
+
+  // remove old markers
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  data.forEach(mr => {
+
+    const online = isOnline(mr.updatedAt);
+
+    const color = online ? "green" : "red";
+
+    const marker = L.circleMarker(
+      [mr.latitude, mr.longitude],
+      {
+        color: color,
+        radius: 8
+      }
+    ).addTo(map);
+
+    marker.bindPopup(`
+      <b>${mr.mrId}</b><br/>
+      Status: ${online ? "🟢 Online" : "🔴 Offline"}
+    `);
+
+    markers.push(marker);
+
+  });
+
+}
+
+// auto refresh every 5 sec
+setInterval(fetchMRLocations, 5000);
+
+// first load
+fetchMRLocations();
+  
 })();
+
+
