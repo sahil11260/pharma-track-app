@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/api/mr-stock/**", "/api/stock-received/**", "/api/distributions/**")
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                       .requestMatchers("/api/tracking/**").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/index.html",
